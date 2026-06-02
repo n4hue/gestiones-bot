@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestiones BOT - Tracker</title>
+    <meta name="description"
+        content="Aplicación web para seguimiento de gestiones diarias como Analista BackOffice Técnico.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Gestiones BOT</h1>
+            <div class="progress-panel">
+                <div class="progress-info">
+                    <span class="counter"><span id="daily-count">0</span> / 30</span>
+                    <span class="goal-text">Objetivo Diario</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-export" class="btn btn-secondary">Exportar Jornada</button>
+                <button id="btn-reset" class="btn btn-danger">Nueva Jornada</button>
+                <button onclick="openConfigModal()" class="btn btn-icon" style="color: var(--text-muted);"
+                    title="Configuración URL">⚙️</button>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <!-- Form Section -->
+            <section class="form-section card">
+                <h2>Registrar Nueva Gestión</h2>
+                <form id="registro-form">
+                    <div class="form-group">
+                        <label for="cliente-id">Número de Cliente</label>
+                        <input type="text" id="cliente-id" name="cliente" placeholder="Ej. 12345678" required
+                            autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo-ra">Tipo de Gestión / RA</label>
+                        <select id="tipo-ra" name="tipo_ra" required>
+                            <option value="" disabled selected>Seleccione una opción...</option>
+                            <optgroup label="BANDA ANCHA">
+                                <option value="NOC - BANDA ANCHA - SOLICITUD DE CONFIGURACION">NOC - BANDA ANCHA -
+                                    SOLICITUD DE CONFIGURACION</option>
+                                <option value="NOC - BANDA ANCHA - PROBLEMAS PARTICULARES DE ACCESO">NOC - BANDA ANCHA -
+                                    PROBLEMAS PARTICULARES DE ACCESO</option>
+                                <option value="NOC - BANDA ANCHA - PROBLEMA ACCESO A CÁMARAS IP">NOC - BANDA ANCHA -
+                                    PROBLEMA ACCESO A CÁMARAS IP</option>
+                                <option value="NOC - BANDA ANCHA - INTERNET DATOS DE CM INCORRECTOS EN I3">NOC - BANDA
+                                    ANCHA - INTERNET DATOS DE CM INCORRECTOS EN I3</option>
+                            </optgroup>
+                            <optgroup label="TELEF RESID">
+                                <option value="NOC - TELEF RESID - LLAMADAS SIN TONO">NOC - TELEF RESID - LLAMADAS SIN
+                                    TONO</option>
+                                <option value="NOC - TELEF RESID - LLAMADAS SIN LLAMADAS SALIENTES">NOC - TELEF RESID -
+                                    LLAMADAS SIN LLAMADAS SALIENTES</option>
+                                <option value="NOC - TELEF RESID - LLAMADAS SIN LLAMADAS ENTRANTES">NOC - TELEF RESID -
+                                    LLAMADAS SIN LLAMADAS ENTRANTES</option>
+                                <option value="NOC - TELEF RESID - VARIOS">NOC - TELEF RESID - VARIOS</option>
+                            </optgroup>
+                            <optgroup label="WIFI MESH">
+                                <option value="NOC - WIFI MESH - CORTES INTERMITENTES">NOC - WIFI MESH - CORTES
+                                    INTERMITENTES</option>
+                                <option value="NOC - WIFI MESH - LENTITUD EN NAVEGACION">NOC - WIFI MESH - LENTITUD EN
+                                    NAVEGACION</option>
+                                <option value="NOC - WIFI MESH - PROBLEMAS PARTICULARES DE ACCESO">NOC - WIFI MESH -
+                                    PROBLEMAS PARTICULARES DE ACCESO</option>
+                                <option value="NOC - WIFI MESH - SIN NAVEGACION">NOC - WIFI MESH - SIN NAVEGACION
+                                </option>
+                                <option value="NOC - WIFI MESH - SOLICITUD DE CONFIGURACION">NOC - WIFI MESH - SOLICITUD
+                                    DE CONFIGURACION</option>
+                                <option value="NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA">NOC - WIFI MESH - WIFI -
+                                    DISPOSITIVO NO CONECTA</option>
+                                <option value="NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED">NOC - WIFI MESH - WIFI - NO
+                                    SE VISUALIZA RED</option>
+                            </optgroup>
+                            <optgroup label="TELEVISIÓN">
+                                <option value="NOC - TELEVISIÓN - SIN SUSCRIPCION">NOC - TELEVISIÓN - SIN SUSCRIPCION
+                                </option>
+                                <option value="NOC - TELEVISIÓN - PANTALLA NEGRA">NOC - TELEVISIÓN - PANTALLA NEGRA
+                                </option>
+                                <option value="NOC - TELEVISIÓN - PIXELACION/FREEZE">NOC - TELEVISIÓN -
+                                    PIXELACION/FREEZE</option>
+                                <option value="NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online">
+                                    NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online</option>
+                                <option value="NOC - APLICACIONES - DECO - DESAPARECEN APPS">NOC - APLICACIONES - DECO -
+                                    DESAPARECEN APPS</option>
+                            </optgroup>
+                            <optgroup label="WEB / APP">
+                                <option value="Web/App - Sucursal Virtual">Web/App - Sucursal Virtual</option>
+                                <option value="Web/App - Amazon">Web/App - Amazon</option>
+                                <option value="Web/App - Disney">Web/App - Disney</option>
+                                <option value="Web/App - Max">Web/App - Max</option>
+                                <option value="Web/App - Tplay">Web/App - Tplay</option>
+                                <option value="Web/App - Netflix">Web/App - Netflix</option>
+                                <option value="web/app - Tplay en Tizen Samsung TV">web/app - Tplay en Tizen Samsung TV
+                                </option>
+                                <option value="App Mobile - Tphone">App Mobile - Tphone</option>
+                            </optgroup>
+                            <optgroup label="ESCALAMIENTO N3">
+                                <option value="Inconveniente con insumos">Inconveniente con insumos</option>
+                                <option value="Problemas Cableados red.500">Problemas Cableados red.500</option>
+                                <option value="Reposición de Equipos CM/DD">Reposición de Equipos CM/DD</option>
+                                <option value="Escalamiento Teams">Escalamiento Teams</option>
+                            </optgroup>
+                            <optgroup label="GESTIONES ESPECIALES (Requieren Google Form)">
+                                <option value="Problemas Postes/Columnas">Problemas Postes/Columnas</option>
+                                <option value="Reservado para carga de BOT">Reservado para carga de BOT</option>
+                                <option value="Referidos">Referidos</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Registrar Gestión</button>
+                </form>
+            </section>
+
+            <!-- History Section -->
+            <section class="history-section card">
+                <h2>Historial de Hoy</h2>
+                <div class="table-responsive">
+                    <table id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Nº Cliente</th>
+                                <th>Tipo de Gestión / RA</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <!-- Rows will be injected by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Settings -->
+    <div id="google-form-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Configurar Google Form</h3>
+            <p>Todas las gestiones requieren abrir el Google Form.<br>Ingresa la URL aquí y se abrirá automáticamente de
+                ahora en adelante.</p>
+            <div class="form-url-config" style="border:none; padding-top:0;">
+                <label for="form-url-input">URL del Google Form:</label>
+                <input type="url" id="form-url-input" placeholder="https://docs.google.com/forms/..."
+                    autocomplete="off">
+            </div>
+            <div class="modal-actions">
+                <button id="btn-save-url" class="btn btn-primary">Guardar URL</button>
+                <button id="btn-cerrar-modal" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-abrir-form" class="btn btn-secondary hidden">Abrir Manual</button>
+                <!-- Hidden but kept for backwards comp in JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
