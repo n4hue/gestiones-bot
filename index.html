@@ -120,7 +120,18 @@
                             </optgroup>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Registrar Gestión</button>
+                    <div class="form-group">
+                        <label for="observaciones">Observaciones (Opcional)</label>
+                        <textarea id="observaciones" name="observaciones" rows="2" placeholder="Detalles extra..."></textarea>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="form-check" required>
+                        <label for="form-check">Confirmo que completé el Google Form</label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="btn-submit">Registrar Gestión</button>
+                        <button type="button" class="btn btn-secondary hidden" id="btn-cancel-edit">Cancelar Edición</button>
+                    </div>
                 </form>
             </section>
 
@@ -134,7 +145,8 @@
                                 <th>Hora</th>
                                 <th>Nº Cliente</th>
                                 <th>Tipo de Gestión / RA</th>
-                                <th>Acción</th>
+                                <th>Observaciones</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="history-body">
