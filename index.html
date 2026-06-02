@@ -7,6 +7,9 @@
     <title>Gestiones BOT - Tracker</title>
     <meta name="description"
         content="Aplicación web para seguimiento de gestiones diarias como Analista BackOffice Técnico.">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -163,6 +166,17 @@
         </div>
     </div>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registrado con éxito');
+                }).catch(err => {
+                    console.log('Error al registrar ServiceWorker: ', err);
+                });
+            });
+        }
+    </script>
     <script src="js/app.js"></script>
 </body>
 

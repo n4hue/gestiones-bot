@@ -1,0 +1,17 @@
+{
+  "name": "Gestiones BOT Tracker",
+  "short_name": "Gestiones BOT",
+  "description": "Aplicación web para seguimiento de gestiones diarias como Analista BackOffice Técnico.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
