@@ -8,7 +8,7 @@
     <meta name="description"
         content="Aplicación web para seguimiento de gestiones diarias como Analista BackOffice Técnico.">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0f172a" id="meta-theme-color">
     <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -16,8 +16,16 @@
 
 <body>
     <div class="app-container">
+        <!-- ===== HEADER ===== -->
         <header class="app-header">
-            <h1>Gestiones BOT</h1>
+            <div class="header-top">
+                <h1>Gestiones BOT</h1>
+                <div class="header-controls">
+                    <button id="btn-theme" class="btn btn-icon" title="Cambiar tema">🌙</button>
+                    <button id="btn-open-settings" class="btn btn-icon" title="Configuración">⚙️</button>
+                </div>
+            </div>
+
             <div class="progress-panel">
                 <div class="progress-info">
                     <span class="counter"><span id="daily-count">0</span> / 30</span>
@@ -26,16 +34,24 @@
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
+                <div class="progress-meta">
+                    <span id="session-timer" class="session-timer">⏱ Sin iniciar</span>
+                    <span id="sync-status" class="sync-status hidden">
+                        <span class="sync-dot"></span>
+                        <span class="sync-text"></span>
+                    </span>
+                </div>
             </div>
+
             <div class="header-actions">
-                <button id="btn-export" class="btn btn-secondary">Exportar Jornada</button>
-                <button id="btn-reset" class="btn btn-danger">Nueva Jornada</button>
-                <button onclick="openConfigModal()" class="btn btn-icon" style="color: var(--text-muted);"
-                    title="Configuración URL">⚙️</button>
+                <button id="btn-export" class="btn btn-secondary">📥 Exportar</button>
+                <button id="btn-reset" class="btn btn-danger">🔄 Nueva Jornada</button>
             </div>
         </header>
 
+        <!-- ===== MAIN CONTENT ===== -->
         <main class="app-content">
+
             <!-- Form Section -->
             <section class="form-section card">
                 <h2>Registrar Nueva Gestión</h2>
@@ -122,22 +138,66 @@
                     </div>
                     <div class="form-group">
                         <label for="observaciones">Observaciones (Opcional)</label>
-                        <textarea id="observaciones" name="observaciones" rows="2" placeholder="Detalles extra..."></textarea>
+                        <textarea id="observaciones" name="observaciones" rows="2"
+                            placeholder="Detalles extra..."></textarea>
                     </div>
                     <div class="form-group checkbox-group">
                         <input type="checkbox" id="form-check" required>
                         <label for="form-check">Confirmo que completé el Google Form</label>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary" id="btn-submit">Registrar Gestión</button>
-                        <button type="button" class="btn btn-secondary hidden" id="btn-cancel-edit">Cancelar Edición</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit">
+                            Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary hidden" id="btn-cancel-edit">Cancelar</button>
                     </div>
                 </form>
+            </section>
+
+            <!-- Stats Section (Feature 2) -->
+            <section class="stats-section card" id="stats-section">
+                <div class="stats-header">
+                    <h2>Estadísticas</h2>
+                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas">📊</button>
+                </div>
+                <div id="stats-content" class="stats-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-per-hour">0</span>
+                            <span class="stat-label">Gest./Hora</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-streak">0 🔥</span>
+                            <span class="stat-label">Racha días</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value small-text" id="stat-top-category">-</span>
+                            <span class="stat-label">Más frecuente</span>
+                        </div>
+                    </div>
+                    <div id="category-chart" class="category-chart">
+                        <p class="empty-state" style="padding: 0.5rem 0; font-size: 0.8rem;">Sin datos aún</p>
+                    </div>
+                </div>
             </section>
 
             <!-- History Section -->
             <section class="history-section card">
                 <h2>Historial de Hoy</h2>
+                <!-- Filters (Feature 4) -->
+                <div class="history-filters">
+                    <input type="text" id="search-input" placeholder="🔍 Buscar por Nº cliente u observación...">
+                    <select id="filter-category">
+                        <option value="">Todas</option>
+                        <option value="BANDA ANCHA">Banda Ancha</option>
+                        <option value="TELEF RESID">Telef. Resid.</option>
+                        <option value="WIFI MESH">WiFi Mesh</option>
+                        <option value="TELEVISIÓN">Televisión</option>
+                        <option value="WEB / APP">Web / App</option>
+                        <option value="ESCALAMIENTO N3">Escalamiento N3</option>
+                        <option value="GESTIONES ESPECIALES">Gest. Especiales</option>
+                    </select>
+                </div>
                 <div class="table-responsive">
                     <table id="history-table">
                         <thead>
@@ -145,8 +205,8 @@
                                 <th>Hora</th>
                                 <th>Nº Cliente</th>
                                 <th>Tipo de Gestión / RA</th>
-                                <th>Observaciones</th>
-                                <th>Acciones</th>
+                                <th>Obs.</th>
+                                <th>Acc.</th>
                             </tr>
                         </thead>
                         <tbody id="history-body">
@@ -158,26 +218,52 @@
         </main>
     </div>
 
-    <!-- Modal for Settings -->
-    <div id="google-form-modal" class="modal hidden">
+    <!-- ===== TOAST CONTAINER (Feature 6) ===== -->
+    <div id="toast-container"></div>
+
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Configurar Google Form</h3>
-            <p>Todas las gestiones requieren abrir el Google Form.<br>Ingresa la URL aquí y se abrirá automáticamente de
-                ahora en adelante.</p>
-            <div class="form-url-config" style="border:none; padding-top:0;">
+            <h3>⚙️ Configuración</h3>
+
+            <div class="settings-section">
                 <label for="form-url-input">URL del Google Form:</label>
                 <input type="url" id="form-url-input" placeholder="https://docs.google.com/forms/..."
                     autocomplete="off">
             </div>
+
+            <div class="settings-section">
+                <label for="sheets-url-input">URL de Google Sheets (Apps Script):</label>
+                <input type="url" id="sheets-url-input"
+                    placeholder="https://script.google.com/macros/s/..." autocomplete="off">
+                <small class="settings-hint">Opcional — Para sincronización automática con una hoja de cálculo</small>
+            </div>
+
+            <div class="settings-section checkbox-group">
+                <input type="checkbox" id="sound-toggle" checked>
+                <label for="sound-toggle">🔊 Activar sonido al registrar</label>
+            </div>
+
             <div class="modal-actions">
-                <button id="btn-save-url" class="btn btn-primary">Guardar URL</button>
+                <button id="btn-save-settings" class="btn btn-primary" style="width: auto;">Guardar</button>
                 <button id="btn-cerrar-modal" class="btn btn-secondary">Cancelar</button>
-                <button id="btn-abrir-form" class="btn btn-secondary hidden">Abrir Manual</button>
-                <!-- Hidden but kept for backwards comp in JS -->
             </div>
         </div>
     </div>
 
+    <!-- ===== CONFIRM MODAL (Feature 6) ===== -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-content confirm-modal-content">
+            <h3>⚠️ Confirmar</h3>
+            <p id="confirm-message"></p>
+            <div class="modal-actions">
+                <button id="confirm-yes" class="btn btn-danger">Sí, confirmar</button>
+                <button id="confirm-no" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
