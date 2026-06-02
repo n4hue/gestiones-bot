@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State
     let gestiones = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    let googleFormUrl = localStorage.getItem(GFORM_URL_KEY) || '';
+    let googleFormUrl = localStorage.getItem(GFORM_URL_KEY) || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
 
     // Initialize
     inputFormUrl.value = googleFormUrl;
