@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
 
     const CATEGORY_COLORS = {
-        'BANDA ANCHA': '#3b82f6',
+        'INTERNET': '#3b82f6',
         'TELEF RESID': '#8b5cf6',
         'WIFI MESH': '#10b981',
         'TELEVISIÓN': '#f59e0b',
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     function getCategory(tipoRa) {
         const lower = tipoRa.toLowerCase();
-        if (lower.includes('banda ancha')) return 'BANDA ANCHA';
+        if (lower.includes('banda ancha') || lower.includes('internet')) return 'INTERNET';
         if (lower.includes('telef resid')) return 'TELEF RESID';
         if (lower.includes('wifi mesh')) return 'WIFI MESH';
         if (lower.includes('televisión') || lower.includes('television') || lower.includes('aplicaciones - deco')) return 'TELEVISIÓN';
