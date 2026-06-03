@@ -156,6 +156,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function completeSubmit() {
+            saveData();
+            updateUI();
+            startSessionTimer();
+
+            // Reset form
+            inputCliente.value = '';
+            selectRa.value = '';
+            if (inputObservaciones) inputObservaciones.value = '';
+            if (checkForm) checkForm.checked = false;
+
+            // Clear tools
+            if (btnClearTools) btnClearTools.click();
+
+            inputCliente.focus();
+        }
+
         if (editingId) {
             // Update existing
             const index = gestiones.findIndex(g => g.id === editingId);
@@ -171,50 +188,66 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSubmit.innerHTML = 'Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
             btnCancelEdit.classList.add('hidden');
             showToast('Gestión actualizada correctamente', 'success');
+            completeSubmit();
         } else {
             // Add new
-            const now = new Date();
-            const gestion = {
-                id: Date.now().toString(),
-                cliente: cliente,
-                tipo_ra: tipoRa,
-                observaciones: observaciones,
-                fecha: now.toLocaleDateString('es-AR'),
-                hora: now.toLocaleTimeString('es-AR', { hour12: false })
+            const processNewGestion = () => {
+                const now = new Date();
+                const gestion = {
+                    id: Date.now().toString(),
+                    cliente: cliente,
+                    tipo_ra: tipoRa,
+                    observaciones: observaciones,
+                    fecha: now.toLocaleDateString('es-AR'),
+                    hora: now.toLocaleTimeString('es-AR', { hour12: false })
+                };
+                if (equipos) {
+                    gestion.equipos = equipos;
+                }
+                gestiones.unshift(gestion);
+
+                // Feature 8: Sound
+                playSuccessSound();
+
+                // Feature 1: Google Sheets sync
+                syncToGoogleSheets(gestion);
+
+                showToast('✅ Gestión #' + gestiones.length + ' registrada', 'success');
+                completeSubmit();
             };
-            if (equipos) {
-                gestion.equipos = equipos;
-            }
-            gestiones.unshift(gestion);
-
-            // Feature 8: Sound
-            playSuccessSound();
-
-            // Feature 1: Google Sheets sync
-            syncToGoogleSheets(gestion);
 
             // Open Google Form
             if (googleFormUrl) {
-                window.open(googleFormUrl, '_blank');
+                const formWindow = window.open(googleFormUrl, '_blank');
+                if (formWindow) {
+                    const originalBtnHtml = btnSubmit.innerHTML;
+                    btnSubmit.innerHTML = '⏳ Gestión en proceso en el Form...';
+                    btnSubmit.disabled = true;
+                    inputCliente.disabled = true;
+                    selectRa.disabled = true;
+                    if (inputObservaciones) inputObservaciones.disabled = true;
+                    
+                    const checkInterval = setInterval(() => {
+                        if (formWindow.closed) {
+                            clearInterval(checkInterval);
+                            
+                            btnSubmit.innerHTML = originalBtnHtml;
+                            btnSubmit.disabled = false;
+                            inputCliente.disabled = false;
+                            selectRa.disabled = false;
+                            if (inputObservaciones) inputObservaciones.disabled = false;
+                            
+                            processNewGestion();
+                        }
+                    }, 500);
+                } else {
+                    showToast('Habilita las ventanas emergentes (pop-ups) para abrir el Form automáticamente', 'error');
+                    processNewGestion();
+                }
+            } else {
+                processNewGestion();
             }
-
-            showToast('✅ Gestión #' + gestiones.length + ' registrada', 'success');
         }
-
-        saveData();
-        updateUI();
-        startSessionTimer();
-
-        // Reset form
-        inputCliente.value = '';
-        selectRa.value = '';
-        if (inputObservaciones) inputObservaciones.value = '';
-        if (checkForm) checkForm.checked = false;
-
-        // Clear tools
-        if (btnClearTools) btnClearTools.click();
-
-        inputCliente.focus();
     });
 
     // Cancel edit
