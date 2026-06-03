@@ -44,6 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmYes = document.getElementById('confirm-yes');
     const confirmNo = document.getElementById('confirm-no');
 
+    // Tools Elements
+    const toolsAccordion = document.getElementById('tools-accordion');
+    const macCm = document.getElementById('mac-cm');
+    const macMta = document.getElementById('mac-mta');
+    const macOnt = document.getElementById('mac-ont');
+    const lineaTel = document.getElementById('linea-tel');
+    const decosContainer = document.getElementById('decos-container');
+    const btnClearTools = document.getElementById('btn-clear-tools');
+
     // ============================================
     // Constants
     // ============================================
@@ -123,6 +132,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!cliente || !tipoRa) return;
 
+        let equipos = null;
+        if (toolsAccordion && toolsAccordion.open) {
+            const decos = [];
+            if (decosContainer) {
+                decosContainer.querySelectorAll('.deco-input').forEach(input => {
+                    if (input.value) decos.push(input.value);
+                });
+            }
+            const cmVal = macCm ? macCm.value : '';
+            const ontVal = macOnt ? macOnt.value : '';
+            const mtaVal = macMta ? macMta.value : '';
+            const lineaVal = lineaTel ? lineaTel.value : '';
+
+            if (cmVal || ontVal || lineaVal || decos.length > 0) {
+                equipos = {
+                    cm: cmVal,
+                    mta: mtaVal,
+                    ont: ontVal,
+                    decos: decos,
+                    linea: lineaVal
+                };
+            }
+        }
+
         if (editingId) {
             // Update existing
             const index = gestiones.findIndex(g => g.id === editingId);
@@ -130,6 +163,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 gestiones[index].cliente = cliente;
                 gestiones[index].tipo_ra = tipoRa;
                 gestiones[index].observaciones = observaciones;
+                if (equipos) {
+                    gestiones[index].equipos = equipos;
+                }
             }
             editingId = null;
             btnSubmit.innerHTML = 'Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
@@ -146,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 fecha: now.toLocaleDateString('es-AR'),
                 hora: now.toLocaleTimeString('es-AR', { hour12: false })
             };
+            if (equipos) {
+                gestion.equipos = equipos;
+            }
             gestiones.unshift(gestion);
 
             // Feature 8: Sound
@@ -171,6 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
         selectRa.value = '';
         if (inputObservaciones) inputObservaciones.value = '';
         if (checkForm) checkForm.checked = false;
+
+        // Clear tools
+        if (btnClearTools) btnClearTools.click();
+
         inputCliente.focus();
     });
 
@@ -280,12 +323,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         filtered.forEach(g => {
+            let equiposHtml = '';
+            if (g.equipos) {
+                const eq = g.equipos;
+                const parts = [];
+                if (eq.cm) parts.push(`CM: <span style="font-family:monospace">${eq.cm}</span>`);
+                if (eq.mta) parts.push(`MTA: <span style="font-family:monospace">${eq.mta}</span>`);
+                if (eq.ont) parts.push(`ONT: <span style="font-family:monospace">${eq.ont}</span>`);
+                if (eq.decos && eq.decos.length) parts.push(`Decos: ${eq.decos.length}`);
+                if (eq.linea) parts.push(`Línea: ${eq.linea}`);
+                if (parts.length > 0) {
+                    equiposHtml = `<div style="font-size: 0.8rem; line-height:1.4; color: var(--primary); margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">🛠️ ${parts.join(' | ')}</div>`;
+                }
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${g.hora}</td>
                 <td><strong>${g.cliente}</strong></td>
                 <td>${g.tipo_ra}</td>
-                <td><span class="obs-text">${g.observaciones || '—'}</span></td>
+                <td><span class="obs-text">${g.observaciones || '—'}</span>${equiposHtml}</td>
                 <td>
                     <div class="action-buttons">
                         <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')">✏️</button>
@@ -485,14 +542,14 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(gestion)
         })
-        .then(() => {
-            // With no-cors we can't read response, but if no error => assume success
-            updateSyncStatus('success');
-        })
-        .catch(err => {
-            console.error('Sync error:', err);
-            updateSyncStatus('error');
-        });
+            .then(() => {
+                // With no-cors we can't read response, but if no error => assume success
+                updateSyncStatus('success');
+            })
+            .catch(err => {
+                console.error('Sync error:', err);
+                updateSyncStatus('error');
+            });
     }
 
     function updateSyncStatus(status) {
@@ -623,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateThemeColor(theme) {
         const meta = document.getElementById('meta-theme-color');
         if (meta) {
-            meta.setAttribute('content', theme === 'dark' ? '#0f172a' : '#f1f5f9');
+            meta.setAttribute('content', theme === 'dark' ? '#121212' : '#f1f5f9');
         }
     }
 
@@ -699,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CSV Creation
-        const headers = ['ID', 'Fecha', 'Hora', 'N_Cliente', 'Tipo_RA', 'Observaciones'];
+        const headers = ['ID', 'Fecha', 'Hora', 'N_Cliente', 'Tipo_RA', 'Observaciones', 'CM_MAC', 'MTA_MAC', 'ONT_MAC', 'Decos', 'Linea'];
         const csvRows = [];
         csvRows.push(headers.join(','));
 
@@ -708,7 +765,14 @@ document.addEventListener('DOMContentLoaded', () => {
         exportData.forEach(g => {
             const tipoRaEscaped = `"${g.tipo_ra.replace(/"/g, '""')}"`;
             const obsEscaped = g.observaciones ? `"${g.observaciones.replace(/"/g, '""')}"` : '""';
-            const row = [g.id, g.fecha, g.hora, g.cliente, tipoRaEscaped, obsEscaped];
+            const eq = g.equipos || {};
+            const cm = eq.cm || '';
+            const mta = eq.mta || '';
+            const ont = eq.ont || '';
+            const decos = eq.decos && eq.decos.length ? `"${eq.decos.join(' / ')}"` : '""';
+            const linea = eq.linea || '';
+
+            const row = [g.id, g.fecha, g.hora, g.cliente, tipoRaEscaped, obsEscaped, cm, mta, ont, decos, linea];
             csvRows.push(row.join(','));
         });
 
@@ -779,4 +843,130 @@ document.addEventListener('DOMContentLoaded', () => {
             inputCliente.focus();
         });
     }
+
+    // ============================================
+    // Tools Logic (MAC Formatting & MTA Math)
+    // ============================================
+    function formatMac(value) {
+        let v = value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        return v.match(/.{1,2}/g)?.join(':') || '';
+    }
+
+    function calculateMta(cmMac) {
+        const hex = cmMac.replace(/:/g, '');
+        if (hex.length === 12) {
+            try {
+                let num = BigInt("0x" + hex);
+                num += 3n;
+                let newHex = num.toString(16).toUpperCase().padStart(12, '0');
+                if (newHex.length > 12) newHex = newHex.slice(-12);
+                return newHex.match(/.{1,2}/g)?.join(':') || '';
+            } catch (e) {
+                return '';
+            }
+        }
+        return '';
+    }
+
+    function setupMacInput(input) {
+        input.addEventListener('input', (e) => {
+            const start = input.selectionStart;
+            const oldLen = input.value.length;
+
+            input.value = formatMac(input.value);
+
+            let diff = input.value.length - oldLen;
+            let newPos = start + diff;
+            if (newPos < 0) newPos = 0;
+
+            try {
+                input.setSelectionRange(newPos, newPos);
+            } catch (err) { }
+
+            if (input.id === 'mac-cm') {
+                if (macMta) {
+                    macMta.value = input.value.replace(/:/g, '').length === 12 ? calculateMta(input.value) : '';
+                }
+            }
+        });
+    }
+
+    if (macCm) setupMacInput(macCm);
+    if (macOnt) setupMacInput(macOnt);
+    document.querySelectorAll('.deco-input').forEach(setupMacInput);
+
+    const btnAddDeco = document.getElementById('btn-add-deco');
+    if (btnAddDeco && decosContainer) {
+        btnAddDeco.addEventListener('click', () => {
+            const currentDecos = decosContainer.querySelectorAll('.deco-group').length;
+            const index = currentDecos + 1;
+            const group = document.createElement('div');
+            group.className = 'tool-group deco-group';
+            group.innerHTML = `
+                <label>Deco MAC ${index}</label>
+                <div class="input-with-copy">
+                    <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" maxlength="17">
+                    <button type="button" class="btn-copy btn-copy-deco" title="Copiar">📋</button>
+                    <button type="button" class="btn-remove-deco" title="Quitar Deco">➖</button>
+                </div>
+            `;
+            decosContainer.appendChild(group);
+
+            setupMacInput(group.querySelector('.deco-input'));
+
+            group.querySelector('.btn-remove-deco').addEventListener('click', () => {
+                group.remove();
+                decosContainer.querySelectorAll('.deco-group label').forEach((lbl, i) => {
+                    lbl.textContent = 'Deco MAC ' + (i + 1);
+                });
+            });
+
+            setupCopyButton(group.querySelector('.btn-copy'), group.querySelector('.deco-input'));
+        });
+    }
+
+    function setupCopyButton(btn, inputEl) {
+        if (!btn || !inputEl) return;
+        btn.addEventListener('click', async () => {
+            if (!inputEl.value) return;
+            try {
+                await navigator.clipboard.writeText(inputEl.value);
+                const original = btn.textContent;
+                btn.textContent = '✅';
+                setTimeout(() => { if (btn) btn.textContent = original; }, 1500);
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
+        });
+    }
+
+    document.querySelectorAll('.btn-copy').forEach(btn => {
+        if (btn.classList.contains('btn-copy-deco')) {
+            setupCopyButton(btn, btn.previousElementSibling);
+        } else if (btn.dataset.target) {
+            setupCopyButton(btn, document.getElementById(btn.dataset.target));
+        }
+    });
+
+    if (btnClearTools) {
+        btnClearTools.addEventListener('click', () => {
+            if (macCm) macCm.value = '';
+            if (macMta) macMta.value = '';
+            if (macOnt) macOnt.value = '';
+            if (lineaTel) lineaTel.value = '';
+
+            if (decosContainer) {
+                const decoGroups = decosContainer.querySelectorAll('.deco-group');
+                decoGroups.forEach((g, i) => {
+                    if (i === 0) {
+                        g.querySelector('.deco-input').value = '';
+                    } else {
+                        g.remove();
+                    }
+                });
+            }
+            showToast('Herramientas limpiadas', 'info');
+        });
+    }
+
 });
