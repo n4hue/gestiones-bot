@@ -582,6 +582,7 @@ option {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    align-items: center;
 }
 
 .history-filters input,
@@ -591,11 +592,14 @@ option {
 }
 
 .history-filters input {
-    flex: 1;
+    flex: 2;
+    min-width: 0;
 }
 
 .history-filters select {
-    min-width: 140px;
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
 }
 
 /* ==========================================
