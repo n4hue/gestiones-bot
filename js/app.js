@@ -285,6 +285,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!settingsModal.classList.contains('hidden')) {
                 settingsModal.classList.add('hidden');
             }
+            if (jornadaModal && !jornadaModal.classList.contains('hidden')) {
+                if (btnCancelarJornada) btnCancelarJornada.click();
+            }
         }
     });
 
@@ -777,28 +780,176 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    btnReset.addEventListener('click', async () => {
-        if (gestiones.length === 0) {
-            showToast('No hay gestiones para archivar', 'info');
-            return;
+    // ============================================
+    // Nueva Jornada Checklist Modal
+    // ============================================
+    const jornadaModal = document.getElementById('jornada-modal');
+    const chkQueueMetrics = document.getElementById('chk-queuemetrics');
+    const chk3cx = document.getElementById('chk-3cx');
+    const chkFormInicio = document.getElementById('chk-form-inicio');
+    const chkFormHint = document.getElementById('chk-form-hint');
+    const btnOpenFormInicio = document.getElementById('btn-open-form-inicio');
+    const btnIniciarJornada = document.getElementById('btn-iniciar-jornada');
+    const btnCancelarJornada = document.getElementById('btn-cancelar-jornada');
+    const jornadaProgressBar = document.getElementById('jornada-progress-bar');
+    const jornadaProgressText = document.getElementById('jornada-progress-text');
+
+    let formInicioWindow = null;
+    let formInicioCheckInterval = null;
+
+    function resetChecklistState() {
+        if (chkQueueMetrics) chkQueueMetrics.checked = false;
+        if (chk3cx) chk3cx.checked = false;
+        if (chkFormInicio) {
+            chkFormInicio.checked = false;
+            chkFormInicio.disabled = true;
+        }
+        if (btnOpenFormInicio) {
+            btnOpenFormInicio.disabled = false;
+            btnOpenFormInicio.classList.remove('waiting');
+            btnOpenFormInicio.textContent = '📝 Abrir Form';
+        }
+        if (chkFormHint) chkFormHint.textContent = 'Abrí el form, completalo y cerrá la pestaña';
+
+        // Clear form window polling
+        if (formInicioCheckInterval) {
+            clearInterval(formInicioCheckInterval);
+            formInicioCheckInterval = null;
+        }
+        formInicioWindow = null;
+
+        // Reset visual states
+        document.querySelectorAll('.checklist-item').forEach(item => {
+            item.classList.remove('checked');
+        });
+
+        updateJornadaProgress();
+    }
+
+    function updateJornadaProgress() {
+        const checks = [
+            chkQueueMetrics && chkQueueMetrics.checked,
+            chk3cx && chk3cx.checked,
+            chkFormInicio && chkFormInicio.checked
+        ];
+        const completed = checks.filter(Boolean).length;
+
+        // Update progress bar
+        if (jornadaProgressBar) {
+            jornadaProgressBar.style.width = `${(completed / 3) * 100}%`;
+        }
+        if (jornadaProgressText) {
+            jornadaProgressText.textContent = `${completed} de 3 completados`;
         }
 
-        const confirmed = await showConfirm(
-            '¿Estás seguro de iniciar una nueva jornada?\n\nLos datos actuales se archivarán automáticamente.\nTambién puedes exportar un CSV antes.'
-        );
+        // Update start button
+        if (btnIniciarJornada) {
+            const allDone = completed === 3;
+            btnIniciarJornada.disabled = !allDone;
+            btnIniciarJornada.innerHTML = allDone
+                ? '✅ Iniciar Nueva Jornada'
+                : '🔒 Iniciar Nueva Jornada';
+        }
 
-        if (confirmed) {
-            // Archive current day
-            const today = new Date().toISOString().split('T')[0];
-            localStorage.setItem(ARCHIVE_PREFIX + today, JSON.stringify(gestiones));
+        // Update visual state of each item
+        document.querySelectorAll('.checklist-item').forEach(item => {
+            const cb = item.querySelector('.checklist-checkbox');
+            if (cb && cb.checked) {
+                item.classList.add('checked');
+            } else {
+                item.classList.remove('checked');
+            }
+        });
+    }
 
+    // Manual checkboxes
+    [chkQueueMetrics, chk3cx].forEach(cb => {
+        if (cb) {
+            cb.addEventListener('change', updateJornadaProgress);
+        }
+    });
+
+    // "Abrir Form" button — opens form in new tab and monitors .closed
+    if (btnOpenFormInicio) {
+        btnOpenFormInicio.addEventListener('click', () => {
+            const formUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
+            formInicioWindow = window.open(formUrl, '_blank');
+
+            if (formInicioWindow) {
+                // Update UI to "waiting" state
+                btnOpenFormInicio.disabled = true;
+                btnOpenFormInicio.classList.add('waiting');
+                btnOpenFormInicio.textContent = '⏳ Esperando...';
+                if (chkFormHint) chkFormHint.textContent = 'Completá el form y cerrá la pestaña para continuar...';
+
+                // Poll for the window closing
+                formInicioCheckInterval = setInterval(() => {
+                    if (formInicioWindow && formInicioWindow.closed) {
+                        clearInterval(formInicioCheckInterval);
+                        formInicioCheckInterval = null;
+                        formInicioWindow = null;
+
+                        // Auto-check the form checkbox
+                        if (chkFormInicio) {
+                            chkFormInicio.checked = true;
+                        }
+
+                        // Update button visuals
+                        btnOpenFormInicio.classList.remove('waiting');
+                        btnOpenFormInicio.textContent = '✅ Form completado';
+                        if (chkFormHint) chkFormHint.textContent = 'Form de inicio cargado correctamente';
+
+                        updateJornadaProgress();
+                    }
+                }, 500);
+            } else {
+                showToast('Habilitá las ventanas emergentes (pop-ups) para abrir el Form', 'error');
+            }
+        });
+    }
+
+    // "Nueva Jornada" button opens the checklist modal
+    btnReset.addEventListener('click', () => {
+        resetChecklistState();
+        if (jornadaModal) {
+            jornadaModal.classList.remove('hidden');
+        }
+    });
+
+    // "Cancelar" in the checklist modal
+    if (btnCancelarJornada) {
+        btnCancelarJornada.addEventListener('click', () => {
+            // Clean up any ongoing form window polling
+            if (formInicioCheckInterval) {
+                clearInterval(formInicioCheckInterval);
+                formInicioCheckInterval = null;
+            }
+            if (jornadaModal) jornadaModal.classList.add('hidden');
+        });
+    }
+
+    // "Iniciar Nueva Jornada" — the real reset
+    if (btnIniciarJornada) {
+        btnIniciarJornada.addEventListener('click', () => {
+            // Archive current day data
+            if (gestiones.length > 0) {
+                const today = new Date().toISOString().split('T')[0];
+                localStorage.setItem(ARCHIVE_PREFIX + today, JSON.stringify(gestiones));
+            }
+
+            // Reset everything
             gestiones = [];
             saveData();
             updateUI();
             startSessionTimer();
-            showToast('Nueva jornada iniciada. Datos archivados.', 'success');
-        }
-    });
+
+            // Close modal
+            if (jornadaModal) jornadaModal.classList.add('hidden');
+
+            showToast('🚀 Nueva jornada iniciada. ¡Éxitos!', 'success');
+            inputCliente.focus();
+        });
+    }
 
     btnExport.addEventListener('click', () => {
         if (gestiones.length === 0) {

@@ -336,6 +336,62 @@
         </div>
     </div>
 
+    <!-- ===== NUEVA JORNADA CHECKLIST MODAL ===== -->
+    <div id="jornada-modal" class="modal hidden">
+        <div class="modal-content jornada-modal-content">
+            <div class="jornada-header">
+                <span class="jornada-icon">🚀</span>
+                <h3>Checklist de Inicio de Jornada</h3>
+                <p class="jornada-subtitle">Completá todos los pasos antes de iniciar</p>
+            </div>
+
+            <div class="jornada-checklist">
+                <!-- Item 1: QueueMetrics -->
+                <label class="checklist-item" id="checklist-item-qm">
+                    <input type="checkbox" id="chk-queuemetrics" class="checklist-checkbox">
+                    <span class="checklist-checkmark"></span>
+                    <div class="checklist-label">
+                        <span class="checklist-text">Logeo en QueueMetrics</span>
+                        <span class="checklist-hint">Marcá cuando te hayas logeado</span>
+                    </div>
+                </label>
+
+                <!-- Item 2: 3CX -->
+                <label class="checklist-item" id="checklist-item-3cx">
+                    <input type="checkbox" id="chk-3cx" class="checklist-checkbox">
+                    <span class="checklist-checkmark"></span>
+                    <div class="checklist-label">
+                        <span class="checklist-text">Doble llamado en 3CX</span>
+                        <span class="checklist-hint">Marcá cuando hayas hecho el doble llamado</span>
+                    </div>
+                </label>
+
+                <!-- Item 3: Form de inicio -->
+                <div class="checklist-item checklist-item-form" id="checklist-item-form">
+                    <input type="checkbox" id="chk-form-inicio" class="checklist-checkbox" disabled>
+                    <span class="checklist-checkmark"></span>
+                    <div class="checklist-label">
+                        <span class="checklist-text">Carga de form de inicio de jornada</span>
+                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la pestaña</span>
+                    </div>
+                    <button type="button" class="btn btn-open-form" id="btn-open-form-inicio">📝 Abrir Form</button>
+                </div>
+            </div>
+
+            <div class="jornada-progress">
+                <div class="jornada-progress-bar" id="jornada-progress-bar"></div>
+            </div>
+            <span class="jornada-progress-text" id="jornada-progress-text">0 de 3 completados</span>
+
+            <div class="modal-actions jornada-actions">
+                <button id="btn-iniciar-jornada" class="btn btn-primary btn-jornada-start" disabled>
+                    🔒 Iniciar Nueva Jornada
+                </button>
+                <button id="btn-cancelar-jornada" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== SCRIPTS ===== -->
     <script>
         if ('serviceWorker' in navigator) {
