@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const firstTime = new Date();
                 firstTime.setHours(h, m, s, 0);
                 const now = new Date();
-                const hoursElapsed = Math.max((now - firstTime) / (1000 * 60 * 60), 0.1);
+                const hoursElapsed = Math.max((now - firstTime) / (1000 * 60 * 60), 1);
                 statPerHour.textContent = (gestiones.length / hoursElapsed).toFixed(1);
             } else {
                 statPerHour.textContent = '0';
