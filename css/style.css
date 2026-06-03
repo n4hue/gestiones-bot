@@ -117,6 +117,7 @@ h1 {
     text-align: center;
     background: linear-gradient(to right, #D35400, #F39C12);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -868,7 +869,9 @@ tbody tr:hover {
     background-color: rgba(230, 126, 34, 0.1) !important;
 }
 
-.btn-copy, .btn-add-deco, .btn-remove-deco {
+.btn-copy,
+.btn-add-deco,
+.btn-remove-deco {
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -890,6 +893,7 @@ tbody tr:hover {
 .btn-remove-deco {
     color: var(--danger);
 }
+
 .btn-remove-deco:hover {
     background: var(--danger);
     color: white;
