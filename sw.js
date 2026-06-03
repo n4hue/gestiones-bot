@@ -9,6 +9,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Obliga al nuevo Service Worker a instalarse inmediatamente
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -18,19 +19,28 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Estrategia: Network First (Red primero, luego caché como respaldo para offline)
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
+        // Si hay respuesta válida de la red, clónala y guárdala en caché
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
         }
-        return fetch(event.request);
+        return response;
+      })
+      .catch(() => {
+        // Si falla la red (offline), busca en caché
+        return caches.match(event.request);
       })
   );
 });
 
 self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim()); // El nuevo SW toma el control de las ventanas abiertas
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
