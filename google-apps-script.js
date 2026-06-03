@@ -1,58 +1,83 @@
 // ============================================
 // GESTIONES BOT - Google Apps Script
 // ============================================
-// INSTRUCCIONES DE INSTALACIÓN:
+// INSTRUCCIONES DE ACTUALIZACIÓN:
 //
-// 1. Crear una Google Sheet nueva (https://sheets.new)
-// 2. Ir a Extensiones → Apps Script
-// 3. Borrar todo el contenido del editor
-// 4. Pegar este código completo
-// 5. Guardar con Ctrl+S
-// 6. Clic en "Implementar" → "Nueva implementación"
-//    - Tipo: Aplicación web
-//    - Ejecutar como: Yo (tu email)
-//    - Quién tiene acceso: Cualquier persona
-// 7. Clic en "Implementar" y autorizar cuando se solicite
-// 8. Copiar la URL que aparece
-// 9. Abrir Gestiones BOT → ⚙️ Configuración
-//    → Pegar la URL en "URL de Google Sheets"
-//    → Guardar
-//
-// ¡Listo! Cada gestión se sincronizará automáticamente.
+// 1. Ir a Extensiones → Apps Script en tu Google Sheet
+// 2. Borrar todo el contenido actual y pegar este nuevo
+// 3. Guardar con Ctrl+S
+// 4. Clic en "Implementar" → "Gestionar implementaciones"
+// 5. Editar (lápiz) la implementación actual
+// 6. Versión: elegir "Nueva versión"
+// 7. Clic en "Implementar"
 // ============================================
-
-const SHEET_NAME = 'Gestiones';
 
 function doPost(e) {
   try {
+    const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(SHEET_NAME);
+    
+    // Determinar la acción (por defecto es 'add' si viene del formato anterior)
+    const action = data.action || 'add';
+    const gestionData = action === 'add' ? (data.data || data) : data;
+    
+    // 1. Lógica para segmentar por día
+    // Formatear la fecha para que sea segura en nombres de hojas (ej. 02-06-2026)
+    const rawFecha = gestionData.fecha || data.fecha || new Date().toLocaleDateString('es-AR');
+    const sheetName = 'Gestiones_' + rawFecha.replace(/\//g, '-');
+    
+    let sheet = ss.getSheetByName(sheetName);
 
-    // Crear la hoja con encabezados si no existe
+    // 2. Acción: ELIMINAR gestión
+    if (action === 'delete') {
+      if (sheet) {
+        const idToDelete = data.id.toString();
+        const dataRange = sheet.getDataRange();
+        const values = dataRange.getValues();
+        
+        // Recorremos de abajo hacia arriba para evitar problemas con los índices al eliminar filas
+        for (let i = values.length - 1; i >= 1; i--) { // i >= 1 ignora la fila de encabezados
+          if (values[i][0].toString() === idToDelete) {
+            sheet.deleteRow(i + 1); // deleteRow espera índice 1-based, y values array es 0-based
+          }
+        }
+      }
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'ok', action: 'deleted' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 3. Acción: AGREGAR gestión
+    // Crear la hoja con encabezados si no existe (incluye soporte para Equipos)
     if (!sheet) {
-      sheet = ss.insertSheet(SHEET_NAME);
+      sheet = ss.insertSheet(sheetName);
       sheet.appendRow([
         'ID', 'Fecha', 'Hora', 'N_Cliente',
-        'Tipo_RA', 'Observaciones', 'Sync_Timestamp'
+        'Tipo_RA', 'Observaciones', 'CM_MAC', 'MTA_MAC', 'ONT_MAC', 'Decos', 'Linea', 'Sync_Timestamp'
       ]);
-      sheet.getRange(1, 1, 1, 7).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 12).setFontWeight('bold');
       sheet.setFrozenRows(1);
     }
 
-    const data = JSON.parse(e.postData.contents);
-
+    const eq = gestionData.equipos || {};
+    
     sheet.appendRow([
-      data.id || '',
-      data.fecha || '',
-      data.hora || '',
-      data.cliente || '',
-      data.tipo_ra || '',
-      data.observaciones || '',
+      gestionData.id || '',
+      gestionData.fecha || '',
+      gestionData.hora || '',
+      gestionData.cliente || '',
+      gestionData.tipo_ra || '',
+      gestionData.observaciones || '',
+      eq.cm || '',
+      eq.mta || '',
+      eq.ont || '',
+      (eq.decos && eq.decos.length) ? eq.decos.join(' / ') : '',
+      eq.linea || '',
       new Date().toISOString()
     ]);
 
     return ContentService
-      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .createTextOutput(JSON.stringify({ status: 'ok', action: 'added' }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
@@ -70,7 +95,7 @@ function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({
       status: 'ok',
-      message: 'Gestiones BOT endpoint activo ✅'
+      message: 'Gestiones BOT endpoint activo ✅ (Soporte Multi-Hoja y Borrado)'
     }))
     .setMimeType(ContentService.MimeType.JSON);
 }

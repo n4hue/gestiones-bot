@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gestion)
+            body: JSON.stringify({ action: 'add', data: gestion })
         })
             .then(() => {
                 // With no-cors we can't read response, but if no error => assume success
@@ -718,6 +718,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteGestion = async function (id) {
         const confirmed = await showConfirm('¿Seguro que deseas eliminar esta gestión?');
         if (confirmed) {
+            const gestionToDelete = gestiones.find(g => g.id === id);
+            if (gestionToDelete && sheetsUrl) {
+                // Feature 1 update: Delete from Google Sheets
+                updateSyncStatus('sending');
+                fetch(sheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'delete', 
+                        id: id, 
+                        fecha: gestionToDelete.fecha 
+                    })
+                })
+                .then(() => updateSyncStatus('success'))
+                .catch(() => updateSyncStatus('error'));
+            }
+
             gestiones = gestiones.filter(g => g.id !== id);
             saveData();
             updateUI();
