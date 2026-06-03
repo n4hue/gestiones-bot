@@ -541,9 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Get earliest gestión (last in array = first registered)
-        const firstGestion = gestiones[gestiones.length - 1];
-        const [hours, minutes, seconds] = firstGestion.hora.split(':').map(Number);
+        // Get latest gestión (first in array = last registered)
+        const latestGestion = gestiones[0];
+        const [hours, minutes, seconds] = latestGestion.hora.split(':').map(Number);
         const startTime = new Date();
         startTime.setHours(hours, minutes, seconds, 0);
 
