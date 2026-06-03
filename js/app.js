@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const CATEGORY_COLORS = {
         'INTERNET': '#3b82f6',
-        'TELEF RESID': '#8b5cf6',
+        'TELEFONIA': '#8b5cf6',
         'WIFI MESH': '#10b981',
         'TELEVISIÓN': '#f59e0b',
         'WEB / APP': '#ec4899',
@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingId = null;
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
+
 
     // ============================================
     // Initialize
@@ -226,17 +227,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputCliente.disabled = true;
                     selectRa.disabled = true;
                     if (inputObservaciones) inputObservaciones.disabled = true;
-                    
+
                     const checkInterval = setInterval(() => {
                         if (formWindow.closed) {
                             clearInterval(checkInterval);
-                            
+
                             btnSubmit.innerHTML = originalBtnHtml;
                             btnSubmit.disabled = false;
                             inputCliente.disabled = false;
                             selectRa.disabled = false;
                             if (inputObservaciones) inputObservaciones.disabled = false;
-                            
+
                             processNewGestion();
                         }
                     }, 500);
@@ -268,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Feature 5: Keyboard Shortcuts
     // ============================================
     document.addEventListener('keydown', (e) => {
-        // Ctrl+Enter to submit
+        // Ctrl+Enter to submit (opens form in background)
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             if (form.checkValidity()) {
@@ -306,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCategory(tipoRa) {
         const lower = tipoRa.toLowerCase();
         if (lower.includes('banda ancha') || lower.includes('internet')) return 'INTERNET';
-        if (lower.includes('telef resid')) return 'TELEF RESID';
+        if (lower.includes('telefonia')) return 'TELEFONIA';
         if (lower.includes('wifi mesh')) return 'WIFI MESH';
         if (lower.includes('televisión') || lower.includes('television') || lower.includes('aplicaciones - deco')) return 'TELEVISIÓN';
         if (lower.includes('web/app') || lower.includes('app mobile')) return 'WEB / APP';
@@ -762,14 +763,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'delete', 
-                        id: id, 
-                        fecha: gestionToDelete.fecha 
+                    body: JSON.stringify({
+                        action: 'delete',
+                        id: id,
+                        fecha: gestionToDelete.fecha
                     })
                 })
-                .then(() => updateSyncStatus('success'))
-                .catch(() => updateSyncStatus('error'));
+                    .then(() => updateSyncStatus('success'))
+                    .catch(() => updateSyncStatus('error'));
             }
 
             gestiones = gestiones.filter(g => g.id !== id);

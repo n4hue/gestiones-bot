@@ -58,8 +58,12 @@
                 <form id="registro-form">
                     <div class="form-group">
                         <label for="cliente-id">Número de Cliente</label>
-                        <input type="text" id="cliente-id" name="cliente" placeholder="Ej. 12345678" required
-                            autocomplete="off">
+                        <div class="input-with-copy">
+                            <input type="text" id="cliente-id" name="cliente" placeholder="Ej. 12345678" required
+                                autocomplete="off">
+                            <button type="button" class="btn-copy" id="btn-copy-cliente" data-target="cliente-id"
+                                title="Copiar Nº de Cliente">📋</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="tipo-ra">Tipo de Gestión / RA</label>
@@ -75,14 +79,14 @@
                                 <!--option value="NOC - BANDA ANCHA - INTERNET DATOS DE CM INCORRECTOS EN I3">NOC - BANDA
                                     ANCHA - INTERNET DATOS DE CM INCORRECTOS EN I3</option>-->
                             </optgroup>
-                            <optgroup label="TELEF RESID">
-                                <option value="NOC - TELEF RESID - LLAMADAS SIN TONO">NOC - TELEF RESID - LLAMADAS SIN
+                            <optgroup label="TELEFONIA">
+                                <option value="NOC - TELEFONIA - LLAMADAS SIN TONO">NOC - TELEFONIA - LLAMADAS SIN
                                     TONO</option>
-                                <option value="NOC - TELEF RESID - LLAMADAS SIN LLAMADAS SALIENTES">NOC - TELEF RESID -
+                                <option value="NOC - TELEFONIA - LLAMADAS SIN LLAMADAS SALIENTES">NOC - TELEFONIA -
                                     LLAMADAS SIN LLAMADAS SALIENTES</option>
-                                <option value="NOC - TELEF RESID - LLAMADAS SIN LLAMADAS ENTRANTES">NOC - TELEF RESID -
+                                <option value="NOC - TELEFONIA - LLAMADAS SIN LLAMADAS ENTRANTES">NOC - TELEFONIA -
                                     LLAMADAS SIN LLAMADAS ENTRANTES</option>
-                                <option value="NOC - TELEF RESID - VARIOS">NOC - TELEF RESID - VARIOS</option>
+                                <option value="NOC - TELEFONIA - VARIOS">NOC - TELEFONIA - VARIOS</option>
                             </optgroup>
                             <optgroup label="TELEVISIÓN">
                                 <option value="NOC - TELEVISIÓN - SIN SUSCRIPCION">NOC - TELEVISIÓN - SIN SUSCRIPCION
@@ -372,7 +376,8 @@
                     <span class="checklist-checkmark"></span>
                     <div class="checklist-label">
                         <span class="checklist-text">Carga de form de inicio de jornada</span>
-                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la pestaña</span>
+                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la
+                            pestaña</span>
                     </div>
                     <button type="button" class="btn btn-open-form" id="btn-open-form-inicio">📝 Abrir Form</button>
                 </div>
