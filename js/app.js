@@ -1133,7 +1133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', async () => {
             if (!inputEl.value) return;
             try {
-                await navigator.clipboard.writeText(inputEl.value);
+                // Strip colons from MAC addresses so external tools accept them
+                let copyValue = inputEl.value;
+                if (inputEl.classList.contains('mac-input')) {
+                    copyValue = copyValue.replace(/:/g, '');
+                }
+                await navigator.clipboard.writeText(copyValue);
                 const original = btn.textContent;
                 btn.textContent = '✅';
                 setTimeout(() => { if (btn) btn.textContent = original; }, 1500);
