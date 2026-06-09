@@ -94,7 +94,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const GFORM_ENTRY_OPERATOR_NAME = 'entry.1032949883'; // Campo "Operador" del Google Form
     const GFORM_ENTRY_PASS_CRM = 'entry.1602826454';      // Campo "Pass CRM" del Google Form
     const GFORM_ENTRY_CLIENTE = 'entry.497919059';         // Campo "N° de Cliente / Asunto Mail" del Google Form
+    const GFORM_ENTRY_GESTION_RA = 'entry.2074675876';     // Campo "Gestión RAs" del Google Form
     // ============================================================
+
+    // ============================================================
+    // MAPEO: Valores de la Web App → Valores exactos del Google Form
+    // ============================================================
+    // La web app usa nombres ligeramente distintos a los del Google Form.
+    // Este objeto traduce el valor seleccionado en la app al valor
+    // exacto que espera el dropdown del formulario de Google.
+    // ============================================================
+    const GFORM_RA_MAPPING = {
+        // INTERNET (“NOC - INTERNET” en la app → “NOC - BANDA ANCHA” en el form)
+        'NOC - INTERNET - SOLICITUD DE CONFIGURACIÓN': 'NOC - BANDA ANCHA - SOLICITUD DE CONFIGURACION',
+        'NOC - INTERNET - PROBLEMAS PARTICULARES DE ACCESO': 'NOC - BANDA ANCHA - PROBLEMAS PARTICULARES DE ACCESO',
+
+        // TELEFONIA (“NOC - TELEFONIA” en la app → “NOC - TELEF RESID” en el form)
+        'NOC - TELEFONIA - LLAMADAS SIN TONO': 'NOC - TELEF RESID - LLAMADAS SIN TONO',
+        'NOC - TELEFONIA - LLAMADAS SIN LLAMADAS SALIENTES': 'NOC - TELEF RESID - LLAMADAS SIN LLAMADAS SALIENTES',
+        'NOC - TELEFONIA - LLAMADAS SIN LLAMADAS ENTRANTES': 'NOC - TELEF RESID - LLAMADAS SIN LLAMADAS ENTRANTES',
+        'NOC - TELEFONIA - VARIOS': 'NOC - TELEF RESID - VARIOS',
+
+        // TELEVISIÓN (pequeñas diferencias)
+        'NOC - TELEVISIÓN - SIN SUSCRIPCION': 'NOC - TELEVISIÓN - SIN SUSCRIPCION',
+        'NOC - TELEVISIÓN - PANTALLA EN NEGRO': 'NOC - TELEVISIÓN - PANTALLA NEGRA',
+        'NOC - TELEVISIÓN - PIXELACION/FREEZE': 'NOC - TELEVISIÓN - PIXELACION/FREEZE',
+        'NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online': 'NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online',
+        'NOC - APLICACIONES - DECO - DESAPARECEN APPS': 'NOC - APLICACIONES - DECO - DESAPARECEN APPS',
+
+        // WEB / APP (la app usa "Web/App" y el form también, salvo el de Tizen que tiene minúscula)
+        'Web/App - Sucursal Virtual': 'Web/App - Sucursal Virtual',
+        'Web/App - Amazon': 'Web/App - Amazon',
+        'Web/App - Disney': 'Web/App - Disney',
+        'Web/App - Max': 'Web/App - Max',
+        'Web/App - Tplay': 'Web/App - Tplay',
+        'Web/App - Netflix': 'Web/App - Netflix',
+        'Web/App - Tplay en Tizen Samsung TV': 'web/app - Tplay en Tizen Samsung TV',
+        'App Mobile - Tphone': 'App Mobile - Tphone',
+
+        // ESCALAMIENTO N3 (idénticos)
+        'Inconveniente con insumos': 'Inconveniente con insumos',
+        'Problemas Cableados red.500': 'Problemas Cableados red.500',
+        'Reposición de Equipos CM/DD': 'Reposición de Equipos CM/DD',
+        'Escalamiento Teams': 'Escalamiento Teams',
+
+        // GESTIONES ESPECIALES (idénticos)
+        'Problemas Postes/Columnas': 'Problemas Postes/Columnas',
+        'Reservado para carga de BOT': 'Reservado para carga de BOT',
+        'Referidos': 'Referidos',
+
+        // WIFI MESH (la app usa "ACCESO" y el form tiene "ACCESSO" con doble S)
+        'NOC - WIFI MESH - CORTES INTERMITENTES': 'NOC - WIFI MESH - CORTES INTERMITENTES',
+        'NOC - WIFI MESH - LENTITUD EN NAVEGACION': 'NOC - WIFI MESH - LENTITUD EN NAVEGACION',
+        'NOC - WIFI MESH - PROBLEMAS PARTICULARES DE ACCESO': 'NOC - WIFI MESH - PROBLEMAS PARTICULARES DE ACCESSO',
+        'NOC - WIFI MESH - SIN NAVEGACION': 'NOC - WIFI MESH - SIN NAVEGACION',
+        'NOC - WIFI MESH - SOLICITUD DE CONFIGURACION': 'NOC - WIFI MESH - SOLICITUD DE CONFIGURACION',
+        'NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA': 'NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA',
+        'NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED': 'NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED'
+    };
 
     const CATEGORY_COLORS = {
         'INTERNET': '#3b82f6',
@@ -268,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('⚠️ Por favor, configurá tu Nombre de Operador y Pass CRM en Ajustes antes de continuar', 'warning');
                     return;
                 }
-                const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente);
+                const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente, tipoRa);
                 const formWindow = window.open(prefilledUrl, '_blank');
                 if (formWindow) {
                     const originalBtnHtml = btnSubmit.innerHTML;
@@ -1117,8 +1174,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Construye una URL de Google Form con parámetros de pre-llenado
     // usando los datos del operador guardados en Ajustes.
-    function buildPrefilledFormUrl(baseUrl, clienteValue) {
-        if (!operatorName && !passCrm && !clienteValue) return baseUrl;
+    function buildPrefilledFormUrl(baseUrl, clienteValue, tipoRaValue) {
+        if (!operatorName && !passCrm && !clienteValue && !tipoRaValue) return baseUrl;
 
         // Asegurarse de que la URL base no tenga un # al final
         let url = baseUrl.split('#')[0];
@@ -1135,6 +1192,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (clienteValue) {
             params.push(`${GFORM_ENTRY_CLIENTE}=${encodeURIComponent(clienteValue)}`);
+        }
+        if (tipoRaValue) {
+            // Buscar el valor mapeado del Google Form para la gestión seleccionada
+            const formValue = GFORM_RA_MAPPING[tipoRaValue];
+            if (formValue) {
+                params.push(`${GFORM_ENTRY_GESTION_RA}=${encodeURIComponent(formValue)}`);
+            }
         }
 
         return url + separator + params.join('&');
