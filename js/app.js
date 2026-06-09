@@ -38,6 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSaveSettings = document.getElementById('btn-save-settings');
     const btnCerrarModal = document.getElementById('btn-cerrar-modal');
 
+    // Operator Settings Elements
+    const inputOperatorName = document.getElementById('operator-name-input');
+    const inputPassCrm = document.getElementById('pass-crm-input');
+    const btnTogglePass = document.getElementById('btn-toggle-pass');
+
     // Confirm Modal
     const confirmModal = document.getElementById('confirm-modal');
     const confirmMessage = document.getElementById('confirm-message');
@@ -65,6 +70,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const THEME_KEY = 'bot_theme';
     const SOUND_KEY = 'bot_sound_enabled';
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
+    const OPERATOR_NAME_KEY = 'bot_operator_name';
+    const PASS_CRM_KEY = 'bot_pass_crm';
+
+    // ============================================================
+    // IDs DE CAMPOS DE GOOGLE FORMS PARA PRE-LLENADO (PRE-FILL)
+    // ============================================================
+    // INSTRUCCIONES: Reemplazá los valores de abajo con los IDs
+    // reales de tu Google Form.
+    //
+    // Para obtener los IDs:
+    //   1. Abrí tu Google Form en el navegador.
+    //   2. Hacé clic en los 3 puntos (menú) → "Obtener vínculo con
+    //      respuestas precargadas".
+    //   3. Completá los campos de ejemplo y generá el link.
+    //   4. En la URL generada, buscá los parámetros como:
+    //      &entry.123456789=valor
+    //   5. Copiá el número (ej. 123456789) y pegalo abajo.
+    //
+    // Ejemplo: si tu URL dice "entry.1234567890=Juan", entonces:
+    //   GFORM_ENTRY_OPERATOR_NAME = 'entry.1234567890';
+    // ============================================================
+    const GFORM_ENTRY_OPERATOR_NAME = 'entry.1032949883'; // Campo "Operador" del Google Form
+    const GFORM_ENTRY_PASS_CRM = 'entry.1602826454';      // Campo "Pass CRM" del Google Form
+    const GFORM_ENTRY_CLIENTE = 'entry.497919059';         // Campo "N° de Cliente / Asunto Mail" del Google Form
+    // ============================================================
 
     const CATEGORY_COLORS = {
         'INTERNET': '#3b82f6',
@@ -85,6 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingId = null;
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
+    let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
+    let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
 
 
     // ============================================
@@ -97,6 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputFormUrl) inputFormUrl.value = googleFormUrl;
     if (inputSheetsUrl) inputSheetsUrl.value = sheetsUrl;
     if (soundToggleEl) soundToggleEl.checked = soundEnabled;
+    if (inputOperatorName) inputOperatorName.value = operatorName;
+    if (inputPassCrm) inputPassCrm.value = passCrm;
+
+    // Password visibility toggle
+    if (btnTogglePass && inputPassCrm) {
+        btnTogglePass.addEventListener('click', () => {
+            const isPassword = inputPassCrm.type === 'password';
+            inputPassCrm.type = isPassword ? 'text' : 'password';
+            btnTogglePass.textContent = isPassword ? '🙈' : '👁️';
+            btnTogglePass.title = isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña';
+        });
+    }
 
     updateUI();
     startSessionTimer();
@@ -217,9 +261,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 completeSubmit();
             };
 
-            // Open Google Form
+            // Open Google Form (with pre-fill if operator data is configured)
             if (googleFormUrl) {
-                const formWindow = window.open(googleFormUrl, '_blank');
+                // Validación: verificar que los datos del operador estén configurados
+                if (!operatorName || !passCrm) {
+                    showToast('⚠️ Por favor, configurá tu Nombre de Operador y Pass CRM en Ajustes antes de continuar', 'warning');
+                    return;
+                }
+                const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente);
+                const formWindow = window.open(prefilledUrl, '_blank');
                 if (formWindow) {
                     const originalBtnHtml = btnSubmit.innerHTML;
                     btnSubmit.innerHTML = '⏳ Gestión en proceso en el Form...';
@@ -656,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showToast(message, type = 'info') {
         if (!toastContainer) return;
 
-        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.innerHTML = `
@@ -873,7 +923,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // "Abrir Form" button — opens form in new tab and monitors .closed
     if (btnOpenFormInicio) {
         btnOpenFormInicio.addEventListener('click', () => {
-            const formUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
+            // Validación: verificar que los datos del operador estén configurados
+            if (!operatorName || !passCrm) {
+                showToast('⚠️ Por favor, configurá tu Nombre de Operador y Pass CRM en Ajustes antes de continuar', 'warning');
+                return;
+            }
+            const baseFormUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
+            const formUrl = buildPrefilledFormUrl(baseFormUrl);
             formInicioWindow = window.open(formUrl, '_blank');
 
             if (formInicioWindow) {
@@ -1007,6 +1063,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputFormUrl) inputFormUrl.value = googleFormUrl;
             if (inputSheetsUrl) inputSheetsUrl.value = sheetsUrl;
             if (soundToggleEl) soundToggleEl.checked = soundEnabled;
+            if (inputOperatorName) inputOperatorName.value = operatorName;
+            if (inputPassCrm) inputPassCrm.value = passCrm;
             settingsModal.classList.remove('hidden');
         });
     }
@@ -1041,10 +1099,45 @@ document.addEventListener('DOMContentLoaded', () => {
             soundEnabled = soundToggleEl ? soundToggleEl.checked : true;
             localStorage.setItem(SOUND_KEY, soundEnabled.toString());
 
+            // Save operator settings
+            operatorName = inputOperatorName ? inputOperatorName.value.trim() : '';
+            localStorage.setItem(OPERATOR_NAME_KEY, operatorName);
+
+            passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
+            localStorage.setItem(PASS_CRM_KEY, passCrm);
+
             settingsModal.classList.add('hidden');
             showToast('Configuración guardada', 'success');
             inputCliente.focus();
         });
+    }
+
+    // ============================================
+    // Pre-fill Google Form URL Builder
+    // ============================================
+    // Construye una URL de Google Form con parámetros de pre-llenado
+    // usando los datos del operador guardados en Ajustes.
+    function buildPrefilledFormUrl(baseUrl, clienteValue) {
+        if (!operatorName && !passCrm && !clienteValue) return baseUrl;
+
+        // Asegurarse de que la URL base no tenga un # al final
+        let url = baseUrl.split('#')[0];
+
+        // Determinar el separador (? o &) según si la URL ya tiene parámetros
+        const separator = url.includes('?') ? '&' : '?';
+        const params = [];
+
+        if (operatorName) {
+            params.push(`${GFORM_ENTRY_OPERATOR_NAME}=${encodeURIComponent(operatorName)}`);
+        }
+        if (passCrm) {
+            params.push(`${GFORM_ENTRY_PASS_CRM}=${encodeURIComponent(passCrm)}`);
+        }
+        if (clienteValue) {
+            params.push(`${GFORM_ENTRY_CLIENTE}=${encodeURIComponent(clienteValue)}`);
+        }
+
+        return url + separator + params.join('&');
     }
 
     // ============================================

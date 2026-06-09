@@ -57,12 +57,12 @@
                 <h2>Registrar Nueva Gestión</h2>
                 <form id="registro-form">
                     <div class="form-group">
-                        <label for="cliente-id">Número de Cliente</label>
+                        <label for="cliente-id">N° de Cliente / Asunto Mail</label>
                         <div class="input-with-copy">
-                            <input type="text" id="cliente-id" name="cliente" placeholder="Ej. 12345678" required
+                            <input type="text" id="cliente-id" name="cliente" placeholder="Ej. 12345678 o Asunto del email" required
                                 autocomplete="off">
                             <button type="button" class="btn-copy" id="btn-copy-cliente" data-target="cliente-id"
-                                title="Copiar Nº de Cliente">📋</button>
+                                title="Copiar">📋</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -257,7 +257,7 @@
                 <h2>Historial de Hoy</h2>
                 <!-- Filters (Feature 4) -->
                 <div class="history-filters">
-                    <input type="text" id="search-input" placeholder="🔍 Buscar por Nº cliente u observación...">
+                    <input type="text" id="search-input" placeholder="🔍 Buscar por Nº cliente, asunto u observación...">
                     <select id="filter-category">
                         <option value="">Todas</option>
                         <option value="INTERNET">Internet</option>
@@ -274,7 +274,7 @@
                         <thead>
                             <tr>
                                 <th>Hora</th>
-                                <th>Nº Cliente</th>
+                                <th>N° Cliente / Asunto</th>
                                 <th>Tipo de Gestión / RA</th>
                                 <th>Obs.</th>
                                 <th>Acc.</th>
@@ -319,6 +319,40 @@
             <div class="settings-section checkbox-group">
                 <input type="checkbox" id="sound-toggle" checked>
                 <label for="sound-toggle">🔊 Activar sonido al registrar</label>
+            </div>
+
+            <hr class="settings-divider">
+            <p class="settings-group-title">👤 Datos del Operador (Pre-fill Google Form)</p>
+
+            <div class="settings-section">
+                <label for="operator-name-input">Nombre del Operador:</label>
+                <select id="operator-name-input">
+                    <option value="" disabled selected>Seleccioná tu nombre...</option>
+                    <option value="Bonfanti Cecilia">Bonfanti Cecilia</option>
+                    <option value="Cepeda Nicolas">Cepeda Nicolas</option>
+                    <option value="Conti Melanie">Conti Melanie</option>
+                    <option value="Gomez Ignacio">Gomez Ignacio</option>
+                    <option value="Ibacache Ivan">Ibacache Ivan</option>
+                    <option value="Jurnet Lucas">Jurnet Lucas</option>
+                    <option value="Leclerc Kevin">Leclerc Kevin</option>
+                    <option value="Mamani Yanina">Mamani Yanina</option>
+                    <option value="Matos Luciano">Matos Luciano</option>
+                    <option value="Montenegro Omar">Montenegro Omar</option>
+                    <option value="Ortellado Alex">Ortellado Alex</option>
+                    <option value="Pardo Josafat">Pardo Josafat</option>
+                    <option value="Scardaccione Luca">Scardaccione Luca</option>
+                    <option value="Vignolo Nahuel">Vignolo Nahuel</option>
+                </select>
+                <small class="settings-hint">Se usará para pre-llenar el campo de Operador en el Google Form</small>
+            </div>
+
+            <div class="settings-section">
+                <label for="pass-crm-input">Pass CRM:</label>
+                <div class="input-with-toggle">
+                    <input type="password" id="pass-crm-input" placeholder="Contraseña del CRM" autocomplete="off">
+                    <button type="button" class="btn-toggle-pass" id="btn-toggle-pass" title="Mostrar/Ocultar contraseña">👁️</button>
+                </div>
+                <small class="settings-hint">Se usará para pre-llenar el campo de Pass CRM en el Google Form</small>
             </div>
 
             <div class="modal-actions">

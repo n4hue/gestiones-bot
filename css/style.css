@@ -289,6 +289,7 @@ label {
 
 input[type="text"],
 input[type="url"],
+input[type="password"],
 select,
 textarea {
     width: 100%;
@@ -309,6 +310,7 @@ textarea {
 
 input[type="text"]:focus,
 input[type="url"]:focus,
+input[type="password"]:focus,
 textarea:focus,
 select:focus {
     outline: none;
@@ -695,6 +697,59 @@ tbody tr:hover {
     margin-top: 0.25rem;
 }
 
+.settings-section input[type="text"],
+.settings-section input[type="password"] {
+    margin-top: 0.25rem;
+}
+
+/* Settings Divider & Group Title */
+.settings-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.75rem 0 0.5rem;
+}
+
+.settings-group-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+    text-align: left;
+}
+
+/* Password Input with Toggle */
+.input-with-toggle {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.input-with-toggle input {
+    flex: 1;
+    margin-top: 0 !important;
+}
+
+.btn-toggle-pass {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+    cursor: pointer;
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.btn-toggle-pass:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
 /* ==========================================
    Utilities
    ========================================== */
@@ -752,6 +807,11 @@ tbody tr:hover {
 
 .toast.info {
     border-left: 3px solid var(--primary);
+}
+
+.toast.warning {
+    border-left: 3px solid var(--warning);
+    background: linear-gradient(135deg, var(--toast-bg), rgba(243, 156, 18, 0.08));
 }
 
 /* ==========================================
