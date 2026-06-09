@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const GFORM_ENTRY_PASS_CRM = 'entry.1602826454';      // Campo "Pass CRM" del Google Form
     const GFORM_ENTRY_CLIENTE = 'entry.497919059';         // Campo "N° de Cliente / Asunto Mail" del Google Form
     const GFORM_ENTRY_GESTION_RA = 'entry.2074675876';     // Campo "Gestión RAs" del Google Form
+    const GFORM_ENTRY_ESTADO = 'entry.1658376896';         // Campo "Estado" del Google Form
     // ============================================================
 
     // ============================================================
@@ -325,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('⚠️ Por favor, configurá tu Nombre de Operador y Pass CRM en Ajustes antes de continuar', 'warning');
                     return;
                 }
-                const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente, tipoRa);
+                const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente, tipoRa, 'Gestión');
                 const formWindow = window.open(prefilledUrl, '_blank');
                 if (formWindow) {
                     const originalBtnHtml = btnSubmit.innerHTML;
@@ -986,7 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const baseFormUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
-            const formUrl = buildPrefilledFormUrl(baseFormUrl);
+            const formUrl = buildPrefilledFormUrl(baseFormUrl, null, null, 'Estados Sin Gestión');
             formInicioWindow = window.open(formUrl, '_blank');
 
             if (formInicioWindow) {
@@ -1174,8 +1175,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Construye una URL de Google Form con parámetros de pre-llenado
     // usando los datos del operador guardados en Ajustes.
-    function buildPrefilledFormUrl(baseUrl, clienteValue, tipoRaValue) {
-        if (!operatorName && !passCrm && !clienteValue && !tipoRaValue) return baseUrl;
+    function buildPrefilledFormUrl(baseUrl, clienteValue, tipoRaValue, estadoValue) {
+        if (!operatorName && !passCrm && !clienteValue && !tipoRaValue && !estadoValue) return baseUrl;
 
         // Asegurarse de que la URL base no tenga un # al final
         let url = baseUrl.split('#')[0];
@@ -1199,6 +1200,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (formValue) {
                 params.push(`${GFORM_ENTRY_GESTION_RA}=${encodeURIComponent(formValue)}`);
             }
+        }
+        if (estadoValue) {
+            params.push(`${GFORM_ENTRY_ESTADO}=${encodeURIComponent(estadoValue)}`);
         }
 
         return url + separator + params.join('&');
