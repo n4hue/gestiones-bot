@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Problemas Cableados red.500': 'Problemas Cableados red.500',
         'Reposición de Equipos CM/DD': 'Reposición de Equipos CM/DD',
         'Escalamiento Teams': 'Escalamiento Teams',
+        'PANTALLA (DECO ANDROID) SOY CLIENTE SIN SOLUCION': 'PANTALLA (DECO ANDROID) SOY CLIENTE SIN SOLUCION',
 
         // GESTIONES ESPECIALES (idénticos)
         'Problemas Postes/Columnas': 'Problemas Postes/Columnas',
