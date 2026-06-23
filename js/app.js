@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // Render History
+    // Render History — Timeline Cards
     // ============================================
     function renderHistory() {
         historyBody.innerHTML = '';
@@ -463,39 +463,61 @@ document.addEventListener('DOMContentLoaded', () => {
             const msg = gestiones.length === 0
                 ? 'No hay gestiones registradas aún en esta jornada.'
                 : 'No se encontraron resultados para el filtro.';
-            historyBody.innerHTML = `<tr><td colspan="5" class="empty-state">${msg}</td></tr>`;
+            historyBody.innerHTML = `<div class="empty-state">${msg}</div>`;
             return;
         }
 
         filtered.forEach(g => {
+            const category = getCategory(g.tipo_ra);
+
+            // Build equipment details HTML
             let equiposHtml = '';
             if (g.equipos) {
                 const eq = g.equipos;
                 const parts = [];
-                if (eq.cm) parts.push(`CM: <span style="font-family:monospace">${eq.cm}</span>`);
-                if (eq.mta) parts.push(`MTA: <span style="font-family:monospace">${eq.mta}</span>`);
-                if (eq.ont) parts.push(`ONT: <span style="font-family:monospace">${eq.ont}</span>`);
+                if (eq.cm) parts.push(`CM: ${eq.cm}`);
+                if (eq.mta) parts.push(`MTA: ${eq.mta}`);
+                if (eq.ont) parts.push(`ONT: ${eq.ont}`);
                 if (eq.decos && eq.decos.length) parts.push(`Decos: ${eq.decos.length}`);
                 if (eq.linea) parts.push(`Línea: ${eq.linea}`);
                 if (parts.length > 0) {
-                    equiposHtml = `<div style="font-size: 0.8rem; line-height:1.4; color: var(--primary); margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">🛠️ ${parts.join(' | ')}</div>`;
+                    equiposHtml = `<div class="gestion-equipos">🛠️ ${parts.join(' · ')}</div>`;
                 }
             }
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${g.hora}</td>
-                <td><strong>${g.cliente}</strong></td>
-                <td>${g.tipo_ra}</td>
-                <td><span class="obs-text">${g.observaciones || '—'}</span>${equiposHtml}</td>
-                <td>
-                    <div class="action-buttons">
+            // Build secondary details row (obs + equipos)
+            let detailsHtml = '';
+            if ((g.observaciones && g.observaciones.trim()) || equiposHtml) {
+                detailsHtml = `<div class="gestion-details">`;
+                if (g.observaciones && g.observaciones.trim()) {
+                    detailsHtml += `<div class="gestion-obs">${g.observaciones}</div>`;
+                }
+                detailsHtml += equiposHtml + `</div>`;
+            }
+
+            // Short RA label for the badge
+            let shortRa = g.tipo_ra;
+            shortRa = shortRa.replace(/^NOC - (INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH|APLICACIONES) - /, '');
+            shortRa = shortRa.replace(/^(Web\/App|App Mobile) - /, '');
+            if (shortRa.length > 25) shortRa = shortRa.substring(0, 23) + '…';
+
+            const card = document.createElement('div');
+            card.className = 'gestion-card';
+            card.dataset.id = g.id;
+            card.dataset.cat = category;
+            card.innerHTML = `
+                <div class="gestion-card-row">
+                    <span class="gestion-hora">${g.hora}</span>
+                    <span class="gestion-cliente">${g.cliente}</span>
+                    <span class="gestion-tipo" title="${g.tipo_ra}">${shortRa}</span>
+                    <div class="gestion-actions">
                         <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')">✏️</button>
                         <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')">🗑️</button>
                     </div>
-                </td>
+                </div>
+                ${detailsHtml}
             `;
-            historyBody.appendChild(tr);
+            historyBody.appendChild(card);
         });
     }
 
@@ -504,7 +526,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     function updateProgress() {
         const count = gestiones.length;
+        const prevCount = parseInt(dailyCountEl.textContent) || 0;
         dailyCountEl.textContent = count;
+
+        // Pulse animation when count increases
+        if (count > prevCount) {
+            dailyCountEl.classList.remove('pulse-pop');
+            void dailyCountEl.offsetWidth; // Force reflow
+            dailyCountEl.classList.add('pulse-pop');
+        }
 
         let percentage = (count / DAILY_GOAL) * 100;
         const barWidth = percentage > 100 ? 100 : percentage;
@@ -881,6 +911,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     .catch(() => updateSyncStatus('error'));
             }
 
+            // Animate card removal before updating data
+            const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
+            if (cardEl) {
+                cardEl.classList.add('removing');
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
             gestiones = gestiones.filter(g => g.id !== id);
             saveData();
             updateUI();
@@ -1301,8 +1337,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 await navigator.clipboard.writeText(copyValue);
                 const original = btn.textContent;
-                btn.textContent = '✅';
-                setTimeout(() => { if (btn) btn.textContent = original; }, 1500);
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    if (btn) {
+                        btn.textContent = original;
+                        btn.classList.remove('copied');
+                    }
+                }, 1500);
             } catch (err) {
                 console.error('Failed to copy', err);
             }
