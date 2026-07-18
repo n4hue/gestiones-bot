@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bot-gestiones-v2';
+const CACHE_NAME = 'bot-gestiones-v1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -19,13 +19,6 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Solo interceptar requests del mismo origen (app propia).
-  // Las requests a dominios externos (Google Sheets, Google Forms, etc.)
-  // pasan directo a la red sin intervención del Service Worker.
-  const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== location.origin) {
-    return; // No interceptar, dejar que el browser maneje normalmente
-  }
 
   // Estrategia: Network First (Red primero, luego caché como respaldo para offline)
   event.respondWith(

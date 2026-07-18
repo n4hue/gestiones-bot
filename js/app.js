@@ -74,16 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const PASS_CRM_KEY = 'bot_pass_crm';
 
     // ============================================
-    // Source-of-Truth URLs (editar acá para actualizar)
+    // Source-of-Truth URL del Google Form
     // ============================================
-    // URL del Google Form — esta constante SIEMPRE sobreescribe
-    // el valor del LocalStorage al cargar la app.
+    // Esta constante SIEMPRE sobreescribe el valor del LocalStorage
+    // al cargar la app. Si necesitás cambiar el Form, editá acá.
     const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScyha3vodHNJvqCJQouyHD7GKM3Mh-blJLGiklP0OT7sUCFqQ/viewform';
-
-    // URL del Google Sheets publicado como CSV (Web → Archivo → Compartir
-    // → Publicar en la web → formato CSV). Pegar el link acá.
-    // Si está vacío, la app funciona en modo 100% local.
-    const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8C16USkmqWuviwHMr5XMpQWyS9HO_0MFkaNpy4Y0OuH7ULfCZJwgCuGVF2GUoPlsQSpzyDf3_Jr5W/pub?output=csv';
 
     // ============================================================
     // IDs DE CAMPOS DE GOOGLE FORMS PARA PRE-LLENADO (PRE-FILL)
@@ -187,9 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
-    let isOnlineMode = false;
-    let sheetsDailyCount = null; // null = no sincronizado aún
-    let syncStatusTimer = null;
 
     // ── Fix Bug Form URL: la constante del código siempre gana ──
     // Si el LS tiene una URL vieja distinta al código, se sobreescribe.
@@ -233,9 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUI();
     startSessionTimer();
     inputCliente.focus();
-
-    // ── Sincronización inicial con Google Sheets ──
-    fetchSheetsDailyCount();
 
     // ============================================
     // Feature 3: Day Persistence
@@ -348,10 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Feature 1: Google Sheets sync
                 syncToGoogleSheets(gestion);
 
-                // Re-sincronizar contador desde Sheets después de registrar
-                fetchSheetsDailyCount();
-
-                showToast('✅ Gestión #' + getDisplayCount() + ' registrada', 'success');
+                showToast('✅ Gestión #' + gestiones.length + ' registrada', 'success');
                 completeSubmit();
             };
 
@@ -560,14 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Update Progress
     // ============================================
-
-    // Devuelve el conteo a mostrar: Sheets (si sincronizado) o local
-    function getDisplayCount() {
-        return (isOnlineMode && sheetsDailyCount !== null) ? sheetsDailyCount : gestiones.length;
-    }
-
     function updateProgress() {
-        const count = getDisplayCount();
+        const count = gestiones.length;
         const prevCount = parseInt(dailyCountEl.textContent) || 0;
         dailyCountEl.textContent = count;
 
@@ -769,197 +749,28 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // ============================================
-    // Lectura del Conteo Diario desde Google Sheets CSV
-    // ============================================
-    function fetchSheetsDailyCount() {
-        if (!GOOGLE_SHEETS_CSV_URL) {
-            // Sin URL de CSV configurada → modo 100% local, sin indicador
-            return;
-        }
-
-        updateSyncStatus('syncing');
-
-        // Timeout de 10 segundos para no quedarse colgado
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        fetch(GOOGLE_SHEETS_CSV_URL, {
-            cache: 'no-store',
-            signal: controller.signal
-        })
-            .then(response => {
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.text();
-            })
-            .then(csvText => {
-                const count = countTodayRowsFromCSV(csvText);
-                sheetsDailyCount = count;
-                isOnlineMode = true;
-                updateProgress();
-                updateSyncStatus('synced');
-                console.log(`[Sheets Sync] Gestiones de hoy en Sheets: ${count}`);
-            })
-            .catch(err => {
-                clearTimeout(timeoutId);
-                const reason = err.name === 'AbortError' ? 'Timeout (10s)' : err.message;
-                console.warn('[Sheets Sync] Fetch fallido, usando modo local:', reason);
-                isOnlineMode = false;
-                sheetsDailyCount = null;
-                updateProgress(); // Muestra el conteo local como fallback
-                updateSyncStatus('offline');
-            });
-    }
-
-    /**
-     * Parsea el CSV de Google Sheets y cuenta las filas de la fecha de hoy.
-     * Busca automáticamente la columna que contiene fechas en formato dd/mm/yyyy
-     * (el formato que usa Google Sheets en español por defecto).
-     */
-    function countTodayRowsFromCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim() !== '');
-        if (lines.length < 2) return 0; // Solo header o vacío
-
-        // Fecha de hoy en formato dd/mm/yyyy (como la guarda Google Sheets en español)
-        const now = new Date();
-        const todayStr = now.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        }); // → "18/07/2026" por ejemplo
-
-        // También preparar formato alternativo d/m/yyyy (sin ceros) por si Sheets lo usa así
-        const todayAlt = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
-
-        // Parsear header para encontrar la columna de fecha
-        const header = parseCSVRow(lines[0]);
-        let dateColIndex = header.findIndex(col =>
-            col.toLowerCase().includes('fecha') ||
-            col.toLowerCase().includes('date') ||
-            col.toLowerCase().includes('timestamp')
-        );
-
-        // Si no encontramos por nombre, intentar detectar por contenido de la primera fila de datos
-        if (dateColIndex === -1 && lines.length >= 2) {
-            const firstRow = parseCSVRow(lines[1]);
-            dateColIndex = firstRow.findIndex(cell =>
-                /^\d{1,2}\/\d{1,2}\/\d{4}/.test(cell.trim())
-            );
-        }
-
-        if (dateColIndex === -1) {
-            console.warn('[Sheets Sync] No se encontró columna de fecha en el CSV');
-            return 0;
-        }
-
-        // Contar filas de hoy
-        let count = 0;
-        for (let i = 1; i < lines.length; i++) {
-            const row = parseCSVRow(lines[i]);
-            if (row.length <= dateColIndex) continue;
-
-            const cellDate = row[dateColIndex].trim();
-            // Comparar con ambos formatos posibles
-            if (cellDate === todayStr || cellDate === todayAlt ||
-                cellDate.startsWith(todayStr) || cellDate.startsWith(todayAlt)) {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    /**
-     * Parsea una línea CSV respetando campos entre comillas.
-     */
-    function parseCSVRow(row) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < row.length; i++) {
-            const ch = row[i];
-            if (inQuotes) {
-                if (ch === '"') {
-                    if (i + 1 < row.length && row[i + 1] === '"') {
-                        current += '"';
-                        i++; // skip escaped quote
-                    } else {
-                        inQuotes = false;
-                    }
-                } else {
-                    current += ch;
-                }
-            } else {
-                if (ch === '"') {
-                    inQuotes = true;
-                } else if (ch === ',') {
-                    result.push(current);
-                    current = '';
-                } else {
-                    current += ch;
-                }
-            }
-        }
-        result.push(current);
-        return result;
-    }
-
-    // ============================================
-    // Sync Status Indicator (LED visual)
-    // ============================================
-
     function updateSyncStatus(status) {
         if (!syncStatusEl) return;
 
-        // Limpiar clases anteriores
-        syncStatusEl.classList.remove('hidden', 'syncing', 'synced', 'offline', 'sending', 'success', 'error');
+        syncStatusEl.classList.remove('hidden', 'sending', 'success', 'error');
         syncStatusEl.classList.add(status);
 
         const textEl = syncStatusEl.querySelector('.sync-text');
         if (textEl) {
             switch (status) {
-                case 'syncing': textEl.textContent = 'Sincronizando con Sheets...'; break;
-                case 'synced': textEl.textContent = 'Sincronizado ✓'; break;
-                case 'offline': textEl.textContent = 'Modo Local'; break;
-                case 'sending': textEl.textContent = 'Enviando...'; break;
-                case 'success': textEl.textContent = 'Enviado ✓'; break;
+                case 'sending': textEl.textContent = 'Sincronizando...'; break;
+                case 'success': textEl.textContent = 'Sincronizado'; break;
                 case 'error': textEl.textContent = 'Error de sync'; break;
             }
         }
 
-        // Limpiar timer anterior
-        if (syncStatusTimer) {
-            clearTimeout(syncStatusTimer);
-            syncStatusTimer = null;
-        }
-
-        // Auto-transición: 'success' vuelve al estado base después de 4s
+        // Auto-hide success after 4s
         if (status === 'success') {
-            syncStatusTimer = setTimeout(() => {
-                // Volver al estado de sincronización de Sheets (synced u offline)
-                if (isOnlineMode) {
-                    updateSyncStatus('synced');
-                } else if (GOOGLE_SHEETS_CSV_URL) {
-                    updateSyncStatus('offline');
-                } else {
+            setTimeout(() => {
+                if (syncStatusEl.classList.contains('success')) {
                     syncStatusEl.classList.add('hidden');
                 }
             }, 4000);
-        }
-
-        // 'error' también vuelve al estado base después de 6s
-        if (status === 'error') {
-            syncStatusTimer = setTimeout(() => {
-                if (isOnlineMode) {
-                    updateSyncStatus('synced');
-                } else if (GOOGLE_SHEETS_CSV_URL) {
-                    updateSyncStatus('offline');
-                } else {
-                    syncStatusEl.classList.add('hidden');
-                }
-            }, 6000);
         }
     }
 

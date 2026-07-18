@@ -352,59 +352,26 @@ h2 {
 .sync-status {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
     font-size: 0.65rem;
     color: var(--text-muted);
-    transition: opacity 0.3s ease;
 }
 
 .sync-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--text-muted);
-    transition: background 0.3s ease, box-shadow 0.3s ease;
-    flex-shrink: 0;
+    transition: background 0.3s ease;
 }
 
-/* Syncing with Sheets — pulsing orange LED */
-.sync-status.syncing .sync-dot {
-    background: var(--primary);
-    box-shadow: 0 0 6px var(--primary-glow-strong);
-    animation: pulse-glow 1.5s ease-in-out infinite;
-}
-.sync-status.syncing .sync-text { color: var(--primary); }
-
-/* Synced with Sheets — solid green LED */
-.sync-status.synced .sync-dot {
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success-glow);
-}
-.sync-status.synced .sync-text { color: var(--success); }
-
-/* Offline / Local fallback — solid orange LED */
-.sync-status.offline .sync-dot {
-    background: var(--primary);
-    box-shadow: 0 0 4px var(--primary-glow);
-}
-.sync-status.offline .sync-text { color: var(--primary); }
-
-/* Sending data to Sheets — pulsing orange */
 .sync-status.sending .sync-dot {
     background: var(--warning);
-    animation: pulse-glow 1s ease-in-out infinite;
+    animation: pulse 1s infinite;
 }
 
-/* Sent OK — green */
-.sync-status.success .sync-dot {
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success-glow);
-}
-.sync-status.success .sync-text { color: var(--success); }
-
-/* Error — red */
+.sync-status.success .sync-dot { background: var(--success); }
 .sync-status.error .sync-dot { background: var(--danger); }
-.sync-status.error .sync-text { color: var(--danger); }
 
 .header-actions {
     display: flex;
