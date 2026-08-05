@@ -1551,3 +1551,120 @@ tbody tr:hover { background-color: var(--row-hover); }
 
     .gestion-tipo { max-width: 100px; }
 }
+
+/* ==========================================
+   Conditional Fields (Gestiones Especiales)
+   ========================================== */
+.conditional-fields {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease,
+                margin 0.3s ease;
+    margin-top: 0;
+    border-left: 3px solid var(--primary);
+    padding-left: 0.75rem;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.conditional-fields.visible {
+    max-height: 200px;
+    opacity: 1;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.conditional-fields .form-group {
+    margin-bottom: 0.4rem;
+}
+
+.conditional-fields label {
+    color: var(--primary);
+}
+
+/* ==========================================
+   Pace Indicator (Ritmo en Tiempo Real)
+   ========================================== */
+.pace-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    margin-top: 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.68rem;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    animation: fadeIn 0.3s ease;
+}
+
+.pace-indicator .pace-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.pace-indicator.pace-good {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.pace-indicator.pace-good .pace-dot { background: #10B981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+
+.pace-indicator.pace-ok {
+    background: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.pace-indicator.pace-ok .pace-dot { background: #F59E0B; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+
+.pace-indicator.pace-low {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.pace-indicator.pace-low .pace-dot { background: #EF4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+
+/* ==========================================
+   Quick Summary Toast
+   ========================================== */
+.summary-toast {
+    max-width: 380px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.summary-toast pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-main);
+    margin: 0;
+}
+
+/* ==========================================
+   RA Search Filter (Quick-Pick)
+   ========================================== */
+.ra-search-wrapper {
+    position: relative;
+    margin-bottom: 0.3rem;
+}
+
+.ra-search-wrapper input {
+    padding-left: 1.8rem !important;
+    font-size: 0.75rem !important;
+}
+
+.ra-search-wrapper .search-icon {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    pointer-events: none;
+}

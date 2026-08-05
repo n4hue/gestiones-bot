@@ -58,6 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const decosContainer = document.getElementById('decos-container');
     const btnClearTools = document.getElementById('btn-clear-tools');
 
+    // Gestiones Especiales conditional fields
+    const camposEspeciales = document.getElementById('campos-especiales');
+    const selectContactoEsp = document.getElementById('contacto-especial');
+    const selectEstadoEsp = document.getElementById('estado-gestion-especial');
+
+    // New features DOM
+    const paceIndicator = document.getElementById('pace-indicator');
+    const btnQuickSummary = document.getElementById('btn-quick-summary');
+
     // ============================================
     // Constants
     // ============================================
@@ -96,6 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const GFORM_ENTRY_CLIENTE = 'entry.497919059';         // Campo "N° de Cliente / Asunto Mail" del Google Form
     const GFORM_ENTRY_GESTION_RA = 'entry.2074675876';     // Campo "Gestión RAs" del Google Form
     const GFORM_ENTRY_ESTADO = 'entry.1658376896';         // Campo "Estado" del Google Form
+    const GFORM_ENTRY_CONTACTO_RA = 'entry.1018921590';    // Campo "Estado Contacto RA" del Google Form
+    const GFORM_ENTRY_ESTADO_RA = 'entry.789248115';       // Campo "Estado Gestión RA" del Google Form
+    const GFORM_ENTRY_GESTIONES_ESP = 'entry.1800489466';  // Campo "Gestiones Especiales" del Google Form
+    const GFORM_ENTRY_CONTACTO_ESP = 'entry.549594727';    // Campo "Contacto Especial" del Google Form
+    const GFORM_ENTRY_ESTADO_ESP = 'entry.247821766';      // Campo "Estado Gestión Especial" del Google Form
     // ============================================================
 
     // ============================================================
@@ -144,6 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'Problemas Postes/Columnas': 'Problemas Postes/Columnas',
         'Reservado para carga de BOT': 'Reservado para carga de BOT',
         'Referidos': 'Referidos',
+        'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
+        'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
+        '303 Deco en Bucle': '303 Deco en Bucle',
 
         // WIFI MESH (la app usa "ACCESO" y el form tiene "ACCESSO" con doble S)
         'NOC - WIFI MESH - CORTES INTERMITENTES': 'NOC - WIFI MESH - CORTES INTERMITENTES',
@@ -154,6 +171,20 @@ document.addEventListener('DOMContentLoaded', () => {
         'NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA': 'NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA',
         'NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED': 'NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED'
     };
+
+    // Gestiones Especiales mapping to Google Form values
+    const GFORM_ESP_MAPPING = {
+        'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
+        'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
+        '303 Deco en Bucle': '303 Deco en Bucle'
+    };
+
+    // List of tipo_ra values that qualify as "Gestiones Especiales" and need conditional fields
+    const GESTIONES_ESPECIALES_VALUES = [
+        'Analisis Tickets Cargados',
+        'Analisis/Carga RA ID121',
+        '303 Deco en Bucle'
+    ];
 
     const CATEGORY_COLORS = {
         'INTERNET': '#3b82f6',
@@ -203,6 +234,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateUI();
     startSessionTimer();
+
+    // Initialize RA search filter (Quick-Pick)
+    initRaSearchFilter();
+
+    // Initialize conditional fields toggle
+    initConditionalFields();
+
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
     inputCliente.focus();
 
     // ============================================
@@ -270,6 +312,14 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
+
+            // Reset conditional fields (Gestiones Especiales)
+            if (camposEspeciales) {
+                camposEspeciales.classList.remove('visible');
+                setTimeout(() => camposEspeciales.classList.add('hidden'), 350);
+                if (selectContactoEsp) selectContactoEsp.value = '';
+                if (selectEstadoEsp) selectEstadoEsp.value = '';
+            }
 
             // Clear tools
             if (btnClearTools) btnClearTools.click();
@@ -624,18 +674,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Check archived days going backwards
+        // New rule: skip days without data (francos/weekends)
+        // Only break the streak on a WORKED day with < DAILY_GOAL
         let checkDate = new Date(today);
-        // If today doesn't qualify, start checking from yesterday only if today has no gestiones yet
-        if (gestiones.length < DAILY_GOAL && gestiones.length > 0) {
-            // Today started but not complete - check from yesterday
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else if (gestiones.length >= DAILY_GOAL) {
-            // Today complete, check from yesterday
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            // No gestiones today, check from yesterday
-            checkDate.setDate(checkDate.getDate() - 1);
-        }
+        checkDate.setDate(checkDate.getDate() - 1); // Start from yesterday
 
         for (let i = 0; i < 365; i++) {
             const dateStr = checkDate.toISOString().split('T')[0];
@@ -644,13 +686,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = JSON.parse(archived);
                 if (data.length >= DAILY_GOAL) {
                     streak++;
-                    checkDate.setDate(checkDate.getDate() - 1);
                 } else {
+                    // Worked day with < 30 → streak broken
                     break;
                 }
-            } else {
-                break;
             }
+            // No data for this day (franco) → skip, don't break
+            checkDate.setDate(checkDate.getDate() - 1);
         }
 
         return streak;
@@ -681,8 +723,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (gestiones.length === 0) {
             sessionTimerEl.textContent = '⏱ Sin iniciar';
+            updatePaceIndicator(0, 0);
             return;
         }
+
+        // Get the first gestión registered (oldest = last in array)
+        const firstGestion = gestiones[gestiones.length - 1];
+        const [fh, fm, fs] = firstGestion.hora.split(':').map(Number);
+        const sessionStart = new Date();
+        sessionStart.setHours(fh, fm, fs, 0);
 
         // Get latest gestión (first in array = last registered)
         const latestGestion = gestiones[0];
@@ -698,10 +747,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const mm = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
             const ss = String(diff % 60).padStart(2, '0');
             sessionTimerEl.textContent = `⏱ ${hh}:${mm}:${ss}`;
+
+            // Update pace indicator every tick
+            const elapsedHours = (now - sessionStart) / 3600000;
+            updatePaceIndicator(gestiones.length, elapsedHours);
         }
 
         tick();
         timerInterval = setInterval(tick, 1000);
+    }
+
+    // ============================================
+    // Feature: Pace Indicator (Ritmo en Tiempo Real)
+    // ============================================
+    function updatePaceIndicator(count, elapsedHours) {
+        if (!paceIndicator) return;
+
+        if (count === 0) {
+            paceIndicator.classList.remove('hidden');
+            paceIndicator.className = 'pace-indicator pace-ok';
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>Esperando 1ra gestión...`;
+            return;
+        }
+
+        if (elapsedHours < 0.05) {
+            // Not enough time has passed to calculate a meaningful rate, give it a default visual
+            paceIndicator.classList.remove('hidden');
+            paceIndicator.className = 'pace-indicator pace-good';
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>Calculando ritmo...`;
+            return;
+        }
+
+        paceIndicator.classList.remove('hidden');
+        const rate = count / elapsedHours;
+
+        let paceClass, emoji, msg;
+        if (rate >= 5) {
+            paceClass = 'pace-good';
+            emoji = '🟢';
+            msg = `Vas bien`;
+        } else if (rate >= 4) {
+            paceClass = 'pace-ok';
+            emoji = '🟡';
+            msg = `Ritmo ajustado`;
+        } else {
+            paceClass = 'pace-low';
+            emoji = '🔴';
+            msg = `Ritmo bajo`;
+        }
+
+        paceIndicator.className = `pace-indicator ${paceClass}`;
+        paceIndicator.innerHTML = `<span class="pace-dot"></span>${msg}`;
     }
 
     // ============================================
@@ -1146,6 +1242,56 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('CSV exportado correctamente', 'success');
     });
 
+    // ============================================
+    // Feature: Quick Summary (Resumen Rápido)
+    // ============================================
+    if (btnQuickSummary) {
+        btnQuickSummary.addEventListener('click', () => {
+            if (gestiones.length === 0) {
+                showToast('No hay gestiones registradas aún', 'info');
+                return;
+            }
+
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+            const count = gestiones.length;
+
+            // Calculate per-hour rate
+            let perHour = '—';
+            if (count > 0) {
+                const firstG = gestiones[gestiones.length - 1];
+                const [h, m, s] = firstG.hora.split(':').map(Number);
+                const startTime = new Date();
+                startTime.setHours(h, m, s, 0);
+                const elapsedH = (Date.now() - startTime) / 3600000;
+                if (elapsedH > 0.05) perHour = (count / elapsedH).toFixed(1);
+            }
+
+            // Top categories
+            const catCounts = {};
+            gestiones.forEach(g => {
+                const cat = getCategory(g.tipo_ra);
+                catCounts[cat] = (catCounts[cat] || 0) + 1;
+            });
+            const topCats = Object.entries(catCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([cat, c]) => `${cat} (${c})`)
+                .join(' | ');
+
+            const streak = calculateStreak();
+
+            const summary = `Jornada ${dateStr} | ${count} gestiones | ${perHour} g/h\nTop: ${topCats}\nRacha: ${streak} días 🔥`;
+
+            navigator.clipboard.writeText(summary).then(() => {
+                showToast('📋 Resumen copiado al portapapeles', 'success');
+            }).catch(() => {
+                // Fallback: show in toast
+                showToast(summary, 'info');
+            });
+        });
+    }
+
     function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(gestiones));
     }
@@ -1236,6 +1382,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const formValue = GFORM_RA_MAPPING[tipoRaValue];
             if (formValue) {
                 params.push(`${GFORM_ENTRY_GESTION_RA}=${encodeURIComponent(formValue)}`);
+            }
+
+            // Handle the additional fields (Contacto / Estado Gestión)
+            const contactoValue = selectContactoEsp ? selectContactoEsp.value : '';
+            const estadoExtraValue = selectEstadoEsp ? selectEstadoEsp.value : '';
+
+            // If it's a Gestión Especial, use ESP entry IDs
+            if (GESTIONES_ESPECIALES_VALUES.includes(tipoRaValue)) {
+                const espFormValue = GFORM_ESP_MAPPING[tipoRaValue];
+                if (espFormValue) {
+                    params.push(`${GFORM_ENTRY_GESTIONES_ESP}=${encodeURIComponent(espFormValue)}`);
+                }
+                if (contactoValue) {
+                    params.push(`${GFORM_ENTRY_CONTACTO_ESP}=${encodeURIComponent(contactoValue)}`);
+                }
+                if (estadoExtraValue) {
+                    params.push(`${GFORM_ENTRY_ESTADO_ESP}=${encodeURIComponent(estadoExtraValue)}`);
+                }
+            } else {
+                // It's a standard RA, use RA entry IDs
+                if (contactoValue) {
+                    params.push(`${GFORM_ENTRY_CONTACTO_RA}=${encodeURIComponent(contactoValue)}`);
+                }
+                if (estadoExtraValue) {
+                    params.push(`${GFORM_ENTRY_ESTADO_RA}=${encodeURIComponent(estadoExtraValue)}`);
+                }
             }
         }
         if (estadoValue) {
@@ -1379,6 +1551,172 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             showToast('Herramientas limpiadas', 'info');
         });
+    }
+
+    // ============================================
+    // Feature: Conditional Fields (Gestiones Especiales)
+    // ============================================
+    function initConditionalFields() {
+        if (!selectRa || !camposEspeciales) return;
+
+        const labelContacto = document.getElementById('label-contacto');
+        const labelEstado = document.getElementById('label-estado');
+
+        selectRa.addEventListener('change', () => {
+            const val = selectRa.value;
+            if (val) {
+                // Determine if it's an Especial or RA
+                const isEspecial = GESTIONES_ESPECIALES_VALUES.includes(val);
+                
+                // Update Labels
+                if (labelContacto) labelContacto.textContent = isEspecial ? 'Contacto Especial' : 'Estado Contacto RA';
+                if (labelEstado) labelEstado.textContent = isEspecial ? 'Estado Gestión Especial' : 'Estado Gestión RA';
+
+                // Populate Contacto Select
+                if (selectContactoEsp) {
+                    const prevValue = selectContactoEsp.value;
+                    selectContactoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
+                    const contactoOpts = isEspecial 
+                        ? ['Contacto', 'Sin Contacto', 'No es necesario Contacto'] 
+                        : ['Contacto', 'Sin Contacto', 'No es necesario el Contacto'];
+                    contactoOpts.forEach(opt => {
+                        selectContactoEsp.innerHTML += `<option value="${opt}">${opt}</option>`;
+                    });
+                    // Try to restore previous value if it matches the new options
+                    if (contactoOpts.includes(prevValue)) selectContactoEsp.value = prevValue;
+                }
+
+                // Populate Estado Select
+                if (selectEstadoEsp) {
+                    const prevValue = selectEstadoEsp.value;
+                    selectEstadoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
+                    const estadoOpts = isEspecial 
+                        ? ['Gestionado', 'Pendiente'] 
+                        : ['Cerrado', 'Pendiente', 'Rechazado'];
+                    estadoOpts.forEach(opt => {
+                        selectEstadoEsp.innerHTML += `<option value="${opt}">${opt}</option>`;
+                    });
+                    // Try to restore previous value if it matches the new options
+                    if (estadoOpts.includes(prevValue)) selectEstadoEsp.value = prevValue;
+                }
+
+                camposEspeciales.classList.remove('hidden');
+                // Trigger slide animation
+                requestAnimationFrame(() => {
+                    camposEspeciales.classList.add('visible');
+                });
+            } else {
+                camposEspeciales.classList.remove('visible');
+                // Wait for animation to complete before hiding
+                setTimeout(() => {
+                    if (!camposEspeciales.classList.contains('visible')) {
+                        camposEspeciales.classList.add('hidden');
+                    }
+                }, 350);
+                // Reset conditional fields
+                if (selectContactoEsp) selectContactoEsp.value = '';
+                if (selectEstadoEsp) selectEstadoEsp.value = '';
+            }
+        });
+    }
+
+    // ============================================
+    // Feature: RA Search Filter (Quick-Pick)
+    // ============================================
+    function initRaSearchFilter() {
+        if (!selectRa) return;
+
+        // Store all original options
+        const allOptions = [];
+        selectRa.querySelectorAll('option, optgroup').forEach(el => {
+            if (el.tagName === 'OPTGROUP') {
+                const group = { label: el.label, options: [] };
+                el.querySelectorAll('option').forEach(opt => {
+                    group.options.push({ value: opt.value, text: opt.textContent, disabled: opt.disabled });
+                });
+                allOptions.push(group);
+            } else if (!el.closest('optgroup') && el.value === '') {
+                // Default placeholder
+                allOptions.push({ placeholder: true, text: el.textContent, disabled: el.disabled });
+            }
+        });
+
+        // Create search input above the select
+        const wrapper = document.createElement('div');
+        wrapper.className = 'ra-search-wrapper';
+        const searchIcon = document.createElement('span');
+        searchIcon.className = 'search-icon';
+        searchIcon.textContent = '🔍';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Buscar tipo de gestión...';
+        searchInput.autocomplete = 'off';
+        wrapper.appendChild(searchIcon);
+        wrapper.appendChild(searchInput);
+
+        selectRa.parentNode.insertBefore(wrapper, selectRa);
+
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.trim().toLowerCase();
+            if (!term) {
+                // Restore all options
+                rebuildSelect(allOptions, null);
+                return;
+            }
+            rebuildSelect(allOptions, term);
+        });
+
+        // Clear search on select change
+        selectRa.addEventListener('change', () => {
+            if (searchInput.value) {
+                searchInput.value = '';
+                rebuildSelect(allOptions, null);
+            }
+        });
+
+        function rebuildSelect(groups, term) {
+            const currentValue = selectRa.value;
+            selectRa.innerHTML = '';
+
+            groups.forEach(item => {
+                if (item.placeholder) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = item.text;
+                    opt.disabled = true;
+                    if (!currentValue) opt.selected = true;
+                    selectRa.appendChild(opt);
+                    return;
+                }
+
+                const matchingOpts = term
+                    ? item.options.filter(o => !o.disabled && o.text.toLowerCase().includes(term))
+                    : item.options;
+
+                if (matchingOpts.length === 0) return;
+
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = item.label;
+                matchingOpts.forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value;
+                    opt.textContent = o.text;
+                    if (o.disabled) opt.disabled = true;
+                    if (o.value === currentValue) opt.selected = true;
+                    optgroup.appendChild(opt);
+                });
+                selectRa.appendChild(optgroup);
+            });
+
+            // Auto-select if only one match
+            if (term) {
+                const visibleOpts = selectRa.querySelectorAll('option:not([disabled])');
+                if (visibleOpts.length === 1) {
+                    visibleOpts[0].selected = true;
+                    selectRa.dispatchEvent(new Event('change'));
+                }
+            }
+        }
     }
 
 });
