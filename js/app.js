@@ -791,29 +791,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (elapsedHours < 0.05) {
-            // Not enough time has passed to calculate a meaningful rate, give it a default visual
-            paceIndicator.classList.remove('hidden');
-            paceIndicator.className = 'pace-indicator pace-good';
-            paceIndicator.innerHTML = `<span class="pace-dot"></span>Calculando ritmo...`;
-            return;
-        }
+        // Evitar picos irreales al inicio tomando como mínimo 1 minuto de tiempo transcurrido
+        const effectiveHours = Math.max(elapsedHours, 1/60);
 
         paceIndicator.classList.remove('hidden');
-        const rate = count / elapsedHours;
+        const rate = count / effectiveHours;
 
-        let paceClass, emoji, msg;
+        let paceClass, msg;
         if (rate >= 5) {
             paceClass = 'pace-good';
-            emoji = '🟢';
             msg = `Vas bien`;
         } else if (rate >= 4) {
             paceClass = 'pace-ok';
-            emoji = '🟡';
             msg = `Ritmo ajustado`;
         } else {
             paceClass = 'pace-low';
-            emoji = '🔴';
             msg = `Ritmo bajo`;
         }
 
