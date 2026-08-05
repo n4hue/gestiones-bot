@@ -19,6 +19,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+
   // Estrategia: Network First (Red primero, luego caché como respaldo para offline)
   event.respondWith(
     fetch(event.request)

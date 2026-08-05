@@ -82,6 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const OPERATOR_NAME_KEY = 'bot_operator_name';
     const PASS_CRM_KEY = 'bot_pass_crm';
 
+    // ============================================
+    // Source-of-Truth URL del Google Form
+    // ============================================
+    // Esta constante SIEMPRE sobreescribe el valor del LocalStorage
+    // al cargar la app. Si necesitás cambiar el Form, editá acá.
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScyha3vodHNJvqCJQouyHD7GKM3Mh-blJLGiklP0OT7sUCFqQ/viewform';
+
     // ============================================================
     // IDs DE CAMPOS DE GOOGLE FORMS PARA PRE-LLENADO (PRE-FILL)
     // ============================================================
@@ -200,13 +207,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     // ============================================
     let gestiones = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    let googleFormUrl = localStorage.getItem(GFORM_URL_KEY) || 'https://docs.google.com/forms/d/e/1FAIpQLScyha3vodHNJvqCJQouyHD7GKM3Mh-blJLGiklP0OT7sUCFqQ/viewform';
     let sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
     let editingId = null;
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
+
+    // ── Fix Bug Form URL: la constante del código siempre gana ──
+    // Si el LS tiene una URL vieja distinta al código, se sobreescribe.
+    // El usuario puede cambiarla manualmente en Ajustes como override local,
+    // pero al actualizar el código fuente, la nueva URL prevalecerá.
+    let googleFormUrl = GOOGLE_FORM_URL;
+    const storedFormUrl = localStorage.getItem(GFORM_URL_KEY);
+    if (!storedFormUrl || storedFormUrl !== GOOGLE_FORM_URL) {
+        // El código se actualizó o es la primera vez → forzar URL del código
+        localStorage.setItem(GFORM_URL_KEY, GOOGLE_FORM_URL);
+    } else {
+        // El LS coincide con el código → usar la del LS (por si el usuario
+        // la cambió manualmente a la misma que hay en el código, no hay conflicto)
+        googleFormUrl = storedFormUrl;
+    }
 
 
     // ============================================
@@ -1324,7 +1345,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnSaveSettings) {
         btnSaveSettings.addEventListener('click', () => {
-            // Save Google Form URL
+            // Save Google Form URL (override local del usuario)
+            // Se guarda en LS. Si el código fuente tiene una URL diferente,
+            // la del código ganará en el próximo reload. Pero si el usuario
+            // no puede actualizar el código, puede forzar la URL desde acá.
             const formUrl = inputFormUrl ? inputFormUrl.value.trim() : '';
             if (formUrl) {
                 googleFormUrl = formUrl;
@@ -1567,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (val) {
                 // Determine if it's an Especial or RA
                 const isEspecial = GESTIONES_ESPECIALES_VALUES.includes(val);
-                
+
                 // Update Labels
                 if (labelContacto) labelContacto.textContent = isEspecial ? 'Contacto Especial' : 'Estado Contacto RA';
                 if (labelEstado) labelEstado.textContent = isEspecial ? 'Estado Gestión Especial' : 'Estado Gestión RA';
@@ -1576,8 +1600,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectContactoEsp) {
                     const prevValue = selectContactoEsp.value;
                     selectContactoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
-                    const contactoOpts = isEspecial 
-                        ? ['Contacto', 'Sin Contacto', 'No es necesario Contacto'] 
+                    const contactoOpts = isEspecial
+                        ? ['Contacto', 'Sin Contacto', 'No es necesario Contacto']
                         : ['Contacto', 'Sin Contacto', 'No es necesario el Contacto'];
                     contactoOpts.forEach(opt => {
                         selectContactoEsp.innerHTML += `<option value="${opt}">${opt}</option>`;
@@ -1590,8 +1614,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectEstadoEsp) {
                     const prevValue = selectEstadoEsp.value;
                     selectEstadoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
-                    const estadoOpts = isEspecial 
-                        ? ['Gestionado', 'Pendiente'] 
+                    const estadoOpts = isEspecial
+                        ? ['Gestionado', 'Pendiente']
                         : ['Cerrado', 'Pendiente', 'Rechazado'];
                     estadoOpts.forEach(opt => {
                         selectEstadoEsp.innerHTML += `<option value="${opt}">${opt}</option>`;
