@@ -800,7 +800,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let paceClass, msg;
         if (rate >= 5) {
             paceClass = 'pace-good';
-            msg = `ESTAS ATR PERRO! 🔥`;
+            msg = `ESTAS ATR PERRITO 🔥`;
         } else if (rate >= 4) {
             paceClass = 'pace-ok';
             msg = `Vas justo, pero se puede mejorar.`;
