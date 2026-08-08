@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Evitar picos irreales al inicio tomando como mínimo 1 minuto de tiempo transcurrido
-        const effectiveHours = Math.max(elapsedHours, 1/60);
+        const effectiveHours = Math.max(elapsedHours, 1 / 60);
 
         paceIndicator.classList.remove('hidden');
         const rate = count / effectiveHours;
@@ -800,13 +800,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let paceClass, msg;
         if (rate >= 5) {
             paceClass = 'pace-good';
-            msg = `Vas bien`;
+            msg = `ESTAS ATR PERRO! 🔥`;
         } else if (rate >= 4) {
             paceClass = 'pace-ok';
-            msg = `Ritmo ajustado`;
+            msg = `Vas justo, pero se puede mejorar.`;
         } else {
             paceClass = 'pace-low';
-            msg = `Ritmo bajo`;
+            msg = `Hay que agarrar un poco mas la pala.`;
         }
 
         paceIndicator.className = `pace-indicator ${paceClass}`;
