@@ -835,8 +835,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (celebrationTriggered) return;
         celebrationTriggered = true;
 
-        // 1. Play celebration sound
-        playSuccessSound();
+        // 1. Play Final Fantasy level-up sound 🎶
+        try {
+            const levelUpAudio = new Audio('assets/level-up-sound.mp3');
+            levelUpAudio.volume = 0.7;
+            levelUpAudio.play();
+        } catch (e) {
+            // Fallback to default sound if file not found
+            playSuccessSound();
+        }
 
         // 2. Add glow to progress panel
         const progressCard = document.querySelector('.progress-panel');
