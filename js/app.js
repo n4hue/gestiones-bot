@@ -848,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Show celebration banner
         const banner = document.createElement('div');
         banner.className = 'celebration-banner';
-        banner.innerHTML = '<span>🎉 ¡Objetivo diario cumplido! Ahora a mimir 😴</span>';
+        banner.innerHTML = '<span>🎉 ¡Objetivo diario cumplido! Ahora a mimirr 😴</span>';
         document.body.appendChild(banner);
         setTimeout(() => banner.remove(), 5500);
 
