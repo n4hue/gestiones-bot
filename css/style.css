@@ -1924,3 +1924,124 @@ tbody tr:hover {
     font-size: 0.75rem;
     pointer-events: none;
 }
+
+/* ==========================================
+   Goal Celebration (30 Gestiones)
+   ========================================== */
+
+/* Confetti Canvas — covers entire viewport */
+#celebration-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 99999;
+}
+
+/* Goal-reached glow on progress panel */
+.progress-panel.goal-reached {
+    animation: goalGlow 2s ease-in-out 3;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+@keyframes goalGlow {
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2),
+            inset 0 0 10px rgba(16, 185, 129, 0.05);
+    }
+
+    50% {
+        box-shadow: 0 0 35px rgba(16, 185, 129, 0.5),
+            0 0 60px rgba(255, 107, 53, 0.2),
+            inset 0 0 20px rgba(16, 185, 129, 0.1);
+    }
+}
+
+/* Special pace indicator for goal completed */
+.pace-indicator.pace-goal {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.1));
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    font-weight: 600;
+    animation: goalPacePulse 3s ease-in-out infinite;
+}
+
+.pace-indicator.pace-goal .pace-dot {
+    background: #10B981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes goalPacePulse {
+    0%,
+    100% {
+        border-color: rgba(16, 185, 129, 0.35);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.1);
+    }
+
+    50% {
+        border-color: rgba(16, 185, 129, 0.6);
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+}
+
+/* Celebration banner that slides down */
+.celebration-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99998;
+    background: linear-gradient(135deg, #10B981, #059669, #047857);
+    color: white;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    animation: bannerSlideDown 0.5s ease-out, bannerSlideUp 0.5s ease-in 4.5s forwards;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+.celebration-banner span {
+    display: inline-block;
+    animation: bannerBounce 0.6s ease-in-out 0.5s 3;
+}
+
+@keyframes bannerSlideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bannerSlideUp {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+}
+
+@keyframes bannerBounce {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+}

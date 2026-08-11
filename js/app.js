@@ -328,6 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUI();
             startSessionTimer();
 
+            // Check if we just hit the daily goal
+            if (gestiones.length >= DAILY_GOAL) {
+                triggerGoalCelebration();
+            }
+
             // Reset form
             inputCliente.value = '';
             selectRa.value = '';
@@ -784,6 +789,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updatePaceIndicator(count, elapsedHours) {
         if (!paceIndicator) return;
 
+        // Goal reached! Show special message
+        if (count >= DAILY_GOAL) {
+            paceIndicator.classList.remove('hidden');
+            paceIndicator.className = 'pace-indicator pace-goal';
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>Felicidades, llegaste al objetivo diario de gestiones. Podes ir a dormirte una siestita💤😴`;
+            return;
+        }
+
         if (count === 0) {
             paceIndicator.classList.remove('hidden');
             paceIndicator.className = 'pace-indicator pace-ok';
@@ -811,6 +824,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
         paceIndicator.className = `pace-indicator ${paceClass}`;
         paceIndicator.innerHTML = `<span class="pace-dot"></span>${msg}`;
+    }
+
+    // ============================================
+    // Feature: Goal Celebration (Confetti + Banner)
+    // ============================================
+    let celebrationTriggered = gestiones.length >= DAILY_GOAL; // Don't re-trigger on reload if already past 30
+
+    function triggerGoalCelebration() {
+        if (celebrationTriggered) return;
+        celebrationTriggered = true;
+
+        // 1. Play celebration sound
+        playSuccessSound();
+
+        // 2. Add glow to progress panel
+        const progressCard = document.querySelector('.progress-panel');
+        if (progressCard) {
+            progressCard.classList.add('goal-reached');
+            setTimeout(() => progressCard.classList.remove('goal-reached'), 6500);
+        }
+
+        // 3. Show celebration banner
+        const banner = document.createElement('div');
+        banner.className = 'celebration-banner';
+        banner.innerHTML = '<span>🎉 ¡Objetivo diario cumplido! Ahora a mimir 😴</span>';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 5500);
+
+        // 4. Launch confetti
+        launchConfetti();
+    }
+
+    function launchConfetti() {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'celebration-canvas';
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = [
+            '#FF6B35', '#FF8C42', '#FFD700', '#10B981',
+            '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B',
+            '#EF4444', '#06B6D4'
+        ];
+
+        const confetti = [];
+        const PARTICLE_COUNT = 120;
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            confetti.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 8 + 4,
+                h: Math.random() * 6 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 3 + 2,
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 10,
+                opacity: 1
+            });
+        }
+
+        const startTime = Date.now();
+        const DURATION = 4000; // 4 seconds
+
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            if (elapsed > DURATION) {
+                canvas.remove();
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Fade out in the last second
+            const fadeStart = DURATION - 1000;
+            const globalAlpha = elapsed > fadeStart ? 1 - (elapsed - fadeStart) / 1000 : 1;
+
+            confetti.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // gravity
+                p.rotation += p.rotSpeed;
+                p.vx *= 0.99; // air resistance
+
+                ctx.save();
+                ctx.globalAlpha = globalAlpha * p.opacity;
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
     }
 
     // ============================================
