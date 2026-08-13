@@ -831,17 +831,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     let celebrationTriggered = gestiones.length >= DAILY_GOAL; // Don't re-trigger on reload if already past 30
 
+    // Celebration sounds — one per day of the week (0=Domingo ... 6=Sábado)
+    const CELEBRATION_SOUNDS = {
+        0: 'assets/level-up-sound.mp3',  // Domingo
+        1: 'assets/level-up-sound.mp3',              // Lunes (FF Victory Fanfare)
+        2: 'assets/congratulations-you-are-moving-to-the-next-level.mp3',         // Martes
+        3: 'assets/ZeldaOpenChestLoot-SoundEffectforediting.mp3',           // Miércoles
+        4: 'assets/gta-sanandreas-missionpassed.mp3',               // Jueves
+        5: 'assets/YouWinPerfect.mp3',                   // Viernes
+        6: 'assets/YouWin-WiiSports.mp3'            // Sábado
+    };
+
     function triggerGoalCelebration() {
         if (celebrationTriggered) return;
         celebrationTriggered = true;
 
-        // 1. Play Final Fantasy level-up sound 🎶
+        // 1. Play day-of-week celebration sound 🎶
+        const dayOfWeek = new Date().getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+        const soundFile = CELEBRATION_SOUNDS[dayOfWeek] || 'assets/level-up-sound.mp3';
         try {
-            const levelUpAudio = new Audio('assets/level-up-sound.mp3');
-            levelUpAudio.volume = 0.7;
-            levelUpAudio.play();
+            const celebrationAudio = new Audio(soundFile);
+            celebrationAudio.volume = 0.7;
+            celebrationAudio.play().catch(() => {
+                // If the specific file is missing, try the default FF sound
+                const fallback = new Audio('assets/level-up-sound.mp3');
+                fallback.volume = 0.7;
+                fallback.play().catch(() => playSuccessSound());
+            });
         } catch (e) {
-            // Fallback to default sound if file not found
             playSuccessSound();
         }
 
