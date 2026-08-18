@@ -45,6 +45,7 @@
                     </span>
                 </div>
                 <div id="pace-indicator" class="pace-indicator hidden"></div>
+                <div id="break-indicator" class="break-indicator hidden"></div>
             </div>
 
             <div class="header-actions">
@@ -444,6 +445,19 @@
                 </button>
                 <button id="btn-cancelar-jornada" class="btn btn-secondary">Cancelar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Break Alarm Overlay -->
+    <div id="break-overlay" class="break-overlay hidden">
+        <div class="break-overlay-content">
+            <div class="break-emoji">☕</div>
+            <h2 class="break-title">¡HORA DE BREAK!</h2>
+            <p class="break-operator" id="break-operator-name"></p>
+            <p class="break-countdown" id="break-countdown"></p>
+            <button id="btn-dismiss-break" class="btn btn-primary break-dismiss">
+                Entendido ✓
+            </button>
         </div>
     </div>
 

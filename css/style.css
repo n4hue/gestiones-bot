@@ -2044,4 +2044,203 @@ tbody tr:hover {
     50% {
         transform: scale(1.15);
     }
-}
+}
+
+/* ==========================================
+   Break Alarm — Indicator
+   ========================================== */
+.break-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: rgba(255, 107, 53, 0.06);
+    border: 1px solid rgba(255, 107, 53, 0.12);
+    margin-top: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.break-indicator.franco {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+}
+
+.break-indicator.done {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+}
+
+.break-indicator.active {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: rgba(255, 107, 53, 0.25);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ==========================================
+   Break Alarm — Full-Screen Overlay
+   ========================================== */
+.break-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: breakOverlayIn 0.4s ease-out;
+}
+
+.break-overlay.hidden {
+    display: none;
+}
+
+@keyframes breakOverlayIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+
+    to {
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
+}
+
+.break-overlay-content {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    max-width: 380px;
+    width: 90%;
+    border-radius: 20px;
+    background: linear-gradient(145deg,
+            rgba(255, 107, 53, 0.12),
+            rgba(30, 30, 50, 0.95),
+            rgba(255, 165, 0, 0.08));
+    border: 2px solid rgba(255, 107, 53, 0.4);
+    box-shadow:
+        0 0 40px rgba(255, 107, 53, 0.25),
+        0 0 80px rgba(255, 107, 53, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: breakCardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+        breakGlow 2.5s ease-in-out infinite 0.5s;
+}
+
+@keyframes breakCardIn {
+    from {
+        opacity: 0;
+        transform: scale(0.7) translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes breakGlow {
+
+    0%,
+    100% {
+        box-shadow:
+            0 0 40px rgba(255, 107, 53, 0.25),
+            0 0 80px rgba(255, 107, 53, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 107, 53, 0.4);
+    }
+
+    50% {
+        box-shadow:
+            0 0 60px rgba(255, 107, 53, 0.4),
+            0 0 120px rgba(255, 165, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 165, 0, 0.6);
+    }
+}
+
+.break-emoji {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    animation: breakBounce 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px rgba(255, 107, 53, 0.5));
+}
+
+@keyframes breakBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    25% {
+        transform: translateY(-8px) scale(1.05);
+    }
+
+    50% {
+        transform: translateY(0) scale(1);
+    }
+
+    75% {
+        transform: translateY(-4px) scale(1.02);
+    }
+}
+
+.break-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: linear-gradient(135deg, #FF6B35, #FFD700, #FF8C42);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin-bottom: 0.5rem;
+}
+
+.break-operator {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+}
+
+.break-countdown {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #FFD700;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.break-dismiss {
+    background: linear-gradient(135deg, #FF6B35, #FF8C42) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 2rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+    letter-spacing: 0.02em;
+}
+
+.break-dismiss:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+}
+
+.break-dismiss:active {
+    transform: translateY(0);
+}
+

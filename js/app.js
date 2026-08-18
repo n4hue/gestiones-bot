@@ -67,6 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const paceIndicator = document.getElementById('pace-indicator');
     const btnQuickSummary = document.getElementById('btn-quick-summary');
 
+    // Break Alarm DOM
+    const breakIndicator = document.getElementById('break-indicator');
+    const breakOverlay = document.getElementById('break-overlay');
+    const breakOperatorName = document.getElementById('break-operator-name');
+    const breakCountdown = document.getElementById('break-countdown');
+    const btnDismissBreak = document.getElementById('btn-dismiss-break');
+
     // ============================================
     // Constants
     // ============================================
@@ -81,6 +88,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
     const OPERATOR_NAME_KEY = 'bot_operator_name';
     const PASS_CRM_KEY = 'bot_pass_crm';
+
+    // ============================================
+    // Operator Break Schedule
+    // ============================================
+    // francos: array de días JS (0=Dom, 1=Lun, ..., 6=Sáb)
+    // breaks: array de 2 strings "HH:MM" en formato 24h
+    const OPERATOR_SCHEDULE = {
+        // TURNO MAÑANA (08:00-14:00)
+        'Francia Diego':       { francos: [5, 6], breaks: ['09:30', '12:15'] },
+        'Conti Melanie':       { francos: [5, 0], breaks: ['09:45', '12:30'] },
+        'Montenegro Omar':     { francos: [4, 0], breaks: ['10:00', '12:45'] },
+        'Matos Luciano':       { francos: [4, 5], breaks: ['10:15', '13:00'] },
+        'Gomez Ignacio':       { francos: [3, 0], breaks: ['10:30', '13:15'] },
+        'Ibacache Ivan':       { francos: [3, 6], breaks: ['10:45', '13:45'] },
+        'Mamani Yanina':       { francos: [5, 0], breaks: ['11:00', '13:30'] },
+        'Pardo Josafat':       { francos: [3, 6], breaks: ['11:30', '13:30'] },
+        // TURNO TARDE (14:00-20:00)
+        'Ortellado Alex':      { francos: [4, 0], breaks: ['15:30', '18:00'] },
+        'Scaramello Juliana':  { francos: [5, 6], breaks: ['15:45', '18:15'] },
+        'Bonfanti Cecilia':    { francos: [4, 6], breaks: ['16:00', '18:30'] },
+        'Leclerc Kevin':       { francos: [5, 0], breaks: ['16:15', '18:45'] },
+        'Scardaccione Luca':   { francos: [3, 6], breaks: ['16:30', '19:00'] },
+        'Vignolo Nahuel':      { francos: [5, 0], breaks: ['16:45', '19:15'] },
+        'Jurnet Lucas':        { francos: [3, 0], breaks: ['17:00', '19:30'] },
+        'Cepeda Nicolas':      { francos: [4, 0], breaks: ['17:15', '19:45'] }
+    };
 
     // ============================================
     // Source-of-Truth URL del Google Form
@@ -214,6 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
 
+    // Break alarm state
+    let breakInterval = null;
+    let breakCountdownInterval = null;
+    let lastBreakAlerted = null;
+    let activeBreakEnd = null;
+
     // ── Fix Bug Form URL: la constante del código siempre gana ──
     // Si el LS tiene una URL vieja distinta al código, se sobreescribe.
     // El usuario puede cambiarla manualmente en Ajustes como override local,
@@ -267,6 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
     inputCliente.focus();
+
+    // Initialize Break Monitor
+    initBreakMonitor();
 
     // ============================================
     // Feature 3: Day Persistence
@@ -1872,5 +1914,228 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
+    // ============================================
+    // Feature: Break Alarm System
+    // ============================================
+
+    function initBreakMonitor() {
+        // Update indicator immediately
+        updateNextBreakIndicator();
+
+        // Start monitoring every 10 seconds
+        if (breakInterval) clearInterval(breakInterval);
+        breakInterval = setInterval(() => {
+            checkBreakTime();
+            updateNextBreakIndicator();
+        }, 10000);
+
+        // Dismiss button
+        if (btnDismissBreak) {
+            btnDismissBreak.addEventListener('click', () => {
+                dismissBreakAlert();
+            });
+        }
+    }
+
+    function getOperatorSchedule() {
+        if (!operatorName) return null;
+        return OPERATOR_SCHEDULE[operatorName] || null;
+    }
+
+    function checkBreakTime() {
+        const schedule = getOperatorSchedule();
+        if (!schedule) return;
+
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0=Dom ... 6=Sab
+
+        // Don't alert on franco days
+        if (schedule.francos.includes(dayOfWeek)) return;
+
+        const currentHH = String(now.getHours()).padStart(2, '0');
+        const currentMM = String(now.getMinutes()).padStart(2, '0');
+        const currentTime = `${currentHH}:${currentMM}`;
+        const todayStr = now.toISOString().split('T')[0];
+
+        schedule.breaks.forEach((breakTime, index) => {
+            if (currentTime === breakTime) {
+                const alertKey = `${todayStr}-${breakTime}`;
+                if (lastBreakAlerted === alertKey) return; // Already alerted
+                lastBreakAlerted = alertKey;
+                showBreakAlert(index + 1, breakTime);
+            }
+        });
+    }
+
+    function updateNextBreakIndicator() {
+        if (!breakIndicator) return;
+
+        // If a break is currently active, let the countdown interval manage the indicator
+        if (activeBreakEnd) return;
+
+        const schedule = getOperatorSchedule();
+        if (!schedule) {
+            breakIndicator.classList.add('hidden');
+            return;
+        }
+
+        breakIndicator.classList.remove('hidden');
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+
+        // Franco day
+        if (schedule.francos.includes(dayOfWeek)) {
+            breakIndicator.className = 'break-indicator franco';
+            breakIndicator.innerHTML = '🏖️ Día de franco — sin breaks';
+            return;
+        }
+
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Find next break
+        let nextBreak = null;
+        let nextBreakIndex = -1;
+        for (let i = 0; i < schedule.breaks.length; i++) {
+            const [bh, bm] = schedule.breaks[i].split(':').map(Number);
+            const breakMinutes = bh * 60 + bm;
+            if (currentMinutes < breakMinutes) {
+                nextBreak = schedule.breaks[i];
+                nextBreakIndex = i + 1;
+                break;
+            }
+        }
+
+        if (nextBreak) {
+            // There is a future break today
+            const [bh, bm] = nextBreak.split(':').map(Number);
+            const diffMin = (bh * 60 + bm) - currentMinutes;
+            const label = diffMin <= 30
+                ? `☕ Break ${nextBreakIndex} en ${diffMin} min (${nextBreak})`
+                : `☕ Próximo Break: ${nextBreak}`;
+            breakIndicator.className = 'break-indicator active';
+            breakIndicator.innerHTML = label;
+        } else {
+            // All breaks passed
+            breakIndicator.className = 'break-indicator done';
+            breakIndicator.innerHTML = '✅ Breaks completados por hoy';
+        }
+    }
+
+    function showBreakAlert(breakNum, breakTime) {
+        if (!breakOverlay) return;
+
+        // Play beep
+        playBreakBeep();
+
+        // Set content
+        if (breakOperatorName) {
+            breakOperatorName.textContent = `${operatorName} — Break ${breakNum}`;
+        }
+
+        // Show overlay
+        breakOverlay.classList.remove('hidden');
+
+        // Start 15-minute countdown
+        activeBreakEnd = new Date();
+        const [bh, bm] = breakTime.split(':').map(Number);
+        activeBreakEnd.setHours(bh, bm + 15, 0, 0);
+
+        if (breakCountdownInterval) clearInterval(breakCountdownInterval);
+
+        function updateCountdown() {
+            const now = new Date();
+            let diff = Math.max(0, Math.floor((activeBreakEnd - now) / 1000));
+            const mm = String(Math.floor(diff / 60)).padStart(2, '0');
+            const ss = String(diff % 60).padStart(2, '0');
+            
+            const isOverlayHidden = breakOverlay.classList.contains('hidden');
+            
+            if (!isOverlayHidden && breakCountdown) {
+                breakCountdown.textContent = `${mm}:${ss}`;
+            } else if (isOverlayHidden && breakIndicator) {
+                breakIndicator.className = 'break-indicator active';
+                breakIndicator.innerHTML = `⏳ Break termina en ${mm}:${ss}`;
+            }
+            
+            if (diff <= 0) {
+                clearInterval(breakCountdownInterval);
+                activeBreakEnd = null;
+                
+                if (!isOverlayHidden && breakCountdown) {
+                    breakCountdown.textContent = '¡Fin del break!';
+                }
+                
+                // Play end of break alarm
+                playEndOfBreakBeep();
+                
+                // Revert indicator back to next break
+                updateNextBreakIndicator();
+            }
+        }
+
+        updateCountdown();
+        breakCountdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function dismissBreakAlert() {
+        if (breakOverlay) breakOverlay.classList.add('hidden');
+        // Do NOT clear interval here, let it run in the background indicator
+    }
+    
+    function playEndOfBreakBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const frequencies = [1100, 880, 660, 440]; // 4 descending tones for "back to work"
+
+            frequencies.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.type = 'square'; // harsher tone to wake up
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.25);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.25);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.25 + 0.23);
+
+                osc.start(ctx.currentTime + i * 0.25);
+                osc.stop(ctx.currentTime + i * 0.25 + 0.25);
+            });
+
+            setTimeout(() => ctx.close(), 1500);
+        } catch (e) {}
+    }
+
+    function playBreakBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const frequencies = [660, 880, 1100]; // 3 ascending tones
+
+            frequencies.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.2);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.18);
+
+                osc.start(ctx.currentTime + i * 0.2);
+                osc.stop(ctx.currentTime + i * 0.2 + 0.2);
+            });
+
+            // Clean up after all tones finish
+            setTimeout(() => ctx.close(), 1000);
+        } catch (e) {
+            // Web Audio API not supported, fail silently
+        }
+    }
+
+    // Expose break functions for console testing
+    window.showBreakAlert = showBreakAlert;
+    window.playBreakBeep = playBreakBeep;
 
 });
