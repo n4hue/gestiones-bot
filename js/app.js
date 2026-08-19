@@ -2032,28 +2032,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (breakOperatorName) {
             breakOperatorName.textContent = `${operatorName} — Break ${breakNum}`;
         }
+        
+        if (breakCountdown) {
+            breakCountdown.textContent = '15:00';
+        }
 
         // Show overlay
         breakOverlay.classList.remove('hidden');
+    }
 
-        // Start 15-minute countdown
-        activeBreakEnd = new Date();
-        const [bh, bm] = breakTime.split(':').map(Number);
-        activeBreakEnd.setHours(bh, bm + 15, 0, 0);
-
+    function startBreakCountdown() {
         if (breakCountdownInterval) clearInterval(breakCountdownInterval);
-
+        
+        activeBreakEnd = new Date();
+        activeBreakEnd.setMinutes(activeBreakEnd.getMinutes() + 15);
+        
         function updateCountdown() {
+            if (!activeBreakEnd) return;
+            
             const now = new Date();
             let diff = Math.max(0, Math.floor((activeBreakEnd - now) / 1000));
             const mm = String(Math.floor(diff / 60)).padStart(2, '0');
             const ss = String(diff % 60).padStart(2, '0');
             
-            const isOverlayHidden = breakOverlay.classList.contains('hidden');
-            
-            if (!isOverlayHidden && breakCountdown) {
-                breakCountdown.textContent = `${mm}:${ss}`;
-            } else if (isOverlayHidden && breakIndicator) {
+            if (breakIndicator) {
                 breakIndicator.className = 'break-indicator active';
                 breakIndicator.innerHTML = `⏳ Break termina en ${mm}:${ss}`;
             }
@@ -2062,10 +2064,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearInterval(breakCountdownInterval);
                 activeBreakEnd = null;
                 
-                if (!isOverlayHidden && breakCountdown) {
-                    breakCountdown.textContent = '¡Fin del break!';
-                }
-                
                 // Play end of break alarm
                 playEndOfBreakBeep();
                 
@@ -2073,14 +2071,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateNextBreakIndicator();
             }
         }
-
+        
         updateCountdown();
         breakCountdownInterval = setInterval(updateCountdown, 1000);
     }
 
     function dismissBreakAlert() {
         if (breakOverlay) breakOverlay.classList.add('hidden');
-        // Do NOT clear interval here, let it run in the background indicator
+        // Start the actual countdown ONLY when the user dismisses the alert
+        startBreakCountdown();
     }
     
     function playEndOfBreakBeep() {
