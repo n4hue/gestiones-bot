@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputFormUrl = document.getElementById('form-url-input');
     const inputSheetsUrl = document.getElementById('sheets-url-input');
     const soundToggleEl = document.getElementById('sound-toggle');
+    const breakAlarmToggleEl = document.getElementById('break-alarm-toggle');
     const btnSaveSettings = document.getElementById('btn-save-settings');
     const btnCerrarModal = document.getElementById('btn-cerrar-modal');
 
@@ -85,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SHEETS_URL_KEY = 'bot_sheets_url';
     const THEME_KEY = 'bot_theme';
     const SOUND_KEY = 'bot_sound_enabled';
+    const BREAK_ALARM_KEY = 'bot_break_alarm_enabled';
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
     const OPERATOR_NAME_KEY = 'bot_operator_name';
     const PASS_CRM_KEY = 'bot_pass_crm';
@@ -244,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingId = null;
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
+    let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
 
@@ -279,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputFormUrl) inputFormUrl.value = googleFormUrl;
     if (inputSheetsUrl) inputSheetsUrl.value = sheetsUrl;
     if (soundToggleEl) soundToggleEl.checked = soundEnabled;
+    if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
 
@@ -1536,6 +1540,11 @@ document.addEventListener('DOMContentLoaded', () => {
             soundEnabled = soundToggleEl ? soundToggleEl.checked : true;
             localStorage.setItem(SOUND_KEY, soundEnabled.toString());
 
+            // Save break alarm preference
+            breakAlarmEnabled = breakAlarmToggleEl ? breakAlarmToggleEl.checked : true;
+            localStorage.setItem(BREAK_ALARM_KEY, breakAlarmEnabled.toString());
+            updateNextBreakIndicator();
+
             // Save operator settings
             operatorName = inputOperatorName ? inputOperatorName.value.trim() : '';
             localStorage.setItem(OPERATOR_NAME_KEY, operatorName);
@@ -1944,6 +1953,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkBreakTime() {
+        if (!breakAlarmEnabled) return;
         const schedule = getOperatorSchedule();
         if (!schedule) return;
 
@@ -1970,6 +1980,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNextBreakIndicator() {
         if (!breakIndicator) return;
+        
+        if (!breakAlarmEnabled) {
+            breakIndicator.classList.add('hidden');
+            return;
+        }
 
         // If a break is currently active, let the countdown interval manage the indicator
         if (activeBreakEnd) return;
