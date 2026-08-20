@@ -96,23 +96,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // breaks: array de 2 strings "HH:MM" en formato 24h
     const OPERATOR_SCHEDULE = {
         // TURNO MAÑANA (08:00-14:00)
-        'Francia Diego':       { francos: [5, 6], breaks: ['09:30', '12:15'] },
-        'Conti Melanie':       { francos: [5, 0], breaks: ['09:45', '12:30'] },
-        'Montenegro Omar':     { francos: [4, 0], breaks: ['10:00', '12:45'] },
-        'Matos Luciano':       { francos: [4, 5], breaks: ['10:15', '13:00'] },
-        'Gomez Ignacio':       { francos: [3, 0], breaks: ['10:30', '13:15'] },
-        'Ibacache Ivan':       { francos: [3, 6], breaks: ['10:45', '13:45'] },
-        'Mamani Yanina':       { francos: [5, 0], breaks: ['11:00', '13:30'] },
-        'Pardo Josafat':       { francos: [3, 6], breaks: ['11:30', '13:30'] },
+        'Francia Diego': { francos: [5, 6], breaks: ['09:30', '12:15'] },
+        'Conti Melanie': { francos: [5, 0], breaks: ['09:45', '12:30'] },
+        'Montenegro Omar': { francos: [4, 0], breaks: ['10:00', '12:45'] },
+        'Matos Luciano': { francos: [4, 5], breaks: ['10:15', '13:00'] },
+        'Gomez Ignacio': { francos: [3, 0], breaks: ['10:30', '13:15'] },
+        'Ibacache Ivan': { francos: [3, 6], breaks: ['10:45', '13:45'] },
+        'Mamani Yanina': { francos: [5, 0], breaks: ['11:00', '13:30'] },
+        'Pardo Josafat': { francos: [3, 6], breaks: ['11:30', '13:30'] },
         // TURNO TARDE (14:00-20:00)
-        'Ortellado Alex':      { francos: [4, 0], breaks: ['15:30', '18:00'] },
-        'Scaramello Juliana':  { francos: [5, 6], breaks: ['15:45', '18:15'] },
-        'Bonfanti Cecilia':    { francos: [4, 6], breaks: ['16:00', '18:30'] },
-        'Leclerc Kevin':       { francos: [5, 0], breaks: ['16:15', '18:45'] },
-        'Scardaccione Luca':   { francos: [3, 6], breaks: ['16:30', '19:00'] },
-        'Vignolo Nahuel':      { francos: [5, 0], breaks: ['16:45', '19:15'] },
-        'Jurnet Lucas':        { francos: [3, 0], breaks: ['17:00', '19:30'] },
-        'Cepeda Nicolas':      { francos: [4, 0], breaks: ['17:15', '19:45'] }
+        'Ortellado Alex': { francos: [4, 0], breaks: ['15:30', '18:00'] },
+        'Scaramello Juliana': { francos: [5, 6], breaks: ['15:45', '18:15'] },
+        'Bonfanti Cecilia': { francos: [4, 6], breaks: ['16:00', '18:30'] },
+        'Leclerc Kevin': { francos: [5, 0], breaks: ['16:15', '18:45'] },
+        'Scardaccione Luca': { francos: [3, 6], breaks: ['16:30', '19:00'] },
+        'Vignolo Nahuel': { francos: [5, 0], breaks: ['16:45', '19:15'] },
+        'Jurnet Lucas': { francos: [3, 0], breaks: ['17:00', '19:30'] },
+        'Cepeda Nicolas': { francos: [4, 0], breaks: ['17:15', '19:45'] }
     };
 
     // ============================================
@@ -2032,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (breakOperatorName) {
             breakOperatorName.textContent = `${operatorName} — Break ${breakNum}`;
         }
-        
+
         if (breakCountdown) {
             breakCountdown.textContent = '15:00';
         }
@@ -2043,35 +2043,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startBreakCountdown() {
         if (breakCountdownInterval) clearInterval(breakCountdownInterval);
-        
+
         activeBreakEnd = new Date();
         activeBreakEnd.setMinutes(activeBreakEnd.getMinutes() + 15);
-        
+
         function updateCountdown() {
             if (!activeBreakEnd) return;
-            
+
             const now = new Date();
             let diff = Math.max(0, Math.floor((activeBreakEnd - now) / 1000));
             const mm = String(Math.floor(diff / 60)).padStart(2, '0');
             const ss = String(diff % 60).padStart(2, '0');
-            
+
             if (breakIndicator) {
                 breakIndicator.className = 'break-indicator active';
                 breakIndicator.innerHTML = `⏳ Break termina en ${mm}:${ss}`;
             }
-            
+
             if (diff <= 0) {
                 clearInterval(breakCountdownInterval);
                 activeBreakEnd = null;
-                
+
                 // Play end of break alarm
                 playEndOfBreakBeep();
-                
+
                 // Revert indicator back to next break
                 updateNextBreakIndicator();
             }
         }
-        
+
         updateCountdown();
         breakCountdownInterval = setInterval(updateCountdown, 1000);
     }
@@ -2081,7 +2081,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Start the actual countdown ONLY when the user dismisses the alert
         startBreakCountdown();
     }
-    
+
     function playEndOfBreakBeep() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2103,33 +2103,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             setTimeout(() => ctx.close(), 1500);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function playBreakBeep() {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const frequencies = [660, 880, 1100]; // 3 ascending tones
-
-            frequencies.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.2);
-                gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.2);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.18);
-
-                osc.start(ctx.currentTime + i * 0.2);
-                osc.stop(ctx.currentTime + i * 0.2 + 0.2);
-            });
-
-            // Clean up after all tones finish
-            setTimeout(() => ctx.close(), 1000);
+            const breakAudio = new Audio('assets/Gallo%20delay.mp3');
+            breakAudio.volume = 0.8;
+            breakAudio.duration = 7;
+            breakAudio.play().catch(e => console.warn('No se pudo reproducir el audio de break', e));
         } catch (e) {
-            // Web Audio API not supported, fail silently
+            console.error('Error al reproducir audio de break', e);
         }
     }
 
