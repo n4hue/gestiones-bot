@@ -2109,9 +2109,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function playBreakBeep() {
         try {
             const breakAudio = new Audio('assets/Gallo%20delay.mp3');
-            breakAudio.volume = 0.8;
-            breakAudio.duration = 7;
-            breakAudio.play().catch(e => console.warn('No se pudo reproducir el audio de break', e));
+            breakAudio.volume = 0.5;
+            breakAudio.play().then(() => {
+                setTimeout(() => {
+                    breakAudio.pause();
+                    breakAudio.currentTime = 0;
+                }, 7000);
+            }).catch(e => console.warn('No se pudo reproducir el audio de break', e));
         } catch (e) {
             console.error('Error al reproducir audio de break', e);
         }
