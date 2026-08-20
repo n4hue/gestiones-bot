@@ -2109,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function playBreakBeep() {
         try {
             const breakAudio = new Audio('assets/Gallo%20delay.mp3');
-            breakAudio.volume = 0.5;
+            breakAudio.volume = 0.3;
             breakAudio.play().then(() => {
                 setTimeout(() => {
                     breakAudio.pause();
