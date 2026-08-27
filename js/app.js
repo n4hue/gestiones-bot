@@ -64,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectContactoEsp = document.getElementById('contacto-especial');
     const selectEstadoEsp = document.getElementById('estado-gestion-especial');
 
+    // SN conditional field (PANTALLA DECO ANDROID)
+    const campoSn = document.getElementById('campo-sn');
+    const inputSn = document.getElementById('input-sn');
+
     // New features DOM
     const paceIndicator = document.getElementById('pace-indicator');
     const btnQuickSummary = document.getElementById('btn-quick-summary');
@@ -341,7 +345,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cliente = inputCliente.value.trim();
         const tipoRa = selectRa.value;
-        const observaciones = inputObservaciones ? inputObservaciones.value.trim() : '';
+        const snValue = inputSn ? inputSn.value.trim() : '';
+        let observaciones = inputObservaciones ? inputObservaciones.value.trim() : '';
+
+        // Append SN to observaciones if present
+        if (snValue) {
+            observaciones = observaciones ? `${observaciones} | SN: ${snValue}` : `SN: ${snValue}`;
+        }
 
         if (!cliente || !tipoRa) return;
 
@@ -391,6 +401,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => camposEspeciales.classList.add('hidden'), 350);
                 if (selectContactoEsp) selectContactoEsp.value = '';
                 if (selectEstadoEsp) selectEstadoEsp.value = '';
+            }
+
+            // Reset SN field
+            if (campoSn) {
+                campoSn.classList.remove('visible');
+                setTimeout(() => campoSn.classList.add('hidden'), 350);
+                if (inputSn) inputSn.value = '';
             }
 
             // Clear tools
@@ -542,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lower.includes('wifi mesh')) return 'WIFI MESH';
         if (lower.includes('televisión') || lower.includes('television') || lower.includes('aplicaciones - deco')) return 'TELEVISIÓN';
         if (lower.includes('web/app') || lower.includes('app mobile')) return 'WEB / APP';
-        if (['inconveniente con insumos', 'problemas cableados red.500', 'reposición de equipos cm/dd', 'escalamiento teams'].includes(lower)) return 'ESCALAMIENTO N3';
+        if (['inconveniente con insumos', 'problemas cableados red.500', 'reposición de equipos cm/dd', 'escalamiento teams', 'pantalla (deco android) soy cliente sin solucion',].includes(lower)) return 'ESCALAMIENTO N3';
         return 'GESTIONES ESPECIALES';
     }
 
@@ -839,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count >= DAILY_GOAL) {
             paceIndicator.classList.remove('hidden');
             paceIndicator.className = 'pace-indicator pace-goal';
-            paceIndicator.innerHTML = `<span class="pace-dot"></span>Felicidades, llegaste al objetivo diario de gestiones. Podes ir a dormirte una siestita💤😴`;
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>Felicidades, llegaste al objetivo diario de gestiones 😎`;
             return;
         }
 
@@ -1766,9 +1783,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const labelContacto = document.getElementById('label-contacto');
         const labelEstado = document.getElementById('label-estado');
+        const PANTALLA_VALUE = 'PANTALLA (DECO ANDROID) SOY CLIENTE SIN SOLUCION';
 
         selectRa.addEventListener('change', () => {
             const val = selectRa.value;
+
+            // Handle SN field (only for PANTALLA DECO ANDROID)
+            if (campoSn) {
+                if (val === PANTALLA_VALUE) {
+                    campoSn.classList.remove('hidden');
+                    requestAnimationFrame(() => campoSn.classList.add('visible'));
+                } else {
+                    campoSn.classList.remove('visible');
+                    setTimeout(() => {
+                        if (!campoSn.classList.contains('visible')) {
+                            campoSn.classList.add('hidden');
+                        }
+                    }, 350);
+                    if (inputSn) inputSn.value = '';
+                }
+            }
+
             if (val) {
                 // Determine if it's an Especial or RA
                 const isEspecial = GESTIONES_ESPECIALES_VALUES.includes(val);
@@ -1980,7 +2015,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNextBreakIndicator() {
         if (!breakIndicator) return;
-        
+
         if (!breakAlarmEnabled) {
             breakIndicator.classList.add('hidden');
             return;
