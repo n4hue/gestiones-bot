@@ -79,6 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const breakCountdown = document.getElementById('break-countdown');
     const btnDismissBreak = document.getElementById('btn-dismiss-break');
 
+    // Compact Mode, Shortcuts & Smart Paste DOM
+    const btnToggleCompact = document.getElementById('btn-toggle-compact');
+    const btnShortcutsHelp = document.getElementById('btn-shortcuts-help');
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    const btnCloseShortcuts = document.getElementById('btn-close-shortcuts');
+    const btnSmartPaste = document.getElementById('btn-smart-paste');
+    const btnExportBackup = document.getElementById('btn-export-backup');
+    const btnImportBackup = document.getElementById('btn-import-backup');
+    const fileImportBackup = document.getElementById('file-import-backup');
+    const historyChips = document.getElementById('history-chips');
+
     // ============================================
     // Constants
     // ============================================
@@ -86,6 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const STORAGE_KEY = 'bot_gestiones_today';
     const DATE_KEY = 'bot_gestiones_date';
     const ARCHIVE_PREFIX = 'bot_gestiones_archive_';
+    const COMPACT_KEY = 'bot_compact_mode';
+    const SYNC_QUEUE_KEY = 'bot_sync_queue';
     const GFORM_URL_KEY = 'bot_gform_url';
     const SHEETS_URL_KEY = 'bot_sheets_url';
     const THEME_KEY = 'bot_theme';
@@ -295,8 +308,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btnTogglePass.addEventListener('click', () => {
             const isPassword = inputPassCrm.type === 'password';
             inputPassCrm.type = isPassword ? 'text' : 'password';
-            btnTogglePass.textContent = isPassword ? '🙈' : '👁️';
+            btnTogglePass.innerHTML = isPassword ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
             btnTogglePass.title = isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         });
     }
 
@@ -308,6 +322,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize conditional fields toggle
     initConditionalFields();
+
+    // Initialize Compact Mode, Shortcuts, Category Chips, Smart Paste, Backup & Offline Sync
+    initCompactMode();
+    initShortcutsModal();
+    initCategoryFilterChips();
+    initSmartPaste();
+    initBackupAndRestore();
+    initOfflineSyncQueue();
 
     // Initialize Lucide icons
     if (typeof lucide !== 'undefined') {
@@ -517,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Feature 5: Keyboard Shortcuts
     // ============================================
     document.addEventListener('keydown', (e) => {
-        // Ctrl+Enter to submit (opens form in background)
+        // Ctrl+Enter to submit
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             if (form.checkValidity()) {
@@ -526,16 +548,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.reportValidity();
             }
         }
+        // Alt+C to focus Cliente input
+        if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+            e.preventDefault();
+            if (inputCliente) {
+                inputCliente.focus();
+                inputCliente.select();
+            }
+        }
+        // Alt+G to focus RA search filter
+        if (e.altKey && (e.key === 'g' || e.key === 'G')) {
+            e.preventDefault();
+            const raSearch = document.querySelector('.ra-search-wrapper input');
+            if (raSearch) {
+                raSearch.focus();
+                raSearch.select();
+            }
+        }
+        // Alt+P for Smart Paste
+        if (e.altKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            handleSmartPaste();
+        }
+        // Alt+T to toggle Tools accordion
+        if (e.altKey && (e.key === 't' || e.key === 'T')) {
+            e.preventDefault();
+            if (toolsAccordion) toolsAccordion.open = !toolsAccordion.open;
+        }
+        // Alt+M to toggle Compact Mode
+        if (e.altKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            toggleCompactMode();
+        }
+        // Ctrl+K to focus history search input
+        if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
         // Escape to cancel edit or close modals
         if (e.key === 'Escape') {
             if (editingId) {
                 btnCancelEdit.click();
             }
-            if (!settingsModal.classList.contains('hidden')) {
+            if (settingsModal && !settingsModal.classList.contains('hidden')) {
                 settingsModal.classList.add('hidden');
+            }
+            if (shortcutsModal && !shortcutsModal.classList.contains('hidden')) {
+                shortcutsModal.classList.add('hidden');
             }
             if (jornadaModal && !jornadaModal.classList.contains('hidden')) {
                 if (btnCancelarJornada) btnCancelarJornada.click();
+            }
+            if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                confirmModal.classList.add('hidden');
             }
         }
     });
@@ -651,14 +719,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="gestion-cliente">${g.cliente}</span>
                     <span class="gestion-tipo" title="${g.tipo_ra}">${shortRa}</span>
                     <div class="gestion-actions">
-                        <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')">✏️</button>
-                        <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')">🗑️</button>
+                        <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')"><i data-lucide="pencil"></i></button>
+                        <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')"><i data-lucide="trash-2"></i></button>
                     </div>
                 </div>
                 ${detailsHtml}
             `;
             historyBody.appendChild(card);
         });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        updateCategoryChipCounts();
     }
 
     // ============================================
@@ -1015,10 +1088,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // Feature 1: Google Sheets Sync
+    // Feature 1: Google Sheets Sync & Offline Queue
     // ============================================
+    function getSyncQueue() {
+        try {
+            return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveSyncQueue(queue) {
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+        if (queue.length > 0) {
+            updateSyncStatus('pending', queue.length);
+        }
+    }
+
+    function addToSyncQueue(payload) {
+        const queue = getSyncQueue();
+        queue.push(payload);
+        saveSyncQueue(queue);
+    }
+
+    async function flushSyncQueue() {
+        const queue = getSyncQueue();
+        if (!queue.length || !sheetsUrl || !navigator.onLine) return;
+
+        updateSyncStatus('sending');
+        const remaining = [];
+        for (const item of queue) {
+            try {
+                await fetch(sheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+            } catch (err) {
+                console.error('Sync queue retry failed:', err);
+                remaining.push(item);
+            }
+        }
+        saveSyncQueue(remaining);
+        if (remaining.length === 0) {
+            updateSyncStatus('success');
+        } else {
+            updateSyncStatus('pending', remaining.length);
+        }
+    }
+
     function syncToGoogleSheets(gestion) {
         if (!sheetsUrl) return;
+        const payload = { action: 'add', data: gestion };
+
+        if (!navigator.onLine) {
+            addToSyncQueue(payload);
+            return;
+        }
 
         updateSyncStatus('sending');
 
@@ -1026,22 +1153,21 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'add', data: gestion })
+            body: JSON.stringify(payload)
         })
             .then(() => {
-                // With no-cors we can't read response, but if no error => assume success
                 updateSyncStatus('success');
             })
             .catch(err => {
-                console.error('Sync error:', err);
-                updateSyncStatus('error');
+                console.error('Sync error, adding to offline queue:', err);
+                addToSyncQueue(payload);
             });
     }
 
-    function updateSyncStatus(status) {
+    function updateSyncStatus(status, pendingCount = 0) {
         if (!syncStatusEl) return;
 
-        syncStatusEl.classList.remove('hidden', 'sending', 'success', 'error');
+        syncStatusEl.classList.remove('hidden', 'sending', 'success', 'error', 'pending');
         syncStatusEl.classList.add(status);
 
         const textEl = syncStatusEl.querySelector('.sync-text');
@@ -1049,6 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (status) {
                 case 'sending': textEl.textContent = 'Sincronizando...'; break;
                 case 'success': textEl.textContent = 'Sincronizado'; break;
+                case 'pending': textEl.textContent = `⏳ ${pendingCount} pendiente(s)`; break;
                 case 'error': textEl.textContent = 'Error de sync'; break;
             }
         }
@@ -1158,8 +1285,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateThemeButton(theme) {
         if (btnTheme) {
-            btnTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+            btnTheme.innerHTML = theme === 'dark' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
             btnTheme.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
     }
 
@@ -1206,20 +1336,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirmed) {
             const gestionToDelete = gestiones.find(g => g.id === id);
             if (gestionToDelete && sheetsUrl) {
-                // Feature 1 update: Delete from Google Sheets
-                updateSyncStatus('sending');
-                fetch(sheetsUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'delete',
-                        id: id,
-                        fecha: gestionToDelete.fecha
+                const deletePayload = {
+                    action: 'delete',
+                    id: id,
+                    fecha: gestionToDelete.fecha
+                };
+                if (!navigator.onLine) {
+                    addToSyncQueue(deletePayload);
+                } else {
+                    updateSyncStatus('sending');
+                    fetch(sheetsUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(deletePayload)
                     })
-                })
-                    .then(() => updateSyncStatus('success'))
-                    .catch(() => updateSyncStatus('error'));
+                        .then(() => updateSyncStatus('success'))
+                        .catch(err => {
+                            console.error('Delete sync error, adding to offline queue:', err);
+                            addToSyncQueue(deletePayload);
+                        });
+                }
             }
 
             // Animate card removal before updating data
@@ -1701,11 +1838,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label>Deco MAC ${index}</label>
                 <div class="input-with-copy">
                     <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" maxlength="17">
-                    <button type="button" class="btn-copy btn-copy-deco" title="Copiar">📋</button>
-                    <button type="button" class="btn-remove-deco" title="Quitar Deco">➖</button>
+                    <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i data-lucide="copy"></i></button>
+                    <button type="button" class="btn-remove-deco" title="Quitar Deco"><i data-lucide="minus"></i></button>
                 </div>
             `;
             decosContainer.appendChild(group);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
 
             setupMacInput(group.querySelector('.deco-input'));
 
@@ -1731,13 +1869,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     copyValue = copyValue.replace(/:/g, '');
                 }
                 await navigator.clipboard.writeText(copyValue);
-                const original = btn.textContent;
-                btn.textContent = '✓';
+                btn.innerHTML = '<i data-lucide="check"></i>';
                 btn.classList.add('copied');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 setTimeout(() => {
                     if (btn) {
-                        btn.textContent = original;
+                        btn.innerHTML = '<i data-lucide="copy"></i>';
                         btn.classList.remove('copied');
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
                     }
                 }, 1500);
             } catch (err) {
@@ -1886,15 +2025,35 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.className = 'ra-search-wrapper';
         const searchIcon = document.createElement('span');
         searchIcon.className = 'search-icon';
-        searchIcon.textContent = '🔍';
+        searchIcon.innerHTML = '<i data-lucide="search"></i>';
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
-        searchInput.placeholder = 'Buscar tipo de gestión...';
+        searchInput.placeholder = 'Buscar tipo de gestión... (Alt+G)';
         searchInput.autocomplete = 'off';
         wrapper.appendChild(searchIcon);
         wrapper.appendChild(searchInput);
 
         selectRa.parentNode.insertBefore(wrapper, selectRa);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectRa.focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const visibleOpts = selectRa.querySelectorAll('option:not([disabled])');
+                if (visibleOpts.length > 0) {
+                    visibleOpts[0].selected = true;
+                    selectRa.dispatchEvent(new Event('change'));
+                    if (inputObservaciones) inputObservaciones.focus();
+                }
+            } else if (e.key === 'Escape') {
+                searchInput.value = '';
+                rebuildSelect(allOptions, null);
+                searchInput.blur();
+            }
+        });
 
         searchInput.addEventListener('input', () => {
             const term = searchInput.value.trim().toLowerCase();
@@ -2174,5 +2333,338 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expose break functions for console testing
     window.showBreakAlert = showBreakAlert;
     window.playBreakBeep = playBreakBeep;
+
+    // ============================================
+    // Feature: Compact Mode (Split Screen)
+    // ============================================
+    function initCompactMode() {
+        const isCompact = localStorage.getItem(COMPACT_KEY) === 'true';
+        if (isCompact) {
+            document.documentElement.classList.add('compact-mode');
+        }
+        updateCompactButton(isCompact);
+
+        if (btnToggleCompact) {
+            btnToggleCompact.addEventListener('click', toggleCompactMode);
+        }
+    }
+
+    function toggleCompactMode() {
+        const isCompact = document.documentElement.classList.toggle('compact-mode');
+        localStorage.setItem(COMPACT_KEY, isCompact);
+        updateCompactButton(isCompact);
+        showToast(isCompact ? 'Modo Compacto activado' : 'Modo Estándar activado', 'info');
+    }
+
+    function updateCompactButton(isCompact) {
+        if (btnToggleCompact) {
+            btnToggleCompact.innerHTML = isCompact ? '<i data-lucide="maximize-2"></i>' : '<i data-lucide="minimize-2"></i>';
+            btnToggleCompact.title = isCompact ? 'Salir de Modo Compacto (Alt+M)' : 'Activar Modo Compacto (Alt+M)';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    }
+
+    // ============================================
+    // Feature: Shortcuts Modal
+    // ============================================
+    function initShortcutsModal() {
+        if (btnShortcutsHelp && shortcutsModal) {
+            btnShortcutsHelp.addEventListener('click', () => {
+                shortcutsModal.classList.remove('hidden');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+        }
+        if (btnCloseShortcuts && shortcutsModal) {
+            btnCloseShortcuts.addEventListener('click', () => {
+                shortcutsModal.classList.add('hidden');
+            });
+        }
+        if (shortcutsModal) {
+            shortcutsModal.addEventListener('click', (e) => {
+                if (e.target === shortcutsModal) {
+                    shortcutsModal.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    // ============================================
+    // Feature: Category Filter Chips
+    // ============================================
+    function initCategoryFilterChips() {
+        if (historyChips) {
+            historyChips.querySelectorAll('.history-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    historyChips.querySelectorAll('.history-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    if (filterCategory) {
+                        filterCategory.value = chip.dataset.cat;
+                    }
+                    renderHistory();
+                });
+            });
+        }
+
+        if (filterCategory) {
+            filterCategory.addEventListener('change', () => {
+                if (historyChips) {
+                    historyChips.querySelectorAll('.history-chip').forEach(c => {
+                        c.classList.toggle('active', c.dataset.cat === filterCategory.value);
+                    });
+                }
+                renderHistory();
+            });
+        }
+    }
+
+    function updateCategoryChipCounts() {
+        const counts = {
+            '': gestiones.length,
+            'INTERNET': 0,
+            'TELEFONIA': 0,
+            'TELEVISIÓN': 0,
+            'WEB / APP': 0,
+            'ESCALAMIENTO N3': 0,
+            'GESTIONES ESPECIALES': 0,
+            'WIFI MESH': 0
+        };
+
+        gestiones.forEach(g => {
+            const cat = getCategory(g.tipo_ra);
+            if (cat in counts) {
+                counts[cat]++;
+            } else if (cat === 'TELEF RESID') {
+                counts['TELEFONIA'] = (counts['TELEFONIA'] || 0) + 1;
+            }
+        });
+
+        const cntAll = document.getElementById('chip-cnt-all');
+        if (cntAll) cntAll.textContent = counts[''];
+        const cntInternet = document.getElementById('chip-cnt-internet');
+        if (cntInternet) cntInternet.textContent = counts['INTERNET'] || 0;
+        const cntTelef = document.getElementById('chip-cnt-telefonia');
+        if (cntTelef) cntTelef.textContent = counts['TELEFONIA'] || 0;
+        const cntTv = document.getElementById('chip-cnt-tv');
+        if (cntTv) cntTv.textContent = counts['TELEVISIÓN'] || 0;
+        const cntWeb = document.getElementById('chip-cnt-webapp');
+        if (cntWeb) cntWeb.textContent = counts['WEB / APP'] || 0;
+        const cntN3 = document.getElementById('chip-cnt-n3');
+        if (cntN3) cntN3.textContent = counts['ESCALAMIENTO N3'] || 0;
+        const cntEsp = document.getElementById('chip-cnt-especiales');
+        if (cntEsp) cntEsp.textContent = counts['GESTIONES ESPECIALES'] || 0;
+        const cntMesh = document.getElementById('chip-cnt-mesh');
+        if (cntMesh) cntMesh.textContent = counts['WIFI MESH'] || 0;
+    }
+
+    // ============================================
+    // Feature: Smart Paste (Pegado Inteligente)
+    // ============================================
+    function initSmartPaste() {
+        if (btnSmartPaste) {
+            btnSmartPaste.addEventListener('click', handleSmartPaste);
+        }
+    }
+
+    async function handleSmartPaste() {
+        try {
+            let text = '';
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                try {
+                    text = await navigator.clipboard.readText();
+                } catch {
+                    text = prompt('Pegá aquí el texto copiado del CRM o correo:');
+                }
+            } else {
+                text = prompt('Pegá aquí el texto copiado del CRM o correo:');
+            }
+
+            if (!text || !text.trim()) return;
+
+            let detected = 0;
+
+            // 1. Cliente / Cuenta
+            const clienteMatch = text.match(/(?:cliente|cta|cuenta|id|asunto)?[:=\s#]*\b([0-9]{7,10})\b/i);
+            if (clienteMatch && clienteMatch[1] && inputCliente) {
+                inputCliente.value = clienteMatch[1];
+                detected++;
+            }
+
+            // 2. MACs
+            const macRegex = /\b([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})\b/g;
+            const macMatches = [...text.matchAll(macRegex)].map(m => m[1]);
+
+            function formatMac(raw) {
+                const clean = raw.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+                if (clean.length === 12) {
+                    return clean.match(/.{1,2}/g).join(':');
+                }
+                return raw.toUpperCase();
+            }
+
+            const cmMatch = text.match(/(?:cm|cablemodem|cable\s*modem|modem)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
+            const ontMatch = text.match(/(?:ont|gpon|fibra)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
+            const decoMatch = text.match(/(?:deco|stb|box)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
+
+            let hasEquipment = false;
+
+            if (cmMatch && macCm) {
+                macCm.value = formatMac(cmMatch[1]);
+                macCm.dispatchEvent(new Event('input'));
+                hasEquipment = true;
+                detected++;
+            } else if (macMatches.length > 0 && macCm && !macCm.value) {
+                macCm.value = formatMac(macMatches[0]);
+                macCm.dispatchEvent(new Event('input'));
+                hasEquipment = true;
+                detected++;
+            }
+
+            if (ontMatch && macOnt) {
+                macOnt.value = formatMac(ontMatch[1]);
+                hasEquipment = true;
+                detected++;
+            }
+
+            if (decoMatch) {
+                const firstDeco = document.querySelector('.deco-input');
+                if (firstDeco) {
+                    firstDeco.value = formatMac(decoMatch[1]);
+                    hasEquipment = true;
+                    detected++;
+                }
+            }
+
+            // 3. Teléfono / Línea
+            const telMatch = text.match(/(?:tel|linea|telefono|celular|movil)?[:=\s]*\b(11[0-9]{8}|[2-9][0-9]{9})\b/i);
+            if (telMatch && lineaTel) {
+                lineaTel.value = telMatch[1];
+                hasEquipment = true;
+                detected++;
+            }
+
+            // 4. SN (Serial Number)
+            const snMatch = text.match(/(?:sn|serial|serie)?[:=\s]*\b((?:GZ|gz)[0-9A-Za-z]+)\b/i);
+            if (snMatch && inputSn) {
+                inputSn.value = snMatch[1].toUpperCase();
+                detected++;
+            }
+
+            if (hasEquipment && toolsAccordion) {
+                toolsAccordion.open = true;
+            }
+
+            if (detected > 0) {
+                showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)`, 'success');
+            } else {
+                if (inputCliente && !inputCliente.value) {
+                    inputCliente.value = text.trim().substring(0, 40);
+                } else if (inputObservaciones) {
+                    inputObservaciones.value = (inputObservaciones.value ? inputObservaciones.value + ' | ' : '') + text.trim();
+                }
+                showToast('Texto pegado en el formulario', 'info');
+            }
+        } catch (err) {
+            console.error('Smart paste error:', err);
+            showToast('No se pudo acceder al portapapeles', 'error');
+        }
+    }
+
+    // ============================================
+    // Feature: Backup & Restore JSON
+    // ============================================
+    function initBackupAndRestore() {
+        if (btnExportBackup) {
+            btnExportBackup.addEventListener('click', exportBackupJson);
+        }
+        if (btnImportBackup && fileImportBackup) {
+            btnImportBackup.addEventListener('click', () => {
+                fileImportBackup.click();
+            });
+            fileImportBackup.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (file) {
+                    importBackupJson(file);
+                    fileImportBackup.value = '';
+                }
+            });
+        }
+    }
+
+    function exportBackupJson() {
+        const backupData = {
+            version: '1.0',
+            appName: 'Gestiones BOT',
+            exportDate: new Date().toISOString(),
+            localStorage: {}
+        };
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('bot_') || key.startsWith('gestiones_') || key === 'operator_name' || key === 'pass_crm')) {
+                backupData.localStorage[key] = localStorage.getItem(key);
+            }
+        }
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `gestiones_bot_backup_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Copia de seguridad (JSON) descargada con éxito', 'success');
+    }
+
+    function importBackupJson(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!data.localStorage || typeof data.localStorage !== 'object') {
+                    throw new Error('Formato de backup inválido');
+                }
+                let count = 0;
+                for (const [key, val] of Object.entries(data.localStorage)) {
+                    localStorage.setItem(key, val);
+                    count++;
+                }
+                showToast(`Backup restaurado con éxito (${count} registros)`, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } catch (err) {
+                console.error('Import error:', err);
+                showToast('Error: archivo JSON de backup no válido', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ============================================
+    // Feature: Offline Sync Queue Auto-Flush
+    // ============================================
+    function initOfflineSyncQueue() {
+        window.addEventListener('online', () => {
+            showToast('Conexión restaurada. Sincronizando pendientes...', 'info');
+            flushSyncQueue();
+        });
+
+        // Check queue periodically
+        setInterval(flushSyncQueue, 30000);
+
+        // Initial check if there are pending items
+        const pending = getSyncQueue();
+        if (pending.length > 0) {
+            updateSyncStatus('pending', pending.length);
+            if (navigator.onLine) {
+                flushSyncQueue();
+            }
+        }
+    }
 
 });

@@ -29,6 +29,12 @@ Permite registrar interacciones rápidamente, calcular automáticamente parámet
 ## 🎹 Atajos de Teclado
 
 *   `Ctrl + Enter` : Registrar / Guardar gestión actual.
+*   `Alt + C` : Ir al campo N° Cliente.
+*   `Alt + G` : Buscar tipo de Gestión / RA.
+*   `Alt + P` : Pegado Inteligente (Smart Paste desde portapapeles).
+*   `Alt + T` : Abrir / Cerrar Herramientas de Equipos (MACs).
+*   `Alt + M` : Alternar Modo Compacto (pantalla dividida).
+*   `Ctrl + K` : Buscar en el historial del día.
 *   `Esc` : Cancelar edición actual o cerrar ventanas modales.
 
 ---

@@ -24,8 +24,10 @@
             <div class="header-top">
                 <h1>Gestiones BOT</h1>
                 <div class="header-controls">
-                    <button id="btn-theme" class="btn btn-icon" title="Cambiar tema">🌙</button>
-                    <button id="btn-open-settings" class="btn btn-icon" title="Configuración">⚙️</button>
+                    <button id="btn-toggle-compact" class="btn btn-icon" title="Modo Compacto (Alt+M)"><i data-lucide="minimize-2"></i></button>
+                    <button id="btn-shortcuts-help" class="btn btn-icon" title="Atajos de teclado"><i data-lucide="keyboard"></i></button>
+                    <button id="btn-theme" class="btn btn-icon" title="Cambiar tema"><i data-lucide="moon"></i></button>
+                    <button id="btn-open-settings" class="btn btn-icon" title="Configuración"><i data-lucide="settings"></i></button>
                 </div>
             </div>
 
@@ -49,9 +51,9 @@
             </div>
 
             <div class="header-actions">
-                <button id="btn-quick-summary" class="btn btn-secondary">📊 Resumen</button>
-                <button id="btn-export" class="btn btn-secondary">📥 Exportar</button>
-                <button id="btn-reset" class="btn btn-danger">🔄 Nueva Jornada</button>
+                <button id="btn-quick-summary" class="btn btn-secondary"><i data-lucide="bar-chart-2"></i> Resumen</button>
+                <button id="btn-export" class="btn btn-secondary"><i data-lucide="download"></i> Exportar</button>
+                <button id="btn-reset" class="btn btn-danger"><i data-lucide="rotate-ccw"></i> Nueva Jornada</button>
             </div>
         </header>
 
@@ -60,15 +62,20 @@
 
             <!-- Form Section -->
             <section class="form-section card">
-                <h2>Registrar Nueva Gestión</h2>
+                <div class="section-header-flex">
+                    <h2>Registrar Nueva Gestión</h2>
+                    <button type="button" class="btn btn-secondary btn-sm btn-smart-paste" id="btn-smart-paste" title="Pegar texto del portapapeles y autocompletar campos (Alt+P)">
+                        <i data-lucide="sparkles"></i> Pegado Inteligente
+                    </button>
+                </div>
                 <form id="registro-form">
                     <div class="form-group">
-                        <label for="cliente-id">N° de Cliente / Asunto Mail</label>
+                        <label for="cliente-id">N° de Cliente / Asunto Mail <span class="shortcut-hint-small">Alt+C</span></label>
                         <div class="input-with-copy">
                             <input type="text" id="cliente-id" name="cliente"
                                 placeholder="Ej. 12345678 o Asunto del email" required autocomplete="off">
                             <button type="button" class="btn-copy" id="btn-copy-cliente" data-target="cliente-id"
-                                title="Copiar">📋</button>
+                                title="Copiar"><i data-lucide="copy"></i></button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -175,7 +182,7 @@
                             <label for="input-sn">SN (Serial Number)</label>
                             <div class="input-with-copy">
                                 <input type="text" id="input-sn" placeholder="GZ..." autocomplete="off">
-                                <button type="button" class="btn-copy" data-target="input-sn" title="Copiar">📋</button>
+                                <button type="button" class="btn-copy" data-target="input-sn" title="Copiar"><i data-lucide="copy"></i></button>
                             </div>
                         </div>
                     </div>
@@ -184,13 +191,9 @@
                         <textarea id="observaciones" name="observaciones" rows="2"
                             placeholder="Detalles extra..."></textarea>
                     </div>
-                    <!-- <div class="form-group checkbox-group">
-                        <input type="checkbox" id="form-check" required>
-                        <label for="form-check">Confirmo que voy a completar el Google Form</label>
-                    </div> -->
 
                     <details class="tools-accordion" id="tools-accordion">
-                        <summary>🛠️ Herramientas de Equipos (Opcional)</summary>
+                        <summary>🛠️ Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span></summary>
                         <div class="tools-content">
                             <!-- MTA Calculator -->
                             <div class="tool-group">
@@ -199,7 +202,7 @@
                                     <input type="text" id="mac-cm" class="mac-input" placeholder="AA:BB:CC:DD:EE:FF"
                                         autocomplete="off" maxlength="17">
                                     <button type="button" class="btn-copy" data-target="mac-cm"
-                                        title="Copiar">📋</button>
+                                        title="Copiar"><i data-lucide="copy"></i></button>
                                 </div>
                             </div>
                             <div class="tool-group">
@@ -208,7 +211,7 @@
                                     <input type="text" id="mac-mta" class="mac-input highlight-calc" placeholder="—"
                                         readonly tabindex="-1">
                                     <button type="button" class="btn-copy" data-target="mac-mta"
-                                        title="Copiar">📋</button>
+                                        title="Copiar"><i data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
@@ -219,7 +222,7 @@
                                     <input type="text" id="mac-ont" class="mac-input" placeholder="AA:BB:CC:DD:EE:FF"
                                         autocomplete="off" maxlength="17">
                                     <button type="button" class="btn-copy" data-target="mac-ont"
-                                        title="Copiar">📋</button>
+                                        title="Copiar"><i data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
@@ -230,9 +233,9 @@
                                     <div class="input-with-copy">
                                         <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF"
                                             autocomplete="off" maxlength="17">
-                                        <button type="button" class="btn-copy btn-copy-deco" title="Copiar">📋</button>
+                                        <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i data-lucide="copy"></i></button>
                                         <button type="button" class="btn-add-deco" title="Agregar Deco"
-                                            id="btn-add-deco">➕</button>
+                                            id="btn-add-deco"><i data-lucide="plus"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -243,13 +246,13 @@
                                 <div class="input-with-copy">
                                     <input type="text" id="linea-tel" placeholder="Ej. 1122334455" autocomplete="off">
                                     <button type="button" class="btn-copy" data-target="linea-tel"
-                                        title="Copiar">📋</button>
+                                        title="Copiar"><i data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
                             <div style="display:flex; justify-content: flex-end; margin-top: 0.25rem;">
                                 <button type="button" class="btn btn-secondary btn-sm"
-                                    id="btn-clear-tools">Limpiar</button>
+                                    id="btn-clear-tools"><i data-lucide="trash-2"></i> Limpiar</button>
                             </div>
                         </div>
                     </details>
@@ -267,7 +270,7 @@
             <section class="stats-section card" id="stats-section">
                 <div class="stats-header">
                     <h2>Estadísticas</h2>
-                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas">📊</button>
+                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas"><i data-lucide="pie-chart"></i></button>
                 </div>
                 <div id="stats-content" class="stats-content">
                     <div class="stats-grid">
@@ -294,8 +297,11 @@
             <section class="history-section card">
                 <h2>Historial de Hoy</h2>
                 <div class="history-filters">
-                    <input type="text" id="search-input" placeholder="🔍 Buscar...">
-                    <select id="filter-category">
+                    <div class="history-search-wrapper">
+                        <i data-lucide="search" class="history-search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Buscar por cliente o tipo... (Ctrl+K)">
+                    </div>
+                    <select id="filter-category" class="filter-category-select">
                         <option value="">Todas</option>
                         <option value="INTERNET">Internet</option>
                         <option value="TELEF RESID">Telef. Resid.</option>
@@ -306,6 +312,19 @@
                         <option value="WIFI MESH">WiFi Mesh</option>
                     </select>
                 </div>
+
+                <!-- Chips de Categoría Rápidos -->
+                <div class="history-chips-bar" id="history-chips">
+                    <button type="button" class="history-chip active" data-cat="">Todas <span class="chip-count" id="chip-cnt-all">0</span></button>
+                    <button type="button" class="history-chip" data-cat="INTERNET">Internet <span class="chip-count" id="chip-cnt-internet">0</span></button>
+                    <button type="button" class="history-chip" data-cat="TELEFONIA">Telefonía <span class="chip-count" id="chip-cnt-telefonia">0</span></button>
+                    <button type="button" class="history-chip" data-cat="TELEVISIÓN">TV <span class="chip-count" id="chip-cnt-tv">0</span></button>
+                    <button type="button" class="history-chip" data-cat="WEB / APP">Web/App <span class="chip-count" id="chip-cnt-webapp">0</span></button>
+                    <button type="button" class="history-chip" data-cat="ESCALAMIENTO N3">N3 <span class="chip-count" id="chip-cnt-n3">0</span></button>
+                    <button type="button" class="history-chip" data-cat="GESTIONES ESPECIALES">Especiales <span class="chip-count" id="chip-cnt-especiales">0</span></button>
+                    <button type="button" class="history-chip" data-cat="WIFI MESH">WiFi Mesh <span class="chip-count" id="chip-cnt-mesh">0</span></button>
+                </div>
+
                 <!-- Timeline container — JS injects .gestion-card divs here -->
                 <div id="history-body" class="history-timeline">
                     <!-- Cards injected by JavaScript -->
@@ -384,9 +403,21 @@
                 <div class="input-with-toggle">
                     <input type="password" id="pass-crm-input" placeholder="Contraseña del CRM" autocomplete="off">
                     <button type="button" class="btn-toggle-pass" id="btn-toggle-pass"
-                        title="Mostrar/Ocultar contraseña">👁️</button>
+                        title="Mostrar/Ocultar contraseña"><i data-lucide="eye"></i></button>
                 </div>
                 <small class="settings-hint">Se usará para pre-llenar el campo de Pass CRM en el Google Form</small>
+            </div>
+
+            <hr class="settings-divider">
+            <p class="settings-group-title"><i data-lucide="database"></i> Copia de Seguridad y Datos</p>
+            <div class="settings-backup-grid">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-export-backup">
+                    <i data-lucide="download"></i> Exportar Backup (JSON)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-import-backup">
+                    <i data-lucide="upload"></i> Importar Backup (JSON)
+                </button>
+                <input type="file" id="file-import-backup" accept=".json" style="display:none;">
             </div>
 
             <div class="modal-actions">
@@ -396,10 +427,54 @@
         </div>
     </div>
 
+    <!-- ===== SHORTCUTS MODAL ===== -->
+    <div id="shortcuts-modal" class="modal hidden">
+        <div class="modal-content shortcuts-modal-content">
+            <div class="shortcuts-header">
+                <h3><i data-lucide="keyboard"></i> Atajos de Teclado</h3>
+                <button type="button" class="btn btn-icon btn-close-shortcuts" id="btn-close-shortcuts">✕</button>
+            </div>
+            <div class="shortcuts-grid">
+                <div class="shortcut-item">
+                    <kbd>Ctrl + Enter</kbd>
+                    <span>Registrar o guardar gestión</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + C</kbd>
+                    <span>Ir al campo N° Cliente</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + G</kbd>
+                    <span>Buscar tipo de Gestión / RA</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + P</kbd>
+                    <span>Pegado Inteligente (Smart Paste)</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + T</kbd>
+                    <span>Abrir / Cerrar Herramientas (MACs)</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + M</kbd>
+                    <span>Alternar Modo Compacto</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl + K</kbd>
+                    <span>Buscar en el historial del día</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Esc</kbd>
+                    <span>Cerrar modales o cancelar edición</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== CONFIRM MODAL ===== -->
     <div id="confirm-modal" class="modal hidden">
         <div class="modal-content confirm-modal-content">
-            <h3>⚠️ Confirmar</h3>
+            <h3><i data-lucide="alert-triangle"></i> Confirmar</h3>
             <p id="confirm-message"></p>
             <div class="modal-actions">
                 <button id="confirm-yes" class="btn btn-danger">Sí, confirmar</button>
@@ -412,7 +487,7 @@
     <div id="jornada-modal" class="modal hidden">
         <div class="modal-content jornada-modal-content">
             <div class="jornada-header">
-                <span class="jornada-icon">🚀</span>
+                <span class="jornada-icon"><i data-lucide="rocket"></i></span>
                 <h3>Checklist de Inicio de Jornada</h3>
                 <p class="jornada-subtitle">Completá todos los pasos antes de iniciar</p>
             </div>
@@ -444,10 +519,9 @@
                     <span class="checklist-checkmark"></span>
                     <div class="checklist-label">
                         <span class="checklist-text">Carga de form de inicio de jornada</span>
-                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la
-                            pestaña</span>
+                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la pestaña</span>
                     </div>
-                    <button type="button" class="btn btn-open-form" id="btn-open-form-inicio">📝 Abrir Form</button>
+                    <button type="button" class="btn btn-open-form" id="btn-open-form-inicio"><i data-lucide="external-link"></i> Abrir Form</button>
                 </div>
             </div>
 
@@ -458,7 +532,7 @@
 
             <div class="modal-actions jornada-actions">
                 <button id="btn-iniciar-jornada" class="btn btn-primary btn-jornada-start" disabled>
-                    🔒 Iniciar Nueva Jornada
+                    <i data-lucide="lock"></i> Iniciar Nueva Jornada
                 </button>
                 <button id="btn-cancelar-jornada" class="btn btn-secondary">Cancelar</button>
             </div>
@@ -468,7 +542,7 @@
     <!-- Break Alarm Overlay -->
     <div id="break-overlay" class="break-overlay hidden">
         <div class="break-overlay-content">
-            <div class="break-emoji">☕</div>
+            <div class="break-emoji"><i data-lucide="coffee"></i></div>
             <h2 class="break-title">¡HORA DE BREAK!</h2>
             <p class="break-operator" id="break-operator-name"></p>
             <p class="break-countdown" id="break-countdown"></p>

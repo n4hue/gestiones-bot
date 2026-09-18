@@ -2243,4 +2243,338 @@ tbody tr:hover {
 .break-dismiss:active {
     transform: translateY(0);
 }
+
+/* ==========================================
+   Lucide Icons Alignment & Sizing
+   ========================================== */
+.lucide, [data-lucide] {
+    width: 1.15em;
+    height: 1.15em;
+    display: inline-block;
+    vertical-align: -0.18em;
+    stroke-width: 2;
+}
+
+.btn .lucide,
+.btn [data-lucide] {
+    margin-right: 0.35rem;
+    vertical-align: -0.18em;
+}
+
+.btn-icon .lucide,
+.btn-icon [data-lucide],
+.btn-copy .lucide,
+.btn-copy [data-lucide],
+.btn-add-deco .lucide,
+.btn-add-deco [data-lucide],
+.btn-toggle-pass .lucide,
+.btn-toggle-pass [data-lucide] {
+    margin-right: 0 !important;
+    vertical-align: middle !important;
+}
+
+/* ==========================================
+   Section Header Flex & Smart Paste
+   ========================================== */
+.section-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+}
+
+.section-header-flex h2 {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.btn-smart-paste {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: var(--radius-sm);
+    color: var(--primary) !important;
+    border-color: var(--border-hover) !important;
+    background: var(--primary-subtle) !important;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-smart-paste:hover {
+    background: var(--primary) !important;
+    color: white !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px var(--primary-glow);
+}
+
+.shortcut-hint-small {
+    font-size: 0.62rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    background: var(--bg-input);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    margin-left: 0.4rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* ==========================================
+   History Search & Category Filter Chips
+   ========================================== */
+.history-search-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.history-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    width: 1em;
+    height: 1em;
+}
+
+.history-search-wrapper input {
+    padding-left: 2.2rem !important;
+    width: 100%;
+}
+
+.history-chips-bar {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0.35rem 0 0.55rem;
+    margin-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.history-chips-bar::-webkit-scrollbar {
+    height: 4px;
+}
+
+.history-chips-bar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.history-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.22rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.history-chip:hover {
+    background: var(--bg-input-hover);
+    color: var(--text-main);
+    border-color: var(--border-hover);
+}
+
+.history-chip.active {
+    background: var(--primary-subtle);
+    color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.chip-count {
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    font-size: 0.65rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: 10px;
+}
+
+.history-chip.active .chip-count {
+    background: var(--primary);
+    color: white;
+}
+
+:root[data-theme="light"] .chip-count {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================
+   Sync Status — Pending State
+   ========================================== */
+.sync-status.pending .sync-dot {
+    background: #F59E0B;
+    box-shadow: 0 0 8px #F59E0B;
+    animation: syncPulse 1.5s infinite;
+}
+
+.sync-status.pending .sync-text {
+    color: #F59E0B;
+}
+
+/* ==========================================
+   Compact Mode (Split Screen / High Density)
+   ========================================== */
+html.compact-mode .app-container {
+    max-width: 680px;
+    padding: 0.4rem;
+}
+
+html.compact-mode .app-header {
+    margin-bottom: 0.4rem;
+}
+
+html.compact-mode h1 {
+    font-size: 1.25rem;
+}
+
+html.compact-mode .progress-panel {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.4rem;
+}
+
+html.compact-mode .card {
+    padding: 0.65rem 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+html.compact-mode .form-group {
+    margin-bottom: 0.4rem;
+}
+
+html.compact-mode .form-group label {
+    font-size: 0.72rem;
+    margin-bottom: 0.15rem;
+}
+
+html.compact-mode input,
+html.compact-mode select,
+html.compact-mode textarea {
+    padding: 0.32rem 0.5rem;
+    font-size: 0.78rem;
+}
+
+html.compact-mode .btn {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.78rem;
+}
+
+html.compact-mode .btn-icon {
+    padding: 0.25rem;
+}
+
+html.compact-mode .gestion-card {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+html.compact-mode .stats-grid {
+    gap: 0.35rem;
+}
+
+html.compact-mode .stat-card {
+    padding: 0.35rem;
+}
+
+html.compact-mode .stat-value {
+    font-size: 1.15rem;
+}
+
+/* ==========================================
+   Shortcuts Modal
+   ========================================== */
+.shortcuts-modal-content {
+    max-width: 440px;
+    width: 90%;
+}
+
+.shortcuts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.shortcuts-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary);
+    margin: 0;
+    font-size: 1rem;
+}
+
+.shortcuts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.shortcut-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    background: var(--bg-input);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+}
+
+.shortcut-item kbd {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-hover);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    color: var(--primary);
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.72rem;
+}
+
+:root[data-theme="light"] .shortcut-item kbd {
+    background: #E2E8F0;
+    box-shadow: 0 2px 0 #CBD5E1;
+    color: #C2410C;
+}
+
+/* ==========================================
+   Settings Backup Section
+   ========================================== */
+.settings-backup-grid {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.settings-backup-grid .btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
 
