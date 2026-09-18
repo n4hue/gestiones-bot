@@ -90,6 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileImportBackup = document.getElementById('file-import-backup');
     const historyChips = document.getElementById('history-chips');
 
+    // Reclamo Reiterado DOM
+    const chkReiterado = document.getElementById('chk-reiterado');
+    const badgeRecurrencia = document.getElementById('badge-recurrencia');
+    const reiteradoPanel = document.getElementById('reiterado-panel');
+    const reiteradoRaId = document.getElementById('reiterado-ra-id');
+    const plantillaTextSinContacto = document.getElementById('plantilla-text-sin-contacto');
+    const plantillaTextBienGestionado = document.getElementById('plantilla-text-bien-gestionado');
+    const plantillaTextMalGestionado = document.getElementById('plantilla-text-mal-gestionado');
+
     // ============================================
     // Constants
     // ============================================
@@ -323,6 +332,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize conditional fields toggle
     initConditionalFields();
 
+    // Initialize Reclamo Reiterado & Plantillas
+    initReiterados();
+
     // Initialize Compact Mode, Shortcuts, Category Chips, Smart Paste, Backup & Offline Sync
     initCompactMode();
     initShortcutsModal();
@@ -432,6 +444,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (inputSn) inputSn.value = '';
             }
 
+            // Reset Reclamo Reiterado
+            if (chkReiterado) chkReiterado.checked = false;
+            if (reiteradoPanel) reiteradoPanel.classList.add('hidden');
+            const reiteradoSec = document.querySelector('.reiterado-section');
+            if (reiteradoSec) reiteradoSec.classList.remove('active');
+            if (badgeRecurrencia) {
+                badgeRecurrencia.classList.add('hidden');
+                badgeRecurrencia.innerHTML = '';
+            }
+            if (reiteradoRaId) reiteradoRaId.value = '';
+            updateSinContactoTemplate();
+
             // Clear tools
             if (btnClearTools) btnClearTools.click();
 
@@ -445,6 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 gestiones[index].cliente = cliente;
                 gestiones[index].tipo_ra = tipoRa;
                 gestiones[index].observaciones = observaciones;
+                gestiones[index].is_reiterado = chkReiterado ? chkReiterado.checked : false;
+                gestiones[index].ra_id = reiteradoRaId ? reiteradoRaId.value.trim() : '';
                 if (equipos) {
                     gestiones[index].equipos = equipos;
                 }
@@ -458,11 +484,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add new
             const processNewGestion = () => {
                 const now = new Date();
+                const isReiterado = chkReiterado ? chkReiterado.checked : false;
+                const raId = reiteradoRaId ? reiteradoRaId.value.trim() : '';
                 const gestion = {
                     id: Date.now().toString(),
                     cliente: cliente,
                     tipo_ra: tipoRa,
                     observaciones: observaciones,
+                    is_reiterado: isReiterado,
+                    ra_id: raId,
                     fecha: now.toLocaleDateString('es-AR'),
                     hora: now.toLocaleTimeString('es-AR', { hour12: false })
                 };
@@ -529,6 +559,18 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
+
+            if (chkReiterado) chkReiterado.checked = false;
+            if (reiteradoPanel) reiteradoPanel.classList.add('hidden');
+            const reiteradoSec = document.querySelector('.reiterado-section');
+            if (reiteradoSec) reiteradoSec.classList.remove('active');
+            if (badgeRecurrencia) {
+                badgeRecurrencia.classList.add('hidden');
+                badgeRecurrencia.innerHTML = '';
+            }
+            if (reiteradoRaId) reiteradoRaId.value = '';
+            updateSinContactoTemplate();
+
             btnSubmit.innerHTML = 'Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
             btnCancelEdit.classList.add('hidden');
             inputCliente.focus();
@@ -569,6 +611,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.altKey && (e.key === 'p' || e.key === 'P')) {
             e.preventDefault();
             handleSmartPaste();
+        }
+        // Alt+R to toggle Reclamo Reiterado
+        if (e.altKey && (e.key === 'r' || e.key === 'R')) {
+            e.preventDefault();
+            if (chkReiterado) {
+                chkReiterado.checked = !chkReiterado.checked;
+                chkReiterado.dispatchEvent(new Event('change'));
+            }
         }
         // Alt+T to toggle Tools accordion
         if (e.altKey && (e.key === 't' || e.key === 'T')) {
@@ -717,7 +767,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="gestion-card-row">
                     <span class="gestion-hora">${g.hora}</span>
                     <span class="gestion-cliente">${g.cliente}</span>
-                    <span class="gestion-tipo" title="${g.tipo_ra}">${shortRa}</span>
+                    <span class="gestion-tipo" title="${g.tipo_ra}">
+                        ${shortRa}
+                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="Reclamo Reiterado ${g.ra_id ? '(RA: ' + g.ra_id + ')' : ''}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
+                    </span>
                     <div class="gestion-actions">
                         <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')"><i data-lucide="pencil"></i></button>
                         <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')"><i data-lucide="trash-2"></i></button>
@@ -1322,6 +1375,26 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = gestion.tipo_ra;
             if (inputObservaciones) inputObservaciones.value = gestion.observaciones || '';
             if (checkForm) checkForm.checked = true;
+
+            if (gestion.is_reiterado) {
+                if (chkReiterado) {
+                    chkReiterado.checked = true;
+                    chkReiterado.dispatchEvent(new Event('change'));
+                }
+                if (reiteradoRaId) {
+                    reiteradoRaId.value = gestion.ra_id || '';
+                    updateSinContactoTemplate();
+                }
+            } else {
+                if (chkReiterado) {
+                    chkReiterado.checked = false;
+                    chkReiterado.dispatchEvent(new Event('change'));
+                }
+                if (reiteradoRaId) {
+                    reiteradoRaId.value = '';
+                    updateSinContactoTemplate();
+                }
+            }
 
             btnSubmit.innerHTML = 'Actualizar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
             btnCancelEdit.classList.remove('hidden');
@@ -1944,6 +2017,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (val) {
+                // If Reiterados viena is selected, auto-check Reclamo Reiterado
+                if (val === 'Reiterados viena') {
+                    if (chkReiterado && !chkReiterado.checked) {
+                        chkReiterado.checked = true;
+                        chkReiterado.dispatchEvent(new Event('change'));
+                    }
+                }
+
                 // Determine if it's an Especial or RA
                 const isEspecial = GESTIONES_ESPECIALES_VALUES.includes(val);
 
@@ -2510,14 +2591,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let detected = 0;
 
-            // 1. Cliente / Cuenta
-            const clienteMatch = text.match(/(?:cliente|cta|cuenta|id|asunto)?[:=\s#]*\b([0-9]{7,10})\b/i);
-            if (clienteMatch && clienteMatch[1] && inputCliente) {
-                inputCliente.value = clienteMatch[1];
+            // 1. Reclamo Administrativo ID (RA)
+            const raIdMatch = text.match(/(?:reclamo\s*administrativo\s*id|ra\s*id|id\s*ra|ra\s*n[°o]?)[:=\s#]+([0-9]+)/i);
+            let detectedRaId = null;
+            if (raIdMatch && raIdMatch[1]) {
+                detectedRaId = raIdMatch[1];
+                if (reiteradoRaId) {
+                    reiteradoRaId.value = detectedRaId;
+                    updateSinContactoTemplate();
+                }
                 detected++;
             }
 
-            // 2. MACs
+            // 2. Cliente / Cuenta (soporta explícito y números de 5 a 10 dígitos)
+            let clienteVal = null;
+            const explicitCliente = text.match(/(?:id\s*cliente|n[°o]?\s*cliente|cliente\s*id|cuenta\s*id|cta\s*id|n[°o]?\s*cuenta|n[°o]?\s*cta)[:=\s#]+([0-9A-Za-z_-]+)/i);
+            if (explicitCliente && explicitCliente[1]) {
+                clienteVal = explicitCliente[1];
+            } else {
+                const generalMatch = text.match(/(?:cliente|cta|cuenta|id|asunto)?[:=\s#]*\b([0-9]{5,10})\b/i);
+                if (generalMatch && generalMatch[1] && generalMatch[1] !== detectedRaId) {
+                    clienteVal = generalMatch[1];
+                }
+            }
+            if (clienteVal && inputCliente) {
+                inputCliente.value = clienteVal;
+                detected++;
+            }
+
+            // 3. Recurrencia / Reiterado
+            const recurrenciaMatch = text.match(/(?:recurrencia\s*detectada|reiterad[oa]s?|recurrencia)[^\n]*?(?:total[:=\s]*([0-9]+))?/i);
+            let recurrenciaTotal = null;
+            if (recurrenciaMatch) {
+                if (recurrenciaMatch[1]) {
+                    recurrenciaTotal = parseInt(recurrenciaMatch[1], 10);
+                } else {
+                    const totalMatch = text.match(/total[:=\s]*([0-9]+)/i);
+                    if (totalMatch) recurrenciaTotal = parseInt(totalMatch[1], 10);
+                }
+
+                if (chkReiterado) {
+                    chkReiterado.checked = true;
+                    chkReiterado.dispatchEvent(new Event('change'));
+                }
+
+                if (badgeRecurrencia) {
+                    badgeRecurrencia.innerHTML = recurrenciaTotal
+                        ? `<i data-lucide="repeat"></i> Recurrencia (${recurrenciaTotal})`
+                        : `<i data-lucide="repeat"></i> Recurrencia detectada`;
+                    badgeRecurrencia.classList.remove('hidden');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+                detected++;
+            }
+
+            // 4. MACs (CM, ONT, DECO)
             const macRegex = /\b([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})\b/g;
             const macMatches = [...text.matchAll(macRegex)].map(m => m[1]);
 
@@ -2562,7 +2690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. Teléfono / Línea
+            // 5. Teléfono / Línea
             const telMatch = text.match(/(?:tel|linea|telefono|celular|movil)?[:=\s]*\b(11[0-9]{8}|[2-9][0-9]{9})\b/i);
             if (telMatch && lineaTel) {
                 lineaTel.value = telMatch[1];
@@ -2570,16 +2698,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 detected++;
             }
 
-            // 4. SN (Serial Number)
+            // 6. SN (Serial Number)
             const snMatch = text.match(/(?:sn|serial|serie)?[:=\s]*\b((?:GZ|gz)[0-9A-Za-z]+)\b/i);
             if (snMatch && inputSn) {
                 inputSn.value = snMatch[1].toUpperCase();
                 detected++;
             }
 
-            // 5. Tipo de Gestión / RA / Reclamo
+            // 7. Tipo de Gestión / RA / Reclamo (Clasificación inteligente con jerarquía de campos)
             if (selectRa) {
-                // Normalizador de texto (sin acentos, minúsculas, espacios limpios)
+                const subMatch = text.match(/(?:subclasificaci[oó]n|subcategoria)[:=\s]+([^\n\r]+)/i);
+                const clasifMatch = text.match(/(?:clasificaci[oó]n|categoria)[:=\s]+([^\n\r]+)/i);
+                const headerMatch = text.match(/^([^\n\r]+)(?:\n[^\n\r]+)?(?=\s*informaci[oó]n\s*del\s*ra)/i);
+
                 const norm = (s) => s.toLowerCase()
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '')
@@ -2587,35 +2718,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     .replace(/\s+/g, ' ')
                     .trim();
 
-                const normText = norm(text);
-
-                // Obtener todas las opciones disponibles en selectRa
                 const allRaOptions = Array.from(selectRa.querySelectorAll('option'))
                     .filter(opt => opt.value && !opt.disabled)
                     .map(opt => opt.value);
 
+                function scoreMatch(candidate) {
+                    if (!candidate) return null;
+                    const normCand = norm(candidate);
+                    let bestOpt = null;
+                    let maxLen = 0;
+
+                    for (const optVal of allRaOptions) {
+                        const normOpt = norm(optVal);
+                        if (normCand.includes(normOpt) && normOpt.length > maxLen) {
+                            bestOpt = optVal;
+                            maxLen = normOpt.length;
+                        }
+
+                        const corePhrase = optVal
+                            .replace(/^NOC\s*-\s*(INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH|APLICACIONES)\s*-\s*/i, '')
+                            .replace(/^(Web\/App|App Mobile)\s*-\s*/i, '');
+                        const normCore = norm(corePhrase);
+
+                        if (normCore.length >= 3 && normCand.includes(normCore) && normCore.length > maxLen) {
+                            bestOpt = optVal;
+                            maxLen = normCore.length;
+                        }
+                    }
+                    return bestOpt;
+                }
+
                 let matchedRa = null;
-                let maxMatchLen = 0;
-
-                for (const optVal of allRaOptions) {
-                    const normOpt = norm(optVal);
-
-                    // A) Coincidencia directa de la opción completa
-                    if (normText.includes(normOpt) && normOpt.length > maxMatchLen) {
-                        matchedRa = optVal;
-                        maxMatchLen = normOpt.length;
-                    }
-
-                    // B) Coincidencia por frase clave central (ej. "sin suscripcion", "pantalla en negro")
-                    const corePhrase = optVal
-                        .replace(/^NOC\s*-\s*(INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH|APLICACIONES)\s*-\s*/i, '')
-                        .replace(/^(Web\/App|App Mobile)\s*-\s*/i, '');
-                    const normCore = norm(corePhrase);
-
-                    if (normCore.length >= 5 && normText.includes(normCore) && normCore.length > maxMatchLen) {
-                        matchedRa = optVal;
-                        maxMatchLen = normCore.length;
-                    }
+                if (subMatch) matchedRa = scoreMatch(subMatch[1]);
+                if (!matchedRa && headerMatch) matchedRa = scoreMatch(headerMatch[1]);
+                if (!matchedRa && clasifMatch) matchedRa = scoreMatch(clasifMatch[1] + (subMatch ? ' ' + subMatch[1] : ''));
+                if (!matchedRa) {
+                    const textWithoutObs = text.replace(/(?:observaciones|obs|detalles|detalle|nota|comentarios)[:=\s]*\n?[\s\S]*?(?=(?:\n\s*(?:id\s*cliente|cliente|usuario|clasificaci[oó]n|subclasificaci[oó]n|recurrencia|reclamo\s*administrativo|informaci[oó]n\s*del\s*ra)\b|$))/i, '');
+                    matchedRa = scoreMatch(textWithoutObs) || scoreMatch(text);
                 }
 
                 if (matchedRa) {
@@ -2623,15 +2762,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectRa.dispatchEvent(new Event('change'));
                     detected++;
 
-                    // Limpiar el campo de filtro si estaba abierto
                     const raSearch = document.querySelector('.ra-search-wrapper input');
                     if (raSearch) raSearch.value = '';
                 }
             }
 
-            // 6. Observaciones explícitas (si vienen con prefijo "Obs:", "Detalle:", etc.)
-            const obsMatch = text.match(/(?:observaciones|obs|detalle|detalles|nota|comentarios)[:=\s]+([^\n\r]+)/i);
-            if (obsMatch && obsMatch[1] && inputObservaciones && !inputObservaciones.value) {
+            // 8. Observaciones (captura completa del bloque multi-línea)
+            const obsMatch = text.match(/(?:observaciones|obs|detalles|detalle|nota|comentarios)[:=\s]*\n?([\s\S]*?)(?=(?:\n\s*(?:id\s*cliente|cliente|usuario|clasificaci[oó]n|subclasificaci[oó]n|recurrencia|reclamo\s*administrativo|informaci[oó]n\s*del\s*ra)\b|$))/i);
+            if (obsMatch && obsMatch[1] && inputObservaciones) {
                 const cleanObs = obsMatch[1].trim();
                 if (cleanObs.length > 2) {
                     inputObservaciones.value = cleanObs;
@@ -2644,7 +2782,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (detected > 0) {
-                showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)`, 'success');
+                const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
+                showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
             } else {
                 if (inputCliente && !inputCliente.value) {
                     inputCliente.value = text.trim().substring(0, 40);
@@ -2656,6 +2795,91 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Smart paste error:', err);
             showToast('No se pudo acceder al portapapeles', 'error');
+        }
+    }
+
+    // ============================================
+    // Feature: Reclamo Reiterado & Plantillas
+    // ============================================
+    function initReiterados() {
+        if (!chkReiterado) return;
+
+        chkReiterado.addEventListener('change', () => {
+            const isActive = chkReiterado.checked;
+            const section = document.querySelector('.reiterado-section');
+            if (section) {
+                section.classList.toggle('active', isActive);
+            }
+            if (reiteradoPanel) {
+                if (isActive) {
+                    reiteradoPanel.classList.remove('hidden');
+                } else {
+                    reiteradoPanel.classList.add('hidden');
+                    if (badgeRecurrencia) badgeRecurrencia.classList.add('hidden');
+                }
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+
+        if (reiteradoRaId) {
+            reiteradoRaId.addEventListener('input', () => {
+                updateSinContactoTemplate();
+            });
+        }
+
+        // Copiar plantilla al portapapeles
+        document.querySelectorAll('.btn-copy-plantilla').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const targetId = btn.dataset.target;
+                const targetElem = document.getElementById(targetId);
+                if (!targetElem) return;
+
+                const textToCopy = targetElem.textContent.trim();
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const origHtml = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check"></i> Copiado';
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    showToast('Plantilla copiada al portapapeles', 'success');
+                    setTimeout(() => {
+                        btn.innerHTML = origHtml;
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    }, 1500);
+                } catch {
+                    showToast('Error al copiar plantilla', 'error');
+                }
+            });
+        });
+
+        // Insertar plantilla en Observaciones
+        document.querySelectorAll('.btn-insert-plantilla').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = btn.dataset.target;
+                const targetElem = document.getElementById(targetId);
+                if (!targetElem || !inputObservaciones) return;
+
+                const textToInsert = targetElem.textContent.trim();
+                const currentObs = inputObservaciones.value.trim();
+
+                if (!currentObs) {
+                    inputObservaciones.value = textToInsert;
+                } else if (!currentObs.includes(textToInsert)) {
+                    inputObservaciones.value = `${textToInsert}\n\n${currentObs}`;
+                }
+
+                inputObservaciones.dispatchEvent(new Event('input'));
+                inputObservaciones.focus();
+                showToast('Plantilla insertada en Observaciones', 'success');
+            });
+        });
+    }
+
+    function updateSinContactoTemplate() {
+        const raVal = (reiteradoRaId && reiteradoRaId.value.trim()) ? reiteradoRaId.value.trim() : '########';
+        if (plantillaTextSinContacto) {
+            plantillaTextSinContacto.textContent = `[Sin Contacto] RA ${raVal}`;
         }
     }
 

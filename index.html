@@ -186,6 +186,108 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Sección Reclamo Reiterado & Plantillas -->
+                    <div class="reiterado-section">
+                        <div class="reiterado-header-row">
+                            <label class="reiterado-checkbox-label" for="chk-reiterado">
+                                <input type="checkbox" id="chk-reiterado" name="is_reiterado">
+                                <span class="reiterado-checkbox-custom"></span>
+                                <span class="reiterado-title">
+                                    <i data-lucide="repeat"></i> ¿Es Reclamo Reiterado?
+                                    <span class="shortcut-hint-small">Alt+R</span>
+                                </span>
+                            </label>
+                            <span id="badge-recurrencia" class="badge-recurrencia hidden"></span>
+                        </div>
+
+                        <!-- Panel de plantillas desplegable -->
+                        <div id="reiterado-panel" class="reiterado-panel hidden">
+                            <div class="reiterado-ra-input-row">
+                                <label for="reiterado-ra-id">
+                                    <i data-lucide="ticket"></i> Reclamo Administrativo ID (RA disparador):
+                                </label>
+                                <div class="input-with-copy">
+                                    <input type="text" id="reiterado-ra-id" placeholder="Ej: 13106315" autocomplete="off">
+                                    <button type="button" class="btn-copy" data-target="reiterado-ra-id" title="Copiar RA ID">
+                                        <i data-lucide="copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="plantillas-grid">
+                                <!-- Plantilla 1: Sin Contacto -->
+                                <div class="plantilla-card plantilla-sin-contacto">
+                                    <div class="plantilla-header">
+                                        <div class="plantilla-title-wrap">
+                                            <span class="plantilla-badge badge-warning">
+                                                <i data-lucide="phone-off"></i> Sin Contacto
+                                            </span>
+                                            <span class="plantilla-desc">Dejar asentado RA disparador y suspender en Viena si es AM para llamar en PM</span>
+                                        </div>
+                                    </div>
+                                    <div class="plantilla-code-wrap">
+                                        <code class="plantilla-code" id="plantilla-text-sin-contacto">[Sin Contacto] RA ########</code>
+                                    </div>
+                                    <div class="plantilla-actions">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-sin-contacto" title="Copiar plantilla">
+                                            <i data-lucide="copy"></i> Copiar
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-sin-contacto" title="Pegar en Observaciones">
+                                            <i data-lucide="corner-down-left"></i> Pegar en Obs.
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Plantilla 2: Bien Gestionado -->
+                                <div class="plantilla-card plantilla-bien-gestionado">
+                                    <div class="plantilla-header">
+                                        <div class="plantilla-title-wrap">
+                                            <span class="plantilla-badge badge-success">
+                                                <i data-lucide="check-circle-2"></i> Bien Gestionado
+                                            </span>
+                                            <span class="plantilla-desc">Front cargó bien. Indagar soporte completo y escalar a NOC desde Viena</span>
+                                        </div>
+                                    </div>
+                                    <div class="plantilla-code-wrap">
+                                        <code class="plantilla-code" id="plantilla-text-bien-gestionado">[Bien Gestionado] + [Sondeo] + Se escala noc</code>
+                                    </div>
+                                    <div class="plantilla-actions">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-bien-gestionado" title="Copiar plantilla">
+                                            <i data-lucide="copy"></i> Copiar
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-bien-gestionado" title="Pegar en Observaciones">
+                                            <i data-lucide="corner-down-left"></i> Pegar en Obs.
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Plantilla 3: Mal Gestionado -->
+                                <div class="plantilla-card plantilla-mal-gestionado">
+                                    <div class="plantilla-header">
+                                        <div class="plantilla-title-wrap">
+                                            <span class="plantilla-badge badge-danger">
+                                                <i data-lucide="alert-triangle"></i> Mal Gestionado
+                                            </span>
+                                            <span class="plantilla-desc">Faltó soporte o categoría incorrecta. Resolver y cerrar caso para no reiterar</span>
+                                        </div>
+                                    </div>
+                                    <div class="plantilla-code-wrap">
+                                        <code class="plantilla-code" id="plantilla-text-mal-gestionado">[Mal Gestionado] + [Razon] + [Nueva Gestion/Solucion]</code>
+                                    </div>
+                                    <div class="plantilla-actions">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-mal-gestionado" title="Copiar plantilla">
+                                            <i data-lucide="copy"></i> Copiar
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-mal-gestionado" title="Pegar en Observaciones">
+                                            <i data-lucide="corner-down-left"></i> Pegar en Obs.
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="observaciones">Observaciones (Opcional)</label>
                         <textarea id="observaciones" name="observaciones" rows="2"
@@ -454,6 +556,10 @@
                 <div class="shortcut-item">
                     <kbd>Alt + T</kbd>
                     <span>Abrir / Cerrar Herramientas (MACs)</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Alt + R</kbd>
+                    <span>Activar / Desactivar Reclamo Reiterado</span>
                 </div>
                 <div class="shortcut-item">
                     <kbd>Alt + M</kbd>
