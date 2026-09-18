@@ -2036,8 +2036,23 @@ document.addEventListener('DOMContentLoaded', () => {
         selectRa.parentNode.insertBefore(wrapper, selectRa);
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
+        function clearRaSelection() {
+            if (!selectRa.value) return;
+            selectRa.value = '';
+            if (searchInput) searchInput.value = '';
+            rebuildSelect(allOptions, null);
+            selectRa.dispatchEvent(new Event('change'));
+            showToast('Tipo de gestión borrado', 'info');
+        }
+
         searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown') {
+            // Borrar gestión seleccionada con Backspace si el buscador está vacío
+            if (e.key === 'Backspace' && searchInput.value === '') {
+                if (selectRa.value) {
+                    e.preventDefault();
+                    clearRaSelection();
+                }
+            } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 selectRa.focus();
             } else if (e.key === 'Enter') {
@@ -2049,9 +2064,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (inputObservaciones) inputObservaciones.focus();
                 }
             } else if (e.key === 'Escape') {
-                searchInput.value = '';
-                rebuildSelect(allOptions, null);
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    rebuildSelect(allOptions, null);
+                } else {
+                    clearRaSelection();
+                }
                 searchInput.blur();
+            }
+        });
+
+        // Borrar gestión seleccionada con Backspace o Supr directamente sobre el select
+        selectRa.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                e.preventDefault();
+                clearRaSelection();
+                if (searchInput) searchInput.focus();
             }
         });
 
