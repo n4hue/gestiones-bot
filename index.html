@@ -288,10 +288,95 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="observaciones">Observaciones (Opcional)</label>
-                        <textarea id="observaciones" name="observaciones" rows="2"
-                            placeholder="Detalles extra..."></textarea>
+                    <div class="form-group obs-group">
+                        <div class="obs-header-flex">
+                            <label for="observaciones">Observaciones (Opcional)</label>
+                            <div class="obs-header-actions">
+                                <button type="button" class="btn-ai-audit" id="btn-ai-audit" title="Auditar información de observaciones con IA">
+                                    <i data-lucide="sparkles"></i> Auditar con IA
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="observaciones" name="observaciones" rows="3"
+                            placeholder="Detalles extra o pegá el reclamo completo aquí..."></textarea>
+
+                        <!-- Panel de Análisis Inteligente de Reclamos con IA -->
+                        <div id="ai-obs-panel" class="ai-obs-panel hidden">
+                            <!-- Header del panel con Barra de % Gestionable -->
+                            <div class="ai-panel-header">
+                                <div class="ai-title-row">
+                                    <div class="ai-badge-title">
+                                        <i data-lucide="brain-circuit"></i> Auditoría IA de Reclamo
+                                    </div>
+                                    <span class="ai-ra-tag" id="ai-ra-tag">Subclasificación</span>
+                                </div>
+
+                                <div class="ai-gauge-container">
+                                    <div class="ai-gauge-header">
+                                        <span class="ai-gauge-title">Nivel de Gestionabilidad:</span>
+                                        <span class="ai-gauge-percent" id="ai-score-num">0%</span>
+                                    </div>
+                                    <div class="ai-progress-bar-track">
+                                        <div class="ai-progress-bar-fill" id="ai-progress-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Veredicto de Aceptación / Rechazo -->
+                            <div class="ai-verdict-box" id="ai-verdict-box">
+                                <div class="ai-verdict-header">
+                                    <span class="ai-verdict-badge" id="ai-verdict-badge">Evaluando...</span>
+                                    <span class="ai-verdict-title" id="ai-verdict-title"></span>
+                                </div>
+                                <p class="ai-verdict-desc" id="ai-verdict-desc"></p>
+                            </div>
+
+                            <!-- Desglose: Qué SÍ tiene que ver y qué NO / qué FALTA -->
+                            <div class="ai-audit-breakdown">
+                                <div class="ai-audit-col ai-col-valid">
+                                    <div class="ai-col-header">
+                                        <span class="ai-col-badge badge-valid"><i data-lucide="check"></i> SÍ tiene que ver (Detectado)</span>
+                                    </div>
+                                    <ul class="ai-items-list" id="ai-relevant-list"></ul>
+                                </div>
+                                <div class="ai-audit-col ai-col-invalid">
+                                    <div class="ai-col-header">
+                                        <span class="ai-col-badge badge-invalid"><i data-lucide="x"></i> Faltantes / No tiene que ver</span>
+                                    </div>
+                                    <ul class="ai-items-list" id="ai-missing-list"></ul>
+                                </div>
+                            </div>
+
+                            <!-- Resumen Estructurado Oficial -->
+                            <div class="ai-summary-box">
+                                <div class="ai-summary-header">
+                                    <span class="ai-summary-label">
+                                        <i data-lucide="file-check-2"></i> Resumen Estructurado (Plantilla Oficial):
+                                    </span>
+                                    <div class="ai-summary-actions">
+                                        <button type="button" class="btn btn-secondary btn-xs" id="btn-ai-copy-summary" title="Copiar resumen estructurado">
+                                            <i data-lucide="copy"></i> Copiar Resumen
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-xs" id="btn-ai-apply-summary" title="Reemplazar observaciones con este resumen oficial">
+                                            <i data-lucide="arrow-up-right"></i> Aplicar en Obs.
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="ai-summary-text" id="ai-summary-content"></div>
+                            </div>
+
+                            <!-- Plantilla Oficial de Referencia (Colapsable) -->
+                            <details class="ai-official-template-details">
+                                <summary><i data-lucide="clipboard-list"></i> Ver Plantilla Oficial y Protocolo de este RA</summary>
+                                <div class="ai-template-box">
+                                    <div class="ai-template-usage" id="ai-template-usage"></div>
+                                    <code class="ai-template-code" id="ai-template-code"></code>
+                                    <button type="button" class="btn btn-secondary btn-xs mt-2" id="btn-ai-copy-raw-template">
+                                        <i data-lucide="copy"></i> Copiar Plantilla Vacía
+                                    </button>
+                                </div>
+                            </details>
+                        </div>
                     </div>
 
                     <details class="tools-accordion" id="tools-accordion">

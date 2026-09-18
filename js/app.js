@@ -99,6 +99,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const plantillaTextBienGestionado = document.getElementById('plantilla-text-bien-gestionado');
     const plantillaTextMalGestionado = document.getElementById('plantilla-text-mal-gestionado');
 
+    // AI Claim Audit DOM
+    const btnAiAudit = document.getElementById('btn-ai-audit');
+    const aiObsPanel = document.getElementById('ai-obs-panel');
+    const aiRaTag = document.getElementById('ai-ra-tag');
+    const aiScoreNum = document.getElementById('ai-score-num');
+    const aiProgressFill = document.getElementById('ai-progress-fill');
+    const aiVerdictBox = document.getElementById('ai-verdict-box');
+    const aiVerdictBadge = document.getElementById('ai-verdict-badge');
+    const aiVerdictTitle = document.getElementById('ai-verdict-title');
+    const aiVerdictDesc = document.getElementById('ai-verdict-desc');
+    const aiRelevantList = document.getElementById('ai-relevant-list');
+    const aiMissingList = document.getElementById('ai-missing-list');
+    const aiSummaryContent = document.getElementById('ai-summary-content');
+    const btnAiCopySummary = document.getElementById('btn-ai-copy-summary');
+    const btnAiApplySummary = document.getElementById('btn-ai-apply-summary');
+    const aiTemplateUsage = document.getElementById('ai-template-usage');
+    const aiTemplateCode = document.getElementById('ai-template-code');
+    const btnAiCopyRawTemplate = document.getElementById('btn-ai-copy-raw-template');
+
     // ============================================
     // Constants
     // ============================================
@@ -340,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initShortcutsModal();
     initCategoryFilterChips();
     initSmartPaste();
+    initAiClaimAudit();
     initBackupAndRestore();
     initOfflineSyncQueue();
 
@@ -428,6 +448,12 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
+
+            // Reset AI audit panel
+            if (aiObsPanel) {
+                aiObsPanel.classList.add('hidden');
+                if (btnAiAudit) btnAiAudit.classList.remove('active');
+            }
 
             // Reset conditional fields (Gestiones Especiales)
             if (camposEspeciales) {
@@ -559,6 +585,11 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
+
+            if (aiObsPanel) {
+                aiObsPanel.classList.add('hidden');
+                if (btnAiAudit) btnAiAudit.classList.remove('active');
+            }
 
             if (chkReiterado) chkReiterado.checked = false;
             if (reiteradoPanel) reiteradoPanel.classList.add('hidden');
@@ -1375,6 +1406,10 @@ document.addEventListener('DOMContentLoaded', () => {
             selectRa.value = gestion.tipo_ra;
             if (inputObservaciones) inputObservaciones.value = gestion.observaciones || '';
             if (checkForm) checkForm.checked = true;
+
+            if (aiObsPanel && !aiObsPanel.classList.contains('hidden')) {
+                renderAiAudit(false);
+            }
 
             if (gestion.is_reiterado) {
                 if (chkReiterado) {
@@ -2784,6 +2819,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detected > 0) {
                 const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
                 showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
+                if (inputObservaciones && inputObservaciones.value.trim() && selectRa && selectRa.value) {
+                    renderAiAudit(true);
+                }
             } else {
                 if (inputCliente && !inputCliente.value) {
                     inputCliente.value = text.trim().substring(0, 40);
@@ -2795,6 +2833,675 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Smart paste error:', err);
             showToast('No se pudo acceder al portapapeles', 'error');
+        }
+    }
+
+    // ============================================
+    // Feature: AI Claim Audit & Template Engine
+    // ============================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    const RA_AI_RULES = {
+        // === ESCALAMIENTO N3 ===
+        'Inconveniente con insumos': {
+            usos: 'Diferencias de MAC entre CM, ONT, DECOS y/o Extensor en el domicilio del cliente y los insumos en CRM (CM, ONT, DECOS y/o Extensor)',
+            plantilla: '[Problemática] + [Macs que posee el cliente] + [Mac registradas en CRM] + [Nombre + Teléfono]',
+            items: [
+                { id: 'problematica', label: 'Problemática detallada', critical: true, regex: /(?:problem[aá]tica|problema|inconveniente|falla|diferencia|motivo)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'macs_cliente', label: 'MACs que posee el cliente en domicilio', critical: true, regex: /(?:macs?\s*(?:que\s*posee|cliente|en\s*domicilio|reales?|f[ií]sicas?))[:=\s]*([^\n\]\+]+)|(?:cm|ont|deco)?\s*mac[:=\s]*([0-9A-Fa-f:.-]{12,17})/i },
+                { id: 'macs_crm', label: 'MACs registradas en CRM', critical: true, regex: /(?:macs?\s*(?:registradas?\s*en\s*crm|crm|sistema))[:=\s]*([^\n\]\+]+)/i },
+                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i }
+            ]
+        },
+        'Reposición de Equipos CM/DD': {
+            usos: 'Equipos robados, perdidos o quemados',
+            plantilla: '[Problemática] + [Mac de equipos existentes en domicilio o Ninguna Mac] + [Nombre + Teléfono] + [Costo informado USD 100 Deco, USD 100 Modem, USD 100 Wifi Mesh, USD 200 Deco Alexa]',
+            items: [
+                { id: 'problematica', label: 'Problemática (robo, pérdida, quemado)', critical: true, regex: /(?:problem[aá]tica|motivo|robo|perdid[ao]|quemad[ao]|falla|siniestro)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'macs_existentes', label: 'MAC de equipos existentes o Ninguna Mac', critical: true, regex: /(?:macs?\s*(?:existentes?|en\s*domicilio|domicilio|posee)|ninguna\s*mac)[:=\s]*([^\n\]\+]+)|([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i },
+                { id: 'costo_informado', label: 'Costo informado (USD 100 Deco/Modem/Mesh, USD 200 Alexa)', critical: true, regex: /(?:costo|precio|usd|dolares|arancel|informa\s*costo|costo\s*informado)/i }
+            ]
+        },
+        'Escalamiento Teams': {
+            usos: 'Cliente se comunica con casuística no contemplada en los procesos actuales y requiere intervención de un supervisor para su solución',
+            plantilla: '[Nombre supervisor autorizante] + [Casuística / Motivo]',
+            items: [
+                { id: 'supervisor', label: 'Nombre supervisor autorizante', critical: true, regex: /(?:supervisor|autoriz[oó]|autorizante|autoriza|escalado\s*por)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'casuistica', label: 'Casuística no contemplada / Motivo', critical: true, regex: /(?:casu[ií]stica|motivo|detalle|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+
+        // === INTERNET & WIFI MESH (Configuración & Acceso) ===
+        'NOC - INTERNET - SOLICITUD DE CONFIGURACIÓN': {
+            usos: 'Se requiera aplicar una configuración en CPE por motivos como falla herramientas, no existe herramienta, etc.',
+            plantilla: '[SUGERENCIA/SOLICITUD: "CONFIGURAR PUERTOS" / "CONFIGURAR VPN" / "CONFIGURAR RED 2.4" / "CONFIGURAR RED 5" / "CONFIGURAR MODO RED PC/NAT" / "CONFIGURAR BANDSTEERING" / "CONFIGURAR ROUTER / BRIDGE"]',
+            keywords: ['CONFIGURAR PUERTOS', 'CONFIGURAR VPN', 'CONFIGURAR RED 2.4', 'CONFIGURAR RED 5', 'CONFIGURAR MODO RED PC/NAT', 'CONFIGURAR BANDSTEERING', 'CONFIGURAR ROUTER / BRIDGE'],
+            items: [
+                { id: 'solicitud', label: 'Sugerencia / Solicitud con palabra clave obligatoria', critical: true, checkKeywords: true },
+                { id: 'motivo', label: 'Motivo de falla o necesidad de CPE', critical: false, regex: /(?:falla|motivo|solicitud|no\s*existe|herramienta)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+        'NOC - WIFI MESH - SOLICITUD DE CONFIGURACION': {
+            usos: 'Se requiera aplicar una configuración en CPE / Extensor por motivos como falla herramientas, no existe herramienta, etc.',
+            plantilla: '[SUGERENCIA/SOLICITUD: "CONFIGURAR PUERTOS" / "CONFIGURAR VPN" / "CONFIGURAR RED 2.4" / "CONFIGURAR RED 5" / "CONFIGURAR MODO RED PC/NAT" / "CONFIGURAR BANDSTEERING" / "CONFIGURAR ROUTER / BRIDGE"]',
+            keywords: ['CONFIGURAR PUERTOS', 'CONFIGURAR VPN', 'CONFIGURAR RED 2.4', 'CONFIGURAR RED 5', 'CONFIGURAR MODO RED PC/NAT', 'CONFIGURAR BANDSTEERING', 'CONFIGURAR ROUTER / BRIDGE'],
+            items: [
+                { id: 'solicitud', label: 'Sugerencia / Solicitud con palabra clave obligatoria', critical: true, checkKeywords: true },
+                { id: 'motivo', label: 'Motivo de falla o necesidad de CPE/Extensor', critical: false, regex: /(?:falla|motivo|solicitud|no\s*existe|herramienta)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+        'NOC - INTERNET - PROBLEMAS PARTICULARES DE ACCESO': {
+            usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
+            plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
+            items: [
+                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
+                { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo, app o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+        'NOC - WIFI MESH - PROBLEMAS PARTICULARES DE ACCESO': {
+            usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
+            plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
+            items: [
+                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
+                { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+
+        // === WIFI MESH ===
+        'NOC - WIFI MESH - SIN NAVEGACION': {
+            usos: 'El cliente ve la red, logra conectarse pero no navega',
+            plantilla: '[Uno o todos los dispositivos, si es 1 aclarar (MARCA, MODELO, MAC), en el caso que sea por ETH aclararlo]',
+            items: [
+                { id: 'alcance_disp', label: 'Aclaración de uno o todos los dispositivos', critical: true, regex: /(?:uno|todos|un\s*solo|todos\s*los\s*dispositivos|1\s*disp)/i },
+                { id: 'datos_disp', label: 'Datos del dispositivo (Marca, Modelo, MAC) o conexión ETH', critical: true, regex: /(?:marca|modelo|mac|eth|ethernet|cableado)/i }
+            ]
+        },
+        'NOC - WIFI MESH - LENTITUD EN NAVEGACION': {
+            usos: 'El cliente percibe que le funciona lento, tardan en cargar páginas, no llega a la velocidad contratada, etc.',
+            plantilla: '[Informar velocidades máximas alcanzadas, información del dispositivo de prueba, velocidad de enlace. ¿En qué sitios o APPs percibe lentitud?]',
+            items: [
+                { id: 'velocidad_max', label: 'Velocidades máximas alcanzadas (Mbps / Test)', critical: true, regex: /(?:velocidad|megas|mbps|mb|speedtest|test|alcanzad[ao]|llega\s*a)[:=\s]*([0-9]+)/i },
+                { id: 'disp_prueba', label: 'Dispositivo de prueba y velocidad de enlace', critical: true, regex: /(?:dispositivo|celular|pc|notebook|enlace|conexion)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'sitios_apps', label: 'Sitios o APPs donde percibe lentitud', critical: true, regex: /(?:sitios?|apps?|aplicaci[oó]n|en\s*qu[eé]|youtube|netflix|navegar)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+        'NOC - WIFI MESH - CORTES INTERMITENTES': {
+            usos: 'El cliente percibe cortes en el servicio, puede ser en un momento particular del día',
+            plantilla: '[En qué momento del día los percibe, por cuánto tiempo lo percibe. ¿En un solo dispositivo o en todos? ¿En diferentes partes del hogar?]',
+            items: [
+                { id: 'momento_duracion', label: 'Momento del día y duración de los cortes', critical: true, regex: /(?:momento|horario|mañana|tarde|noche|duraci[oó]n|minutos|tiempo)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'dispositivos_afectados', label: '¿En un solo dispositivo o en todos?', critical: true, regex: /(?:uno|todos|un\s*solo|todos\s*los|dispositivos?)/i },
+                { id: 'ubicacion_hogar', label: '¿En diferentes partes del hogar / cobertura?', critical: false, regex: /(?:partes?|habitaci[oó]n|living|dormitorio|hogar|casa|distancia|cerca|lejos)/i }
+            ]
+        },
+        'NOC - WIFI MESH - WIFI - DISPOSITIVO NO CONECTA': {
+            usos: 'Ve la red con su dispositivo pero no logra conectarse / autenticar',
+            plantilla: '[Informar características del dispositivo (MARCA, MODELO, MAC)]',
+            items: [
+                { id: 'caract_disp', label: 'Características del dispositivo (Marca, Modelo, MAC)', critical: true, regex: /(?:marca|modelo|mac)[:=\s]*([^\n\]\+]+)|([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2})/i }
+            ]
+        },
+        'NOC - WIFI MESH - WIFI - NO SE VISUALIZA RED': {
+            usos: 'Ningún dispositivo del hogar ve la red wifi',
+            plantilla: '[Informar características del dispositivo (MARCA, MODELO, MAC)]',
+            items: [
+                { id: 'caract_disp', label: 'Características del dispositivo probado (Marca, Modelo, MAC)', critical: true, regex: /(?:marca|modelo|mac)[:=\s]*([^\n\]\+]+)|([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2})/i }
+            ]
+        },
+
+        // === TELEVISIÓN ===
+        'NOC - TELEVISIÓN - SIN SUSCRIPCION': {
+            usos: 'No ve los canales contratados',
+            plantilla: '[Mac del equipo con problema] + [Canal/les o todos los canales con placa ID121] + [marca del equipo] + [Nombre y apellido de la persona que se contacta] + [Conciliacion OK, IQ Verde] (Constatar conectado a internet y deco encendido)',
+            items: [
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'canales_id121', label: 'Canales con placa ID121 o todos los canales', critical: true, regex: /(?:canales?|todos|id121|121|placa)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'marca_equipo', label: 'Marca del equipo', critical: true, regex: /(?:marca|zte|sagemcom|kaon|skyworth)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'contacto', label: 'Nombre y apellido de contacto', critical: true, regex: /(?:nombre|titular|apellido|contacto)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'conciliacion', label: 'Conciliación OK, IQ Verde / Conectado y encendido', critical: true, regex: /(?:conciliaci[oó]n|iq\s*verde|conectado|encendido)/i }
+            ]
+        },
+        'NOC - TELEVISIÓN - PIXELACION/FREEZE': {
+            usos: 'El cliente percibe en 1 o varios canales pixelación o que la imagen se congela',
+            plantilla: '[Mac del equipo con problema] + [Tel. de contacto] + [Horario de contacto] + [Problema] + [Soporte brindado: Refresco CRM (SI/NO), Batch I3 (SI/NO), Reseteo Manual del Deco (SI/NO), Reseteo de Fabrica (SI/NO), Reseteo de CM/ONT (SI/NO)]',
+            items: [
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Teléfono y horario de contacto', critical: true, regex: /(?:tel|telefono|celular|horario)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'problema', label: 'Detalle del problema (canales, pixelación, freeze)', critical: true, regex: /(?:pixelaci[oó]n|freeze|congel|canales?|problema)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM, Batch I3, Reseteo Deco, Fabrica, CM/ONT)', critical: true, regex: /(?:soporte|refresco|batch|reseteo|reinicio)/i }
+            ]
+        },
+        'NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online': {
+            usos: 'Cuando el cliente visualiza alguno de los errores 310 o 410',
+            plantilla: '[Mac del equipo con problema] + [APP con error]',
+            items: [
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'app_error', label: 'APP con error (310 / 410 / Internal Error)', critical: true, regex: /(?:app|aplicaci[oó]n|error\s*310|error\s*410|internal\s*error)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+        'NOC - TELEVISIÓN - PANTALLA EN NEGRO': {
+            usos: 'Si luego de brindar soporte o ante la reiteración del problema, el cliente continúa sin solución',
+            plantilla: '[Mac del equipo con problema] + [Tel. de contacto] + [Soporte brindado: Refresco CRM (SI/NO), Reseteo Manual del Deco (SI/NO)]',
+            items: [
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Teléfono de contacto', critical: true, regex: /(?:tel|telefono|celular|contacto)[:=\s]*([0-9\s\-]+)/i },
+                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM SI/NO, Reseteo Manual Deco SI/NO)', critical: true, regex: /(?:soporte|refresco|reseteo|reinicio)/i }
+            ]
+        },
+        'NOC - APLICACIONES - DECO - DESAPARECEN APPS': {
+            usos: 'Desaparecen aplicaciones en el decodificador',
+            plantilla: '[Mac del equipo con problema] + [Apps que desaparecen] + [Soporte brindado]',
+            items: [
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'apps', label: 'Apps que desaparecen', critical: true, regex: /(?:app|apps|aplicaci[oó]n|desaparecen)[:=\s]*([^\n\]\+]+)/i }
+            ]
+        },
+
+        // === TELEFONÍA ===
+        'NOC - TELEFONIA - LLAMADAS SIN LLAMADAS ENTRANTES': {
+            usos: 'Sondeos obligatorios para llamadas entrantes fallidas',
+            plantilla: '[La linea existe en CRM, se reseteo CM, el que esta realizando la llamada esta marcando correctamente el numero de CRM, NO MOLESTAR deshabiltado, sin DESVIOS, volumen de timbrado funciona bien, probo otro terminal y RJ11, las pruebas se realizaron con terminal directo al CM] + [Día y horario aproximado]',
+            items: [
+                { id: 'linea_crm', label: 'Línea existe en CRM e I3', critical: true, regex: /(?:linea\s*existe|crm|i3)/i },
+                { id: 'reseteo_cm', label: 'Se reinició / reseteó el CM', critical: true, regex: /(?:reseteo\s*cm|reinici[oó]\s*cm|reseteo|reinicio)/i },
+                { id: 'marcacion_ok', label: 'Marcación correcta sin el 11', critical: true, regex: /(?:marcando|marcaci[oó]n|numero|sin\s*el\s*11)/i },
+                { id: 'no_molestar_desvios', label: 'NO MOLESTAR deshabilitado y sin DESVÍOS', critical: true, regex: /(?:no\s*molestar|desv[ií]os)/i },
+                { id: 'terminal_rj11_directo', label: 'Probó otro terminal/RJ11 y pruebas directo al CM', critical: true, regex: /(?:terminal|rj11|directo\s*al\s*cm|timbrado)/i }
+            ]
+        },
+        'NOC - TELEFONIA - LLAMADAS SIN LLAMADAS SALIENTES': {
+            usos: 'Sondeos obligatorios para llamadas salientes fallidas',
+            plantilla: '[La linea existe en CRM, se reseteo CM, no tiene level que impida el llamado saliente, el terminal esta en modo TONO, Pausa interdigito ok, probo otro terminal y RJ11, las pruebas se realizaron con terminal directo al CM] [A celulares antepuso el 15][Para larga distancia detallar Código de país, ciudad y teléfono, si es fijo/cel/IVR]',
+            items: [
+                { id: 'linea_crm', label: 'Línea existe en CRM e I3 y se reseteó CM', critical: true, regex: /(?:linea\s*existe|crm|reseteo|reinici[oó])/i },
+                { id: 'sin_level', label: 'Sin level de bloqueo activo', critical: true, regex: /(?:level|bloqueo|sin\s*level)/i },
+                { id: 'modo_tono', label: 'Terminal en modo TONO (no pulso)', critical: true, regex: /(?:tono|modo\s*tono|pulso)/i },
+                { id: 'pruebas_terminal', label: 'Pausa interdígito OK, probó otro terminal/RJ11 directo al CM', critical: true, regex: /(?:interd[ií]gito|rj11|directo\s*al\s*cm|terminal)/i },
+                { id: 'antepuso_15_ld', label: 'A celulares antepuso 15 / LD código país/ciudad detallado', critical: false, regex: /(?:15|celulares?|larga\s*distancia|c[oó]digo)/i }
+            ]
+        },
+        'NOC - TELEFONIA - LLAMADAS SIN TONO': {
+            usos: 'Sondeos obligatorios cuando el cliente levanta y no hay tono',
+            plantilla: '[No se escucha tono al levantar teléfono, existe la linea en CRM, se reinicio el CM, niveles óptimos en CRM/I3, terminal conectado correctamente en puerto especificado en I3/CRM, se probo con otro terminal y otro RJ11, se reseteo base del inalámbrico y se verificaron pilas en teléfono inalámbrico, Pruebas realizadas con terminal directo al CM.]',
+            items: [
+                { id: 'sin_tono', label: 'Constatado sin tono al levantar', critical: true, regex: /(?:sin\s*tono|no\s*(?:se\s*escucha\s*)?tono)/i },
+                { id: 'linea_reseteo', label: 'Línea existe en CRM y CM reiniciado', critical: true, regex: /(?:linea|crm|reinici[oó]|reseteo)/i },
+                { id: 'niveles_puerto', label: 'Niveles óptimos y conectado en puerto correcto de I3/CRM', critical: true, regex: /(?:niveles|puerto|i3|crm)/i },
+                { id: 'pruebas_base_rj11', label: 'Probó otro terminal, RJ11, base/pilas de inalámbrico y directo a CM', critical: true, regex: /(?:terminal|rj11|inal[aá]mbrico|pilas|directo\s*al\s*cm)/i }
+            ]
+        },
+        'NOC - TELEFONIA - VARIOS': {
+            usos: 'Otras casuísticas de telefonía',
+            plantilla: '[Sin plantilla obligatoria, detallar problema de telefonía y soporte]',
+            items: [
+                { id: 'detalle', label: 'Detalle del inconveniente y pruebas realizadas', critical: true, regex: /.{10,}/ }
+            ]
+        },
+
+        // === WEB / APP MOBILE (NOC APLICACIONES) ===
+        'Web/App - Disney': {
+            usos: 'Problemas de acceso o activación en Disney+',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Max': {
+            usos: 'Problemas de acceso o activación en Max',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Amazon': {
+            usos: 'Problemas de acceso o activación en Amazon Prime Video',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Netflix': {
+            usos: 'Problemas de acceso o activación en Netflix',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Sucursal Virtual': {
+            usos: 'Problemas de acceso a Sucursal Virtual',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Tplay': {
+            usos: 'Problemas con la aplicación Tplay',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'App Mobile - Tphone': {
+            usos: 'Problemas con la aplicación Tphone',
+            plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
+                { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'funciono_antes', label: '¿Funcionó en otro momento?', critical: true, regex: /(?:(?:[¿?]?\s*funcion[oó]\s*(?:en\s*otro\s*momento)?|\banduvo\b))[?:\s=]+([^\n\]\+]+)/i }
+            ]
+        },
+        'Web/App - Tplay en Tizen Samsung TV': {
+            usos: 'Cliente reclama que tiene problemas con la app Tplay con su Televisor Samsung Crystal con sistema Tizen',
+            plantilla: '[Tipo de error]',
+            items: [
+                { id: 'tipo_error', label: 'Tipo de error detallado en TV Samsung Tizen', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema)[:=\s]*([^\n\]\+]+)|.{5,}/i }
+            ]
+        }
+    };
+
+    function analyzeClaimWithAI(text, tipoRa) {
+        if (!text || !text.trim()) {
+            return {
+                hasRule: !!RA_AI_RULES[tipoRa],
+                score: 0,
+                verdict: 'Sin Datos',
+                verdictClass: 'neutral',
+                verdictDesc: 'Pegá las observaciones o redactá el caso para analizar su gestionabilidad.',
+                detectedItems: [],
+                missingItems: [],
+                structuredSummary: '',
+                noiseItems: []
+            };
+        }
+
+        const rule = RA_AI_RULES[tipoRa];
+        if (!rule) {
+            return {
+                hasRule: false,
+                score: text.trim().length > 20 ? 85 : 45,
+                verdict: text.trim().length > 20 ? 'Gestionable' : 'Poco Detalle',
+                verdictClass: text.trim().length > 20 ? 'success' : 'warning',
+                verdictDesc: 'Esta gestión no posee plantilla estricta obligatoria. Verificá que el motivo y soporte brindado sean claros.',
+                detectedItems: [{ label: 'Texto libre ingresado', val: text.trim().substring(0, 100) + (text.trim().length > 100 ? '...' : ''), critical: false }],
+                missingItems: [],
+                structuredSummary: text.trim(),
+                noiseItems: []
+            };
+        }
+
+        let foundCount = 0;
+        let criticalMissing = 0;
+        let passwordMissing = false;
+        let keywordsMissing = false;
+        const detectedItems = [];
+        const missingItems = [];
+        const extractedData = {};
+
+        for (const item of rule.items) {
+            let matchVal = null;
+
+            if (item.checkKeywords) {
+                const upper = text.toUpperCase();
+                const foundKw = rule.keywords.find(kw => upper.includes(kw.toUpperCase()));
+                if (foundKw) matchVal = foundKw;
+                else keywordsMissing = true;
+            } else if (item.regex) {
+                const m = text.match(item.regex);
+                if (m) {
+                    matchVal = m[1] || m[2] || m[0];
+                }
+            }
+
+            if (matchVal && matchVal.trim()) {
+                foundCount++;
+                extractedData[item.id] = matchVal.trim().replace(/^[?:=\s]+/, '');
+                detectedItems.push({
+                    label: item.label,
+                    val: extractedData[item.id],
+                    critical: item.critical
+                });
+            } else {
+                if (item.critical) criticalMissing++;
+                if (item.isPassword) passwordMissing = true;
+                missingItems.push({
+                    label: item.label,
+                    critical: item.critical,
+                    isPassword: item.isPassword
+                });
+            }
+        }
+
+        const totalItems = rule.items.length;
+        let score = Math.round((foundCount / totalItems) * 100);
+
+        // Apply strict protocol penalties
+        if (passwordMissing) {
+            score = Math.min(score, 35);
+        }
+        if (keywordsMissing) {
+            score = Math.min(score, 40);
+        }
+        if (criticalMissing > 0) {
+            score = Math.min(score, Math.max(15, 100 - (criticalMissing * 25)));
+        }
+
+        let verdict = 'Gestionable';
+        let verdictClass = 'success';
+        let verdictDesc = 'El reclamo cuenta con la información reglamentaria requerida para ser gestionado y escalado.';
+
+        if (score < 50) {
+            verdict = 'Rechazable';
+            verdictClass = 'danger';
+            verdictDesc = passwordMissing 
+                ? 'Corresponde rechazar el RA / devolver a Front: La contraseña es estrictamente necesaria y no fue brindada.'
+                : (keywordsMissing 
+                    ? 'Corresponde rechazar el RA: No se especificó ninguna de las palabras clave requeridas de CONFIGURAR.'
+                    : 'Corresponde rechazar el RA / devolver a Front: Falta información crítica exigida por la plantilla oficial.');
+        } else if (score < 80) {
+            verdict = 'Parcialmente Gestionable';
+            verdictClass = 'warning';
+            verdictDesc = 'El reclamo tiene información útil pero omite campos reglamentarios. Se recomienda completarlos antes de enviar a NOC.';
+        }
+
+        // Detect non-template lines (support info or noise)
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const noiseItems = [];
+        lines.forEach(line => {
+            if (!line.includes('[') && !line.includes(']') && line.length > 5) {
+                if (/hugo\s*ruderman|sc\s*por|indica\s*que|codigo\s*de\s*suscripcion|se\s*chequea|pruebas|reinicio|soporte/i.test(line)) {
+                    noiseItems.push({ type: 'soporte', text: line });
+                } else if (/enojado|reclamo\s*reiterado|llamar\s*urgente|amenaza|molesto/i.test(line)) {
+                    noiseItems.push({ type: 'ruido', text: line });
+                }
+            }
+        });
+
+        // Structured official summary
+        let summaryParts = [];
+        rule.items.forEach(it => {
+            const shortLabel = it.label.split('(')[0].trim();
+            if (extractedData[it.id]) {
+                summaryParts.push(`[${shortLabel}: ${extractedData[it.id]}]`);
+            } else {
+                summaryParts.push(`[${shortLabel}: FALTA]`);
+            }
+        });
+        const structuredSummary = summaryParts.join(' + ');
+
+        return {
+            hasRule: true,
+            tipoRa,
+            usos: rule.usos,
+            plantillaOficial: rule.plantilla,
+            score,
+            verdict,
+            verdictClass,
+            verdictDesc,
+            detectedItems,
+            missingItems,
+            noiseItems,
+            structuredSummary
+        };
+    }
+
+    function renderAiAudit(showIfHidden = false) {
+        if (!aiObsPanel) return;
+
+        if (showIfHidden) {
+            aiObsPanel.classList.remove('hidden');
+            if (btnAiAudit) btnAiAudit.classList.add('active');
+        }
+
+        const text = inputObservaciones ? inputObservaciones.value : '';
+        const tipoRa = selectRa ? selectRa.value : '';
+
+        if (!tipoRa) {
+            if (aiRaTag) aiRaTag.textContent = 'Seleccioná un RA primero';
+            if (aiScoreNum) aiScoreNum.textContent = '0%';
+            if (aiProgressFill) {
+                aiProgressFill.style.width = '0%';
+                aiProgressFill.style.backgroundColor = 'var(--color-danger)';
+            }
+            if (aiVerdictBox) aiVerdictBox.className = 'ai-verdict-box warning';
+            if (aiVerdictBadge) {
+                aiVerdictBadge.textContent = 'Sin Clasificación';
+                aiVerdictBadge.className = 'ai-verdict-badge badge-warning';
+            }
+            if (aiVerdictTitle) aiVerdictTitle.textContent = 'Falta Tipo de Reclamo';
+            if (aiVerdictDesc) aiVerdictDesc.textContent = 'Seleccioná un tipo de reclamo en el selector superior para que la IA audite las observaciones con las plantillas oficiales.';
+            if (aiRelevantList) aiRelevantList.innerHTML = '<li class="ai-item-empty">Esperando selección de RA...</li>';
+            if (aiMissingList) aiMissingList.innerHTML = '<li class="ai-item-empty">Seleccioná una gestión para evaluar requisitos.</li>';
+            if (aiSummaryContent) aiSummaryContent.textContent = '(Seleccioná un RA primero)';
+            if (aiTemplateUsage) aiTemplateUsage.textContent = '';
+            if (aiTemplateCode) aiTemplateCode.textContent = '';
+            return;
+        }
+
+        const res = analyzeClaimWithAI(text, tipoRa);
+
+        if (aiRaTag) aiRaTag.textContent = tipoRa;
+        if (aiScoreNum) aiScoreNum.textContent = res.score + '%';
+
+        // Update progress bar
+        if (aiProgressFill) {
+            aiProgressFill.style.width = res.score + '%';
+            if (res.score >= 80) {
+                aiProgressFill.style.backgroundColor = '#10B981';
+            } else if (res.score >= 50) {
+                aiProgressFill.style.backgroundColor = '#F59E0B';
+            } else {
+                aiProgressFill.style.backgroundColor = '#EF4444';
+            }
+        }
+
+        // Update verdict box
+        if (aiVerdictBox) {
+            aiVerdictBox.className = 'ai-verdict-box ' + res.verdictClass;
+        }
+        if (aiVerdictBadge) {
+            aiVerdictBadge.textContent = res.verdict;
+            aiVerdictBadge.className = 'ai-verdict-badge ' + (
+                res.verdictClass === 'success' ? 'badge-success' : (res.verdictClass === 'warning' ? 'badge-warning' : 'badge-danger')
+            );
+        }
+        if (aiVerdictTitle) {
+            aiVerdictTitle.textContent = res.score >= 80
+                ? '✓ Reclamo Gestionable'
+                : (res.score >= 50 ? '⚠️ Reclamo Parcialmente Gestionable' : '✕ Reclamo Rechazable');
+        }
+        if (aiVerdictDesc) {
+            aiVerdictDesc.textContent = res.verdictDesc;
+        }
+
+        // Render Relevant (Detected)
+        if (aiRelevantList) {
+            let relevantHtml = '';
+            if (res.detectedItems && res.detectedItems.length > 0) {
+                res.detectedItems.forEach(item => {
+                    relevantHtml += `
+                        <li class="ai-item-valid">
+                            <i data-lucide="check-circle-2"></i>
+                            <div class="ai-item-body">
+                                <span class="ai-item-label">${escapeHtml(item.label)}:</span>
+                                <span class="ai-item-val">${escapeHtml(item.val)}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+            if (res.noiseItems && res.noiseItems.length > 0) {
+                res.noiseItems.forEach(n => {
+                    relevantHtml += `
+                        <li class="ai-item-info">
+                            <i data-lucide="info"></i>
+                            <div class="ai-item-body">
+                                <span class="ai-item-label">Info complementaria:</span>
+                                <span class="ai-item-val">${escapeHtml(n.text)}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+            if (!relevantHtml) {
+                relevantHtml = '<li class="ai-item-empty">No se detectaron datos reglamentarios todavía.</li>';
+            }
+            aiRelevantList.innerHTML = relevantHtml;
+        }
+
+        // Render Missing / Non-compliant
+        if (aiMissingList) {
+            let missingHtml = '';
+            if (res.missingItems && res.missingItems.length > 0) {
+                res.missingItems.forEach(item => {
+                    const tag = item.isPassword
+                        ? '<span class="ai-pwd-alert">¡Estrictamente Necesaria!</span>'
+                        : (item.critical ? '<span class="ai-critical-tag">Obligatorio</span>' : '<span class="ai-optional-tag">Sugerido</span>');
+                    missingHtml += `
+                        <li class="ai-item-missing ${item.critical ? 'is-critical' : ''}">
+                            <i data-lucide="alert-circle"></i>
+                            <div class="ai-item-body">
+                                <span class="ai-item-label">${escapeHtml(item.label)}</span>
+                                ${tag}
+                            </div>
+                        </li>
+                    `;
+                });
+            } else {
+                missingHtml = '<li class="ai-item-empty success-text">✓ Cumple con todos los requisitos oficiales de la plantilla.</li>';
+            }
+            aiMissingList.innerHTML = missingHtml;
+        }
+
+        // Summary and Template details
+        if (aiSummaryContent) {
+            aiSummaryContent.textContent = res.structuredSummary || '(Sin datos suficientes para estructurar resumen)';
+        }
+        if (aiTemplateUsage) {
+            aiTemplateUsage.textContent = res.usos ? `Uso oficial: ${res.usos}` : '';
+        }
+        if (aiTemplateCode) {
+            aiTemplateCode.textContent = res.plantillaOficial || '[Sin plantilla estricta para esta gestión]';
+        }
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    function initAiClaimAudit() {
+        if (btnAiAudit && aiObsPanel) {
+            btnAiAudit.addEventListener('click', () => {
+                const isHidden = aiObsPanel.classList.contains('hidden');
+                if (isHidden) {
+                    aiObsPanel.classList.remove('hidden');
+                    btnAiAudit.classList.add('active');
+                    renderAiAudit(true);
+                } else {
+                    aiObsPanel.classList.add('hidden');
+                    btnAiAudit.classList.remove('active');
+                }
+            });
+        }
+
+        let aiAuditDebounce = null;
+        if (inputObservaciones) {
+            inputObservaciones.addEventListener('input', () => {
+                if (aiObsPanel && !aiObsPanel.classList.contains('hidden')) {
+                    clearTimeout(aiAuditDebounce);
+                    aiAuditDebounce = setTimeout(() => {
+                        renderAiAudit(false);
+                    }, 250);
+                }
+            });
+        }
+
+        if (selectRa) {
+            selectRa.addEventListener('change', () => {
+                if (aiObsPanel && !aiObsPanel.classList.contains('hidden')) {
+                    renderAiAudit(false);
+                }
+            });
+        }
+
+        if (btnAiCopySummary && aiSummaryContent) {
+            btnAiCopySummary.addEventListener('click', async () => {
+                const text = aiSummaryContent.textContent;
+                if (!text || text.startsWith('(')) {
+                    showToast('No hay resumen generado para copiar', 'warning');
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Resumen oficial copiado al portapapeles', 'success');
+                } catch {
+                    showToast('Error al copiar al portapapeles', 'error');
+                }
+            });
+        }
+
+        if (btnAiApplySummary && aiSummaryContent && inputObservaciones) {
+            btnAiApplySummary.addEventListener('click', () => {
+                const text = aiSummaryContent.textContent;
+                if (!text || text.startsWith('(')) {
+                    showToast('No hay resumen válido para aplicar', 'warning');
+                    return;
+                }
+                inputObservaciones.value = text;
+                inputObservaciones.dispatchEvent(new Event('input'));
+                inputObservaciones.focus();
+                showToast('✨ Resumen estructurado aplicado a Observaciones', 'success');
+            });
+        }
+
+        if (btnAiCopyRawTemplate && aiTemplateCode) {
+            btnAiCopyRawTemplate.addEventListener('click', async () => {
+                const text = aiTemplateCode.textContent;
+                if (!text) {
+                    showToast('No hay plantilla disponible', 'warning');
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Plantilla oficial vacía copiada', 'success');
+                } catch {
+                    showToast('Error al copiar plantilla', 'error');
+                }
+            });
         }
     }
 
