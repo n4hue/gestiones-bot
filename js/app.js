@@ -2549,6 +2549,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 detected++;
             }
 
+            // 5. Tipo de Gestión / RA / Reclamo
+            if (selectRa) {
+                // Normalizador de texto (sin acentos, minúsculas, espacios limpios)
+                const norm = (s) => s.toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                const normText = norm(text);
+
+                // Obtener todas las opciones disponibles en selectRa
+                const allRaOptions = Array.from(selectRa.querySelectorAll('option'))
+                    .filter(opt => opt.value && !opt.disabled)
+                    .map(opt => opt.value);
+
+                let matchedRa = null;
+                let maxMatchLen = 0;
+
+                for (const optVal of allRaOptions) {
+                    const normOpt = norm(optVal);
+
+                    // A) Coincidencia directa de la opción completa
+                    if (normText.includes(normOpt) && normOpt.length > maxMatchLen) {
+                        matchedRa = optVal;
+                        maxMatchLen = normOpt.length;
+                    }
+
+                    // B) Coincidencia por frase clave central (ej. "sin suscripcion", "pantalla en negro")
+                    const corePhrase = optVal
+                        .replace(/^NOC\s*-\s*(INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH|APLICACIONES)\s*-\s*/i, '')
+                        .replace(/^(Web\/App|App Mobile)\s*-\s*/i, '');
+                    const normCore = norm(corePhrase);
+
+                    if (normCore.length >= 5 && normText.includes(normCore) && normCore.length > maxMatchLen) {
+                        matchedRa = optVal;
+                        maxMatchLen = normCore.length;
+                    }
+                }
+
+                if (matchedRa) {
+                    selectRa.value = matchedRa;
+                    selectRa.dispatchEvent(new Event('change'));
+                    detected++;
+
+                    // Limpiar el campo de filtro si estaba abierto
+                    const raSearch = document.querySelector('.ra-search-wrapper input');
+                    if (raSearch) raSearch.value = '';
+                }
+            }
+
+            // 6. Observaciones explícitas (si vienen con prefijo "Obs:", "Detalle:", etc.)
+            const obsMatch = text.match(/(?:observaciones|obs|detalle|detalles|nota|comentarios)[:=\s]+([^\n\r]+)/i);
+            if (obsMatch && obsMatch[1] && inputObservaciones && !inputObservaciones.value) {
+                const cleanObs = obsMatch[1].trim();
+                if (cleanObs.length > 2) {
+                    inputObservaciones.value = cleanObs;
+                    detected++;
+                }
+            }
+
             if (hasEquipment && toolsAccordion) {
                 toolsAccordion.open = true;
             }
