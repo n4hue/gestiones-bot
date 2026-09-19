@@ -631,8 +631,31 @@
             
             <div class="settings-section">
                 <label for="gemini-api-key-input">Gemini API Key:</label>
-                <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
+                <div class="input-with-toggle">
+                    <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
+                    <button type="button" class="btn-toggle-pass" id="btn-toggle-gemini-key" title="Mostrar/Ocultar API Key">
+                        <i data-lucide="eye"></i>
+                    </button>
+                </div>
                 <small class="settings-hint">Necesaria para usar el motor de IA LLM. Se guarda de forma segura localmente en tu navegador.</small>
+            </div>
+
+            <div class="settings-section">
+                <label for="gemini-model-select">Modelo Gemini:</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="gemini-model-select" style="flex: 1;">
+                        <option value="auto">⚡ Auto-detectar modelo compatible</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Latest)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </select>
+                    <button type="button" id="btn-test-gemini" class="btn btn-secondary btn-sm" title="Probar conexión y listar modelos disponibles" style="padding: 0.45rem 0.75rem; white-space: nowrap; height: 38px;">
+                        <i data-lucide="refresh-cw"></i> Probar
+                    </button>
+                </div>
+                <small class="settings-hint" id="gemini-model-status">Detecta y selecciona los modelos soportados por tu API Key.</small>
             </div>
 
             <hr class="settings-divider">

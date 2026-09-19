@@ -38,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const soundToggleEl = document.getElementById('sound-toggle');
     const breakAlarmToggleEl = document.getElementById('break-alarm-toggle');
     const inputGeminiApiKey = document.getElementById('gemini-api-key-input');
+    const selectGeminiModel = document.getElementById('gemini-model-select');
+    const btnTestGemini = document.getElementById('btn-test-gemini');
+    const btnToggleGeminiKey = document.getElementById('btn-toggle-gemini-key');
+    const geminiModelStatus = document.getElementById('gemini-model-status');
     const btnSaveSettings = document.getElementById('btn-save-settings');
     const btnCerrarModal = document.getElementById('btn-cerrar-modal');
 
@@ -143,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
     const OPERATOR_NAME_KEY = 'bot_operator_name';
     const GEMINI_API_KEY_STORAGE = 'bot_gemini_api_key';
+    const GEMINI_MODEL_STORAGE = 'bot_gemini_model';
     const PASS_CRM_KEY = 'bot_pass_crm';
 
     // ============================================
@@ -303,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
+    let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
 
     // Break alarm state
@@ -341,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
+    if (selectGeminiModel) selectGeminiModel.value = geminiModel;
 
     // Password visibility toggle
     if (btnTogglePass && inputPassCrm) {
@@ -350,6 +357,59 @@ document.addEventListener('DOMContentLoaded', () => {
             btnTogglePass.innerHTML = isPassword ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
             btnTogglePass.title = isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña';
             if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    }
+
+    // Gemini API Key visibility toggle
+    if (btnToggleGeminiKey && inputGeminiApiKey) {
+        btnToggleGeminiKey.addEventListener('click', () => {
+            const isPassword = inputGeminiApiKey.type === 'password';
+            inputGeminiApiKey.type = isPassword ? 'text' : 'password';
+            btnToggleGeminiKey.innerHTML = isPassword ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+            btnToggleGeminiKey.title = isPassword ? 'Ocultar API Key' : 'Mostrar API Key';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    }
+
+    // Probar conexión y detectar modelos Gemini
+    if (btnTestGemini) {
+        btnTestGemini.addEventListener('click', async () => {
+            const key = inputGeminiApiKey ? inputGeminiApiKey.value.trim() : '';
+            if (!key) {
+                showToast('Ingresá una API Key de Gemini primero', 'warning');
+                return;
+            }
+            btnTestGemini.disabled = true;
+            const origHtml = btnTestGemini.innerHTML;
+            btnTestGemini.innerHTML = '<i class="spin" data-lucide="loader-2"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            if (geminiModelStatus) geminiModelStatus.textContent = 'Consultando modelos disponibles en Google AI...';
+
+            try {
+                const models = await getAvailableGeminiModels(key);
+                if (!models || models.length === 0) {
+                    throw new Error('No se encontraron modelos con soporte para generateContent');
+                }
+                populateGeminiModelOptions(models);
+                const best = pickBestGeminiModel(models);
+                if (selectGeminiModel) selectGeminiModel.value = best;
+                geminiModel = best;
+                localStorage.setItem(GEMINI_MODEL_STORAGE, best);
+                if (geminiModelStatus) {
+                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>`;
+                }
+                showToast(`Conexión exitosa: ${models.length} modelos disponibles (${best})`, 'success');
+            } catch (err) {
+                console.error('Error al probar Gemini:', err);
+                if (geminiModelStatus) {
+                    geminiModelStatus.innerHTML = `<span style="color: #EF4444; font-weight: 600;">✗ Error:</span> ${err.message}`;
+                }
+                showToast(`Error al conectar con Gemini: ${err.message}`, 'error');
+            } finally {
+                btnTestGemini.disabled = false;
+                btnTestGemini.innerHTML = origHtml;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
         });
     }
 
@@ -1816,6 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
+            if (selectGeminiModel) selectGeminiModel.value = geminiModel;
             settingsModal.classList.remove('hidden');
         });
     }
@@ -1865,10 +1926,14 @@ document.addEventListener('DOMContentLoaded', () => {
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
             localStorage.setItem(PASS_CRM_KEY, passCrm);
 
-            // Save Gemini API Key
+            // Save Gemini API Key & Model
             const newGeminiKey = inputGeminiApiKey ? inputGeminiApiKey.value.trim() : '';
             geminiApiKey = newGeminiKey;
             localStorage.setItem(GEMINI_API_KEY_STORAGE, geminiApiKey);
+
+            const newGeminiModel = selectGeminiModel ? selectGeminiModel.value : 'auto';
+            geminiModel = newGeminiModel;
+            localStorage.setItem(GEMINI_MODEL_STORAGE, geminiModel);
 
             settingsModal.classList.add('hidden');
             showToast('Configuración guardada', 'success');
@@ -4269,6 +4334,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function getAvailableGeminiModels(apiKey) {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error?.message || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const supported = (data.models || []).filter(m => 
+            Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent')
+        );
+        return supported;
+    }
+
+    function pickBestGeminiModel(modelsList) {
+        if (!modelsList || modelsList.length === 0) return 'gemini-2.0-flash';
+        
+        const priority = [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash-latest',
+            'gemini-1.5-flash-002',
+            'gemini-1.5-flash-001',
+            'gemini-1.5-flash',
+            'gemini-2.0-flash-exp',
+            'gemini-2.5-pro',
+            'gemini-2.0-pro-exp',
+            'gemini-1.5-pro'
+        ];
+
+        for (const p of priority) {
+            const found = modelsList.find(m => {
+                const name = m.name.replace(/^models\//, '');
+                return name === p;
+            });
+            if (found) return found.name.replace(/^models\//, '');
+        }
+
+        const anyFlash = modelsList.find(m => m.name.toLowerCase().includes('flash'));
+        if (anyFlash) return anyFlash.name.replace(/^models\//, '');
+
+        return modelsList[0].name.replace(/^models\//, '');
+    }
+
+    function populateGeminiModelOptions(modelsList) {
+        if (!selectGeminiModel || !modelsList || modelsList.length === 0) return;
+        const currentVal = selectGeminiModel.value;
+        selectGeminiModel.innerHTML = '<option value="auto">⚡ Auto-detectar modelo compatible</option>';
+        modelsList.forEach(m => {
+            const cleanName = m.name.replace(/^models\//, '');
+            const opt = document.createElement('option');
+            opt.value = cleanName;
+            opt.textContent = m.displayName ? `${cleanName} (${m.displayName})` : cleanName;
+            selectGeminiModel.appendChild(opt);
+        });
+        if (currentVal && Array.from(selectGeminiModel.options).some(o => o.value === currentVal)) {
+            selectGeminiModel.value = currentVal;
+        }
+    }
+
     async function handleLlmAudit() {
         if (!geminiApiKey) {
             showToast('API Key requerida. Configurá tu clave de Gemini en Ajustes.', 'warning');
@@ -4286,7 +4410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         btnAiLlmAudit.disabled = true;
         const originalText = btnAiLlmAudit.innerHTML;
-        btnAiLlmAudit.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Analizando...';
+        btnAiLlmAudit.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Razonando con Gemini...';
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
         try {
@@ -4312,28 +4436,72 @@ ${text}
 """
 Solo JSON puro, sin tags HTML.`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: systemPrompt }] }],
-                    generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
-                })
-            });
+            // Determinar modelo a usar
+            let modelToUse = geminiModel;
+            if (!modelToUse || modelToUse === 'auto') {
+                try {
+                    const available = await getAvailableGeminiModels(geminiApiKey);
+                    if (available && available.length > 0) {
+                        modelToUse = pickBestGeminiModel(available);
+                        geminiModel = modelToUse;
+                        localStorage.setItem(GEMINI_MODEL_STORAGE, modelToUse);
+                        if (selectGeminiModel) selectGeminiModel.value = modelToUse;
+                    } else {
+                        modelToUse = 'gemini-2.0-flash';
+                    }
+                } catch {
+                    modelToUse = 'gemini-2.0-flash';
+                }
+            }
 
+            const executeCall = async (model) => {
+                return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: systemPrompt }] }],
+                        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                    })
+                });
+            };
+
+            let response = await executeCall(modelToUse);
+
+            // Si el modelo específico da error (ej. 404, not found, not supported), auto-descubrir y reintentar
             if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || 'Error en Gemini API');
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.error?.message || '';
+                if (response.status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
+                    console.warn(`Modelo ${modelToUse} rechazado. Buscando modelos activos en la cuenta...`);
+                    const freshModels = await getAvailableGeminiModels(geminiApiKey).catch(() => null);
+                    if (freshModels && freshModels.length > 0) {
+                        const fallbackModel = pickBestGeminiModel(freshModels.filter(m => !m.name.includes(modelToUse)));
+                        if (fallbackModel && fallbackModel !== modelToUse) {
+                            modelToUse = fallbackModel;
+                            geminiModel = fallbackModel;
+                            localStorage.setItem(GEMINI_MODEL_STORAGE, fallbackModel);
+                            if (selectGeminiModel) selectGeminiModel.value = fallbackModel;
+                            response = await executeCall(modelToUse);
+                        }
+                    }
+                }
+                if (!response.ok) {
+                    const finalErr = await response.json().catch(() => ({}));
+                    throw new Error(finalErr.error?.message || errMsg || 'Error en Gemini API');
+                }
             }
 
             const data = await response.json();
-            const textResponse = data.candidates[0].content.parts[0].text;
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!textResponse) {
+                throw new Error('Respuesta vacía de Gemini');
+            }
             let cleanedText = textResponse.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
             const resData = JSON.parse(cleanedText);
 
-            resData.verdictDesc = "✨ (Gemini LLM) " + resData.verdictDesc;
+            resData.verdictDesc = `✨ (${modelToUse}) ` + resData.verdictDesc;
             renderAiAuditWithData(resData, tipoRa);
-            showToast('Análisis profundo LLM completado', 'success');
+            showToast(`Análisis profundo completado (${modelToUse})`, 'success');
 
         } catch (error) {
             console.error('Gemini Error:', error);
