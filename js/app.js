@@ -3124,6 +3124,14 @@ document.addEventListener('DOMContentLoaded', () => {
             rejectionAdvice: 'Corresponde rechazar el RA. Si requiere apertura para cámaras con IP 100.64.x.x, primero debe tramitarse el reclamo de Salida de CGNAT / IP Pública Dinámica.'
         },
         {
+            id: 'forwarding_ip_incompatible',
+            label: 'Port Forwarding hacia IP fuera de Subred CPE (192.168.0.xxx)',
+            regex: /(?:abrir\s*puertos?|apertura\s*(?:de\s*)?puertos?|port\s*forward(?:ing)?|redirecci[oó]n\s*(?:de\s*)?puertos?|mapeo\s*(?:de\s*)?puertos?)[^\n\.\+]*?(?:a\s*(?:la\s*)?(?:ip\s*)?|ip[:=\s]+|host[:=\s]+)(?!192\.168\.0\.)\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/i,
+            motivo: 'Dirección IP de Port Forwarding Incompatible con Gateway CPE Sagemcom / ONT',
+            technicalReason: 'Los Cablemódems DOCSIS 3.1 y ONTs GPON residenciales tienen su Gateway configurado en la subred 192.168.0.1/24. La regla de Port Forwarding en la GUI del CPE exige que la IP destino pertenezca obligatoriamente al segmento LAN local (192.168.0.xxx). No es técnicamente posible reenviar tráfico hacia otras subredes privadas (ej: 192.168.1.x, 10.x.x.x) ni hacia IPs públicas.',
+            rejectionAdvice: 'Corresponde rechazar o rectificar el RA. Indicar que el dispositivo destino debe tener asignada una IP dentro del rango 192.168.0.xxx (ej: 192.168.0.100) acorde al gateway 192.168.0.1 del equipo.'
+        },
+        {
             id: 'simetrico_docsis',
             label: 'Velocidad Simétrica de Subida en Red Coaxial DOCSIS 3.1 HFC',
             regex: /(?:(?:[1-9]\d{2}|1000)\s*(?:mbps?|megas?)\s*(?:de\s*)?subida\s*en\s*(?:docsis|cablemodem|cm|coaxil|hfc)|(?:subida\s*sim[eé]trica|servicio\s*sim[eé]trico|igual\s*subida\s*que\s*bajada)\s*en\s*(?:docsis|cablemodem|cm|hfc)|exige\s*(?:[1-9]\d{2}|1000)\s*(?:mbps?|megas?)\s*upstream\s*(?:en\s*)?(?:docsis|cm))/i,
@@ -3201,13 +3209,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // === INTERNET & WIFI MESH (Configuración & Acceso) ===
         'NOC - INTERNET - SOLICITUD DE CONFIGURACIÓN': {
-            usos: 'Se requiera aplicar una configuración técnica viable en CPE (apertura de puertos con TCP/UDP/IP Clase C, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
-            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada Clase C 192.168.x.x)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
+            usos: 'Se requiera aplicar una configuración técnica viable en CPE (apertura de puertos con TCP/UDP/IP 192.168.0.xxx, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
+            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada 192.168.0.xxx)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
             isFlexibleConfig: true
         },
         'NOC - WIFI MESH - SOLICITUD DE CONFIGURACION': {
-            usos: 'Se requiera aplicar una configuración técnica viable en CPE / Extensor (apertura de puertos con TCP/UDP/IP Clase C, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
-            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada Clase C 192.168.x.x)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
+            usos: 'Se requiera aplicar una configuración técnica viable en CPE / Extensor (apertura de puertos con TCP/UDP/IP 192.168.0.xxx, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
+            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada 192.168.0.xxx)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
             isFlexibleConfig: true
         },
         'NOC - INTERNET - PROBLEMAS PARTICULARES DE ACCESO': {
@@ -3475,12 +3483,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const protoMatch = text.match(/\b(tcp\s*[\/\-y]\s*udp|ambos|tcp|udp)\b/i);
             const portMatch = text.match(/(?:puertos?|port|ports|dst\s*port)[:=\s#]*([0-9]{1,5}(?:\s*(?:-|–|y|,|\/)\s*[0-9]{1,5})*)/i) ||
                               text.match(/\b([1-9][0-9]{0,4})\b(?!\s*(?:megas|mbps|mb|gb|d[ií]as|meses|pesos|usd|cliente|id|ra))/i);
-            const ipClassCMatch = text.match(/\b(192\.168\.\d{1,3}\.\d{1,3})\b/);
-            const genericIpMatch = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/);
+
+            // Extraer y clasificar direcciones IPv4 en el reclamo
+            const allIpMatches = [...text.matchAll(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g)].map(m => m[1]);
+
+            // Filtrar IPs de la subred del gateway CPE: 192.168.0.xxx (rango 192.168.0.0/24)
+            const cpeSubnetIps = allIpMatches.filter(ip => {
+                const parts = ip.split('.').map(Number);
+                return parts[0] === 192 && parts[1] === 168 && parts[2] === 0 && parts[3] >= 0 && parts[3] <= 255;
+            });
+
+            // Priorizar IP de host (distinta de .1 que es el gateway y de .0/.255)
+            const hostIp = cpeSubnetIps.find(ip => {
+                const last = Number(ip.split('.')[3]);
+                return last >= 2 && last <= 254;
+            }) || (cpeSubnetIps.length > 0 ? cpeSubnetIps[0] : null);
+
+            // Detectar si ingresó otra subred privada de 192.168 (ej: 192.168.1.x)
+            const otherSubnet192 = allIpMatches.find(ip => {
+                const parts = ip.split('.').map(Number);
+                return parts[0] === 192 && parts[1] === 168 && parts[2] !== 0 && parts[3] <= 255;
+            });
+
+            // O cualquier otra IP no perteneciente a 192.168.0.xxx
+            const genericIp = allIpMatches.find(ip => !cpeSubnetIps.includes(ip));
 
             const proto = protoMatch ? protoMatch[0].toUpperCase() : null;
             const port = portMatch ? (portMatch[1] || portMatch[0]) : null;
-            const ipClassC = ipClassCMatch ? ipClassCMatch[1] : null;
 
             const detectedItems = [];
             const missingItems = [];
@@ -3497,17 +3526,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 missingItems.push({ label: 'Número de Puerto o Rango a abrir', critical: true, isPassword: false });
             }
 
-            if (ipClassC) {
-                detectedItems.push({ label: 'Dirección IP Privada Clase C', val: ipClassC, critical: true });
-            } else if (genericIpMatch) {
+            let isIpValid = false;
+            if (hostIp) {
+                const lastOctet = Number(hostIp.split('.')[3]);
+                if (lastOctet === 1) {
+                    detectedItems.push({
+                        label: 'Dirección IP Subred CPE (192.168.0.1)',
+                        val: `${hostIp} (⚠ Gateway del módem/ONT; verificar si el host destino tiene otra IP en LAN)`,
+                        critical: true
+                    });
+                    isIpValid = true;
+                } else if (lastOctet === 0 || lastOctet === 255) {
+                    missingItems.push({
+                        label: 'IP inválida para host en subred 192.168.0.0/24',
+                        critical: true,
+                        isPassword: false,
+                        isIncoherence: true,
+                        isContentIncoherence: true,
+                        desc: `La dirección ${hostIp} corresponde a la red/broadcast de la subred. Para port forwarding la IP debe estar entre 192.168.0.2 y 192.168.0.254.`
+                    });
+                } else {
+                    detectedItems.push({ label: 'Dirección IP Privada CPE (192.168.0.xxx)', val: hostIp, critical: true });
+                    isIpValid = true;
+                }
+            } else if (otherSubnet192) {
                 missingItems.push({
-                    label: 'IP Privada Clase C (192.168.x.x)',
+                    label: 'IP fuera de la subred del gateway CPE (192.168.0.1)',
                     critical: true,
                     isPassword: false,
-                    desc: `La dirección ${genericIpMatch[1]} no pertenece al rango privado Clase C (192.168.0.0/16)`
+                    isIncoherence: true,
+                    isContentIncoherence: true,
+                    desc: `La dirección ${otherSubnet192} no pertenece a la subred del gateway por defecto de los CMs y ONTs (192.168.0.1/24). La IP de destino para port forwarding debe ser de tipo 192.168.0.xxx (ej: 192.168.0.100).`
+                });
+            } else if (genericIp) {
+                missingItems.push({
+                    label: 'IP fuera del rango de gateway CPE (192.168.0.xxx)',
+                    critical: true,
+                    isPassword: false,
+                    isIncoherence: true,
+                    isContentIncoherence: true,
+                    desc: `La dirección ${genericIp} no pertenece a la subred 192.168.0.0/24 del gateway de los CMs y ONTs. El router/ONT solo permite port forwarding hacia IPs de su LAN local (192.168.0.xxx).`
                 });
             } else {
-                missingItems.push({ label: 'Dirección IPv4 Privada de Clase C (192.168.x.x)', critical: true, isPassword: false });
+                missingItems.push({ label: 'Dirección IPv4 Privada del rango CPE (192.168.0.xxx)', critical: true, isPassword: false });
             }
 
             const destMatch = text.match(/(?:dvr|c[aá]mara|camaras|servidor|server|playstation|ps[45]|xbox|nvr|torrent|nas|pc|ipcam)/i);
@@ -3515,16 +3576,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 detectedItems.push({ label: 'Dispositivo / Servicio Destino', val: destMatch[0].toUpperCase(), critical: false });
             }
 
-            const isComplete = proto && port && ipClassC;
-            const missingCount = (!proto ? 1 : 0) + (!port ? 1 : 0) + (!ipClassC ? 1 : 0);
+            const isComplete = proto && port && isIpValid;
+            const missingCount = (!proto ? 1 : 0) + (!port ? 1 : 0) + (!isIpValid ? 1 : 0);
             const score = isComplete ? 100 : (missingCount === 1 ? 50 : 25);
             const verdict = isComplete ? 'Gestionable' : (score >= 50 ? 'Parcialmente Gestionable' : 'Rechazable');
             const verdictClass = isComplete ? 'success' : (score >= 50 ? 'warning' : 'danger');
             const verdictDesc = isComplete
-                ? 'Solicitud de Apertura de Puertos completa y técnicamente viable: Especifica protocolo (TCP/UDP), puerto(s) e IP privada Clase C (192.168.x.x) para aplicar Port Forwarding en el router CPE.'
-                : 'Faltan parámetros obligatorios para apertura de puertos: Se requiere especificar protocolo (TCP o UDP), número de puerto y la dirección IP privada de Clase C (192.168.x.x) de destino para configurar el forwarding en el equipo.';
+                ? 'Solicitud de Apertura de Puertos completa y técnicamente viable: Especifica protocolo (TCP/UDP), puerto(s) e IP privada de la subred del gateway CPE (192.168.0.xxx) para aplicar Port Forwarding.'
+                : 'Faltan parámetros obligatorios para apertura de puertos: Se requiere especificar protocolo (TCP o UDP), número de puerto y la dirección IP privada de la subred del gateway CPE (192.168.0.xxx) de destino para configurar el forwarding.';
 
-            const structuredSummary = `[SOLICITUD: APERTURA DE PUERTOS] + [PROTOCOLO: ${proto || 'FALTA (TCP/UDP)'}] + [PUERTO: ${port || 'FALTA'}] + [IP PRIVADA: ${ipClassC || 'FALTA (192.168.x.x)'}]${destMatch ? ` + [DESTINO: ${destMatch[0].toUpperCase()}]` : ''}`;
+            const structuredSummary = `[SOLICITUD: APERTURA DE PUERTOS] + [PROTOCOLO: ${proto || 'FALTA (TCP/UDP)'}] + [PUERTO: ${port || 'FALTA'}] + [IP PRIVADA: ${isIpValid ? hostIp : 'FALTA (192.168.0.xxx)'}]${destMatch ? ` + [DESTINO: ${destMatch[0].toUpperCase()}]` : ''}`;
 
             return {
                 hasRule: true,
@@ -3620,13 +3681,13 @@ document.addEventListener('DOMContentLoaded', () => {
             score: 35,
             verdict: 'Rechazable',
             verdictClass: 'danger',
-            verdictDesc: 'Falta especificar qué configuración técnica viable se requiere (ej: apertura de puertos con protocolo/puerto/IP Clase C, cambio de service package, reaprovisionar, sacar morosidad, WiFi, bridge, etc.).',
+            verdictDesc: 'Falta especificar qué configuración técnica viable se requiere (ej: apertura de puertos con protocolo/puerto/IP 192.168.0.xxx, cambio de service package, reaprovisionar, sacar morosidad, WiFi, bridge, etc.).',
             detectedItems: text.trim().length > 8 ? [{ label: 'Texto ingresado', val: text.trim().substring(0, 70) + '...', critical: false }] : [],
             missingItems: [{
                 label: 'Configuración técnica viable y detallada',
                 critical: true,
                 isPassword: false,
-                desc: 'Debe especificar el cambio técnico (puertos con TCP/UDP/IP 192.168.x.x, service package, reaprovisionar, morosidad, WiFi, bridge, etc.)'
+                desc: 'Debe especificar el cambio técnico (puertos con TCP/UDP/IP 192.168.0.xxx, service package, reaprovisionar, morosidad, WiFi, bridge, etc.)'
             }],
             noiseItems: [],
             structuredSummary: text.trim() ? `[SOLICITUD: CONFIGURACIÓN] + [DETALLE: ${text.trim().substring(0, 80)}]` : '',
