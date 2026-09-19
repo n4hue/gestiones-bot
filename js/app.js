@@ -4940,4 +4940,69 @@ Solo JSON puro, sin tags HTML.`;
         }
     }
 
+    // ============================================
+    // Feature: Global JS Tooltips
+    // ============================================
+    function initGlobalTooltips() {
+        const globalTooltip = document.createElement('div');
+        globalTooltip.className = 'global-tooltip';
+        document.body.appendChild(globalTooltip);
+
+        let tooltipTimeout;
+
+        const setupTooltips = () => {
+            const elements = document.querySelectorAll('[title]');
+            elements.forEach(el => {
+                const title = el.getAttribute('title');
+                if (!title) return;
+                
+                el.setAttribute('data-original-title', title);
+                el.removeAttribute('title');
+                
+                el.addEventListener('mouseenter', () => {
+                    const text = el.getAttribute('data-original-title');
+                    if (!text) return;
+                    
+                    globalTooltip.textContent = text;
+                    const rect = el.getBoundingClientRect();
+                    
+                    const top = rect.top - globalTooltip.offsetHeight + window.scrollY;
+                    const left = rect.left + (rect.width / 2) + window.scrollX;
+                    
+                    globalTooltip.style.top = `${top}px`;
+                    globalTooltip.style.left = `${left}px`;
+                    
+                    clearTimeout(tooltipTimeout);
+                    globalTooltip.classList.add('visible');
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                    tooltipTimeout = setTimeout(() => {
+                        globalTooltip.classList.remove('visible');
+                    }, 50);
+                });
+            });
+        };
+        
+        setupTooltips();
+
+        const observer = new MutationObserver((mutations) => {
+            let shouldSetup = false;
+            mutations.forEach(m => {
+                if (m.addedNodes.length > 0) {
+                    m.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && (node.hasAttribute('title') || node.querySelector('[title]'))) {
+                            shouldSetup = true;
+                        }
+                    });
+                }
+            });
+            if (shouldSetup) setupTooltips();
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+    
+    initGlobalTooltips();
+
 });
