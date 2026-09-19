@@ -2065,34 +2065,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if (macOnt) setupMacInput(macOnt);
     document.querySelectorAll('.deco-input').forEach(setupMacInput);
 
+    function addDecoInput() {
+        if (!decosContainer) return null;
+        const currentDecos = decosContainer.querySelectorAll('.deco-group').length;
+        const index = currentDecos + 1;
+        const group = document.createElement('div');
+        group.className = 'tool-group deco-group';
+        group.innerHTML = `
+            <label>Deco MAC ${index}</label>
+            <div class="input-with-copy">
+                <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" maxlength="17">
+                <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i data-lucide="copy"></i></button>
+                <button type="button" class="btn-remove-deco" title="Quitar Deco"><i data-lucide="minus"></i></button>
+            </div>
+        `;
+        decosContainer.appendChild(group);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const input = group.querySelector('.deco-input');
+        setupMacInput(input);
+
+        group.querySelector('.btn-remove-deco').addEventListener('click', () => {
+            group.remove();
+            decosContainer.querySelectorAll('.deco-group label').forEach((lbl, i) => {
+                lbl.textContent = 'Deco MAC ' + (i + 1);
+            });
+        });
+
+        setupCopyButton(group.querySelector('.btn-copy'), input);
+        return input;
+    }
+
     const btnAddDeco = document.getElementById('btn-add-deco');
     if (btnAddDeco && decosContainer) {
         btnAddDeco.addEventListener('click', () => {
-            const currentDecos = decosContainer.querySelectorAll('.deco-group').length;
-            const index = currentDecos + 1;
-            const group = document.createElement('div');
-            group.className = 'tool-group deco-group';
-            group.innerHTML = `
-                <label>Deco MAC ${index}</label>
-                <div class="input-with-copy">
-                    <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" maxlength="17">
-                    <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i data-lucide="copy"></i></button>
-                    <button type="button" class="btn-remove-deco" title="Quitar Deco"><i data-lucide="minus"></i></button>
-                </div>
-            `;
-            decosContainer.appendChild(group);
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-
-            setupMacInput(group.querySelector('.deco-input'));
-
-            group.querySelector('.btn-remove-deco').addEventListener('click', () => {
-                group.remove();
-                decosContainer.querySelectorAll('.deco-group label').forEach((lbl, i) => {
-                    lbl.textContent = 'Deco MAC ' + (i + 1);
-                });
-            });
-
-            setupCopyButton(group.querySelector('.btn-copy'), group.querySelector('.deco-input'));
+            addDecoInput();
         });
     }
 
@@ -2811,67 +2818,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 detected++;
             }
 
-            // 4. MACs (CM, ONT, DECO)
-            const macRegex = /\b([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})\b/g;
-            const macMatches = [...text.matchAll(macRegex)].map(m => m[1]);
-
-            function formatMac(raw) {
-                const clean = raw.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-                if (clean.length === 12) {
-                    return clean.match(/.{1,2}/g).join(':');
-                }
-                return raw.toUpperCase();
-            }
-
-            const cmMatch = text.match(/(?:cm|cablemodem|cable\s*modem|modem)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
-            const ontMatch = text.match(/(?:ont|gpon|fibra)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
-            const decoMatch = text.match(/(?:deco|stb|box)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i);
-
-            let hasEquipment = false;
-
-            if (cmMatch && macCm) {
-                macCm.value = formatMac(cmMatch[1]);
-                macCm.dispatchEvent(new Event('input'));
-                hasEquipment = true;
-                detected++;
-            } else if (macMatches.length > 0 && macCm && !macCm.value) {
-                macCm.value = formatMac(macMatches[0]);
-                macCm.dispatchEvent(new Event('input'));
-                hasEquipment = true;
-                detected++;
-            }
-
-            if (ontMatch && macOnt) {
-                macOnt.value = formatMac(ontMatch[1]);
-                hasEquipment = true;
-                detected++;
-            }
-
-            if (decoMatch) {
-                const firstDeco = document.querySelector('.deco-input');
-                if (firstDeco) {
-                    firstDeco.value = formatMac(decoMatch[1]);
-                    hasEquipment = true;
-                    detected++;
-                }
-            }
-
-            // 5. Teléfono / Línea
-            const telMatch = text.match(/(?:tel|linea|telefono|celular|movil)?[:=\s]*\b(11[0-9]{8}|[2-9][0-9]{9})\b/i);
-            if (telMatch && lineaTel) {
-                lineaTel.value = telMatch[1];
-                hasEquipment = true;
-                detected++;
-            }
-
-            // 6. SN (Serial Number)
-            const snMatch = text.match(/(?:sn|serial|serie)?[:=\s]*\b((?:GZ|gz)[0-9A-Za-z]+)\b/i);
-            if (snMatch && inputSn) {
-                inputSn.value = snMatch[1].toUpperCase();
-                detected++;
-            }
-
-            // 7. Tipo de Gestión / RA / Reclamo (Clasificación inteligente con jerarquía de campos)
+            // 4. Tipo de Gestión / RA / Reclamo (Clasificación inteligente previa para orientar equipos/MACS)
+            let matchedRa = null;
             if (selectRa) {
                 const subMatch = text.match(/(?:subclasificaci[oó]n|subcategoria)[:=\s]+([^\n\r]+)/i);
                 const clasifMatch = text.match(/(?:clasificaci[oó]n|categoria)[:=\s]+([^\n\r]+)/i);
@@ -2914,7 +2862,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return bestOpt;
                 }
 
-                let matchedRa = null;
                 if (subMatch) matchedRa = scoreMatch(subMatch[1]);
                 if (!matchedRa && headerMatch) matchedRa = scoreMatch(headerMatch[1]);
                 if (!matchedRa && clasifMatch) matchedRa = scoreMatch(clasifMatch[1] + (subMatch ? ' ' + subMatch[1] : ''));
@@ -2931,6 +2878,235 @@ document.addEventListener('DOMContentLoaded', () => {
                     const raSearch = document.querySelector('.ra-search-wrapper input');
                     if (raSearch) raSearch.value = '';
                 }
+            }
+
+            // 5. MACs según subclasificación del RA (CM, ONT, DECO)
+            const currentRa = matchedRa || (selectRa ? selectRa.value : '');
+            const raCat = currentRa ? getCategory(currentRa) : '';
+
+            const isTelevision = raCat === 'TELEVISIÓN' ||
+                /\b(televisi[oó]n|deco\s*android|deco|stb)\b/i.test(currentRa) ||
+                /\bnoc\s*-\s*televisi[oó]n\b/i.test(text) ||
+                /\bsubclasificaci[oó]n[:=\s]*[^\n\r]*televisi[oó]n/i.test(text);
+
+            const isInternet = !isTelevision && (
+                raCat === 'INTERNET' ||
+                raCat === 'WIFI MESH' ||
+                /\b(internet|banda\s*ancha)\b/i.test(currentRa) ||
+                /\bnoc\s*-\s*(?:internet|banda\s*ancha)\b/i.test(text) ||
+                /\bsubclasificaci[oó]n[:=\s]*[^\n\r]*(?:internet|banda\s*ancha)/i.test(text)
+            );
+
+            const macRegex = /\b([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})\b/g;
+            const rawMacs = [...text.matchAll(macRegex)].map(m => m[1]);
+
+            // Deduplicar MACs en orden de aparición
+            const uniqueMacs = [];
+            const seenMacs = new Set();
+            for (const raw of rawMacs) {
+                const formatted = formatMac(raw);
+                if (formatted && !seenMacs.has(formatted)) {
+                    seenMacs.add(formatted);
+                    uniqueMacs.push(formatted);
+                }
+            }
+
+            let hasEquipment = false;
+
+            if (isTelevision) {
+                // En NOC - TELEVISION: todas las MACs van a los DECOS, cargando tantos decos como MACs haya
+                if (uniqueMacs.length > 0 && decosContainer) {
+                    let decoInputs = decosContainer.querySelectorAll('.deco-input');
+
+                    // Crear campos adicionales si hay más MACs que campos actuales
+                    while (decoInputs.length < uniqueMacs.length) {
+                        addDecoInput();
+                        decoInputs = decosContainer.querySelectorAll('.deco-input');
+                    }
+
+                    // Quitar campos excedentes si antes había más decos que en este reclamo
+                    const decoGroups = decosContainer.querySelectorAll('.deco-group');
+                    decoGroups.forEach((group, index) => {
+                        if (index >= uniqueMacs.length && index > 0) {
+                            group.remove();
+                        }
+                    });
+
+                    // Cargar cada MAC en su correspondiente deco
+                    decoInputs = decosContainer.querySelectorAll('.deco-input');
+                    uniqueMacs.forEach((macVal, i) => {
+                        if (decoInputs[i]) {
+                            decoInputs[i].value = macVal;
+                            decoInputs[i].dispatchEvent(new Event('input'));
+                        }
+                    });
+
+                    // Re-etiquetar orden de decos
+                    decosContainer.querySelectorAll('.deco-group label').forEach((lbl, i) => {
+                        lbl.textContent = 'Deco MAC ' + (i + 1);
+                    });
+
+                    hasEquipment = true;
+                    detected += uniqueMacs.length;
+                }
+            } else if (isInternet) {
+                // En NOC - INTERNET: verificar si en alguna parte indica ONT o CM (cablemodem)
+                const cmMatch = text.match(/(?:cm|cablemodem|cable\s*modem|modem)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+                const ontMatch = text.match(/(?:ont|gpon|fibra|ftth)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+                const decoMatch = text.match(/(?:deco|stb|box)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+
+                if (cmMatch && macCm) {
+                    macCm.value = formatMac(cmMatch[1]);
+                    macCm.dispatchEvent(new Event('input'));
+                    hasEquipment = true;
+                    detected++;
+                }
+
+                if (ontMatch && macOnt) {
+                    macOnt.value = formatMac(ontMatch[1]);
+                    macOnt.dispatchEvent(new Event('input'));
+                    hasEquipment = true;
+                    detected++;
+                }
+
+                if (decoMatch) {
+                    const firstDeco = document.querySelector('.deco-input');
+                    if (firstDeco) {
+                        firstDeco.value = formatMac(decoMatch[1]);
+                        firstDeco.dispatchEvent(new Event('input'));
+                        hasEquipment = true;
+                        detected++;
+                    }
+                }
+
+                // Si hay MACs genéricas que no fueron asignadas por match explícito
+                const unassignedMacs = uniqueMacs.filter(m => {
+                    const assigned = [];
+                    if (macCm && macCm.value) assigned.push(macCm.value);
+                    if (macOnt && macOnt.value) assigned.push(macOnt.value);
+                    return !assigned.includes(m);
+                });
+
+                if (unassignedMacs.length > 0) {
+                    const ontKeywordRegex = /\b(ont|gpon|ftth|fibra\s*optica|fibra|huawei|zte|fiberhome|nokia)\b/i;
+                    const cmKeywordRegex = /\b(cm|cablemodem|cable\s*modem|modem|hfc|docsis|sagemcom|arris|cisco|technicolor|motorola)\b/i;
+
+                    const hasOntIndication = ontKeywordRegex.test(text);
+                    const hasCmIndication = cmKeywordRegex.test(text);
+
+                    unassignedMacs.forEach(macVal => {
+                        let targetDevice = 'CM'; // default
+
+                        if (hasOntIndication && !hasCmIndication) {
+                            targetDevice = 'ONT';
+                        } else if (hasCmIndication && !hasOntIndication) {
+                            targetDevice = 'CM';
+                        } else if (hasOntIndication && hasCmIndication) {
+                            // Proximidad en caracteres entre la MAC y los términos clave
+                            const macPos = text.search(new RegExp(macVal.replace(/[^0-9A-Fa-f]/g, '[^0-9A-Fa-f]?'), 'i'));
+                            let minOntDist = Infinity;
+                            for (const m of text.matchAll(new RegExp(ontKeywordRegex.source, 'gi'))) {
+                                const dist = Math.abs(m.index - (macPos !== -1 ? macPos : 0));
+                                if (dist < minOntDist) minOntDist = dist;
+                            }
+                            let minCmDist = Infinity;
+                            for (const m of text.matchAll(new RegExp(cmKeywordRegex.source, 'gi'))) {
+                                const dist = Math.abs(m.index - (macPos !== -1 ? macPos : 0));
+                                if (dist < minCmDist) minCmDist = dist;
+                            }
+                            targetDevice = minOntDist < minCmDist ? 'ONT' : 'CM';
+                        }
+
+                        if (targetDevice === 'ONT' && macOnt && !macOnt.value) {
+                            macOnt.value = macVal;
+                            macOnt.dispatchEvent(new Event('input'));
+                            hasEquipment = true;
+                            detected++;
+                        } else if (targetDevice === 'CM' && macCm && !macCm.value) {
+                            macCm.value = macVal;
+                            macCm.dispatchEvent(new Event('input'));
+                            hasEquipment = true;
+                            detected++;
+                        } else if (macOnt && !macOnt.value) {
+                            macOnt.value = macVal;
+                            macOnt.dispatchEvent(new Event('input'));
+                            hasEquipment = true;
+                            detected++;
+                        } else if (macCm && !macCm.value) {
+                            macCm.value = macVal;
+                            macCm.dispatchEvent(new Event('input'));
+                            hasEquipment = true;
+                            detected++;
+                        }
+                    });
+                }
+            } else {
+                // Otras gestiones (Telefonía, Gestiones Especiales, Web/App, etc.)
+                const cmMatch = text.match(/(?:cm|cablemodem|cable\s*modem|modem)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+                const ontMatch = text.match(/(?:ont|gpon|fibra|ftth)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+                const decoMatch = text.match(/(?:deco|stb|box)\s*(?:mac)?[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}|[0-9A-Fa-f]{12})/i);
+
+                if (cmMatch && macCm) {
+                    macCm.value = formatMac(cmMatch[1]);
+                    macCm.dispatchEvent(new Event('input'));
+                    hasEquipment = true;
+                    detected++;
+                }
+                if (ontMatch && macOnt) {
+                    macOnt.value = formatMac(ontMatch[1]);
+                    macOnt.dispatchEvent(new Event('input'));
+                    hasEquipment = true;
+                    detected++;
+                }
+                if (decoMatch) {
+                    const firstDeco = document.querySelector('.deco-input');
+                    if (firstDeco) {
+                        firstDeco.value = formatMac(decoMatch[1]);
+                        firstDeco.dispatchEvent(new Event('input'));
+                        hasEquipment = true;
+                        detected++;
+                    }
+                }
+
+                if (!hasEquipment && uniqueMacs.length > 0) {
+                    const ontKeywordRegex = /\b(ont|gpon|ftth|fibra\s*optica|fibra)\b/i;
+                    const decoKeywordRegex = /\b(deco|stb|box)\b/i;
+
+                    if (ontKeywordRegex.test(text) && macOnt) {
+                        macOnt.value = uniqueMacs[0];
+                        macOnt.dispatchEvent(new Event('input'));
+                        hasEquipment = true;
+                        detected++;
+                    } else if (decoKeywordRegex.test(text)) {
+                        const firstDeco = document.querySelector('.deco-input');
+                        if (firstDeco) {
+                            firstDeco.value = uniqueMacs[0];
+                            firstDeco.dispatchEvent(new Event('input'));
+                            hasEquipment = true;
+                            detected++;
+                        }
+                    } else if (macCm) {
+                        macCm.value = uniqueMacs[0];
+                        macCm.dispatchEvent(new Event('input'));
+                        hasEquipment = true;
+                        detected++;
+                    }
+                }
+            }
+
+            // 6. Teléfono / Línea
+            const telMatch = text.match(/(?:tel|linea|telefono|celular|movil)?[:=\s]*\b(11[0-9]{8}|[2-9][0-9]{9})\b/i);
+            if (telMatch && lineaTel) {
+                lineaTel.value = telMatch[1];
+                hasEquipment = true;
+                detected++;
+            }
+
+            // 7. SN (Serial Number)
+            const snMatch = text.match(/(?:sn|serial|serie)?[:=\s]*\b((?:GZ|gz)[0-9A-Za-z]+)\b/i);
+            if (snMatch && inputSn) {
+                inputSn.value = snMatch[1].toUpperCase();
+                detected++;
             }
 
             // 8. Datos del Reclamo (captura completa del bloque multi-línea)
