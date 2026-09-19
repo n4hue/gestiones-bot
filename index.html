@@ -24,10 +24,13 @@
             <div class="header-top">
                 <h1>Gestiones BOT</h1>
                 <div class="header-controls">
-                    <button id="btn-toggle-compact" class="btn btn-icon" title="Modo Compacto (Alt+M)"><i data-lucide="minimize-2"></i></button>
-                    <button id="btn-shortcuts-help" class="btn btn-icon" title="Atajos de teclado"><i data-lucide="keyboard"></i></button>
+                    <button id="btn-toggle-compact" class="btn btn-icon" title="Modo Compacto (Alt+M)"><i
+                            data-lucide="minimize-2"></i></button>
+                    <button id="btn-shortcuts-help" class="btn btn-icon" title="Atajos de teclado"><i
+                            data-lucide="keyboard"></i></button>
                     <button id="btn-theme" class="btn btn-icon" title="Cambiar tema"><i data-lucide="moon"></i></button>
-                    <button id="btn-open-settings" class="btn btn-icon" title="Configuración"><i data-lucide="settings"></i></button>
+                    <button id="btn-open-settings" class="btn btn-icon" title="Configuración"><i
+                            data-lucide="settings"></i></button>
                 </div>
             </div>
 
@@ -51,7 +54,9 @@
             </div>
 
             <div class="header-actions">
-                <button type="button" id="btn-clear-form" class="btn btn-secondary" title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i> Limpiar Campos</button>
+                <button type="button" id="btn-clear-form" class="btn btn-secondary"
+                    title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i> Limpiar
+                    Campos</button>
                 <button id="btn-export" class="btn btn-secondary"><i data-lucide="download"></i> Exportar</button>
                 <button id="btn-reset" class="btn btn-danger"><i data-lucide="rotate-ccw"></i> Nueva Jornada</button>
             </div>
@@ -64,13 +69,15 @@
             <section class="form-section card">
                 <div class="section-header-flex">
                     <h2>Registrar Nueva Gestión</h2>
-                    <button type="button" class="btn btn-secondary btn-sm btn-smart-paste" id="btn-smart-paste" title="Pegar texto del portapapeles y autocompletar campos (Alt+P)">
+                    <button type="button" class="btn btn-secondary btn-sm btn-smart-paste" id="btn-smart-paste"
+                        title="Pegar texto del portapapeles y autocompletar campos (Alt+P)">
                         <i data-lucide="sparkles"></i> Pegado Inteligente
                     </button>
                 </div>
                 <form id="registro-form">
                     <div class="form-group">
-                        <label for="cliente-id">N° de Cliente / Asunto Mail <span class="shortcut-hint-small">Alt+C</span></label>
+                        <label for="cliente-id">N° de Cliente / Asunto Mail <span
+                                class="shortcut-hint-small">Alt+C</span></label>
                         <div class="input-with-copy">
                             <input type="text" id="cliente-id" name="cliente"
                                 placeholder="Ej. 12345678 o Asunto del email" required autocomplete="off">
@@ -182,7 +189,8 @@
                             <label for="input-sn">SN (Serial Number)</label>
                             <div class="input-with-copy">
                                 <input type="text" id="input-sn" placeholder="GZ..." autocomplete="off">
-                                <button type="button" class="btn-copy" data-target="input-sn" title="Copiar"><i data-lucide="copy"></i></button>
+                                <button type="button" class="btn-copy" data-target="input-sn" title="Copiar"><i
+                                        data-lucide="copy"></i></button>
                             </div>
                         </div>
                     </div>
@@ -208,8 +216,10 @@
                                     <i data-lucide="ticket"></i> Reclamo Administrativo ID (RA disparador):
                                 </label>
                                 <div class="input-with-copy">
-                                    <input type="text" id="reiterado-ra-id" placeholder="Ej: 13106315" autocomplete="off">
-                                    <button type="button" class="btn-copy" data-target="reiterado-ra-id" title="Copiar RA ID">
+                                    <input type="text" id="reiterado-ra-id" placeholder="Ej: 13106315"
+                                        autocomplete="off">
+                                    <button type="button" class="btn-copy" data-target="reiterado-ra-id"
+                                        title="Copiar RA ID">
                                         <i data-lucide="copy"></i>
                                     </button>
                                 </div>
@@ -223,17 +233,21 @@
                                             <span class="plantilla-badge badge-warning">
                                                 <i data-lucide="phone-off"></i> Sin Contacto
                                             </span>
-                                            <span class="plantilla-desc">Dejar asentado RA disparador y suspender en Viena si es AM para llamar en PM</span>
+                                            <span class="plantilla-desc">Dejar asentado RA disparador y suspender en
+                                                Viena si es AM para llamar en PM</span>
                                         </div>
                                     </div>
                                     <div class="plantilla-code-wrap">
-                                        <code class="plantilla-code" id="plantilla-text-sin-contacto">[Sin Contacto] RA ########</code>
+                                        <code class="plantilla-code"
+                                            id="plantilla-text-sin-contacto">[Sin Contacto] RA ########</code>
                                     </div>
                                     <div class="plantilla-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-sin-contacto" title="Copiar plantilla">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla"
+                                            data-target="plantilla-text-sin-contacto" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-sin-contacto" title="Pegar en Observaciones">
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                            data-target="plantilla-text-sin-contacto" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
                                     </div>
@@ -246,17 +260,21 @@
                                             <span class="plantilla-badge badge-success">
                                                 <i data-lucide="check-circle-2"></i> Bien Gestionado
                                             </span>
-                                            <span class="plantilla-desc">Front cargó bien. Indagar soporte completo y escalar a NOC desde Viena</span>
+                                            <span class="plantilla-desc">Front cargó bien. Indagar soporte completo y
+                                                escalar a NOC desde Viena</span>
                                         </div>
                                     </div>
                                     <div class="plantilla-code-wrap">
-                                        <code class="plantilla-code" id="plantilla-text-bien-gestionado">[Bien Gestionado] + [Sondeo] + Se escala noc</code>
+                                        <code class="plantilla-code"
+                                            id="plantilla-text-bien-gestionado">[Bien Gestionado] + [Sondeo] + Se escala noc</code>
                                     </div>
                                     <div class="plantilla-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-bien-gestionado" title="Copiar plantilla">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla"
+                                            data-target="plantilla-text-bien-gestionado" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-bien-gestionado" title="Pegar en Observaciones">
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                            data-target="plantilla-text-bien-gestionado" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
                                     </div>
@@ -269,17 +287,21 @@
                                             <span class="plantilla-badge badge-danger">
                                                 <i data-lucide="alert-triangle"></i> Mal Gestionado
                                             </span>
-                                            <span class="plantilla-desc">Faltó soporte o categoría incorrecta. Resolver y cerrar caso para no reiterar</span>
+                                            <span class="plantilla-desc">Faltó soporte o categoría incorrecta. Resolver
+                                                y cerrar caso para no reiterar</span>
                                         </div>
                                     </div>
                                     <div class="plantilla-code-wrap">
-                                        <code class="plantilla-code" id="plantilla-text-mal-gestionado">[Mal Gestionado] + [Razon] + [Nueva Gestion/Solucion]</code>
+                                        <code class="plantilla-code"
+                                            id="plantilla-text-mal-gestionado">[Mal Gestionado] + [Razon] + [Nueva Gestion/Solucion]</code>
                                     </div>
                                     <div class="plantilla-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla" data-target="plantilla-text-mal-gestionado" title="Copiar plantilla">
+                                        <button type="button" class="btn btn-secondary btn-xs btn-copy-plantilla"
+                                            data-target="plantilla-text-mal-gestionado" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla" data-target="plantilla-text-mal-gestionado" title="Pegar en Observaciones">
+                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                            data-target="plantilla-text-mal-gestionado" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
                                     </div>
@@ -291,9 +313,10 @@
                     <!-- Datos del Reclamo / CRM -->
                     <div class="form-group reclamo-group">
                         <div class="reclamo-header-flex">
-                            <label for="reclamo-texto">Datos del Reclamo / CRM (Opcional)</label>
+                            <label for="reclamo-texto">Datos del Reclamo CRM / VIENA (Opcional)</label>
                             <div class="reclamo-header-actions">
-                                <button type="button" class="btn-ai-audit" id="btn-ai-audit" title="Auditar información del reclamo con IA">
+                                <button type="button" class="btn-ai-audit" id="btn-ai-audit"
+                                    title="Auditar información del reclamo con IA">
                                     <i data-lucide="sparkles"></i> Auditar con IA
                                 </button>
                             </div>
@@ -318,7 +341,8 @@
                                         <span class="ai-gauge-percent" id="ai-score-num">0%</span>
                                     </div>
                                     <div class="ai-progress-bar-track">
-                                        <div class="ai-progress-bar-fill" id="ai-progress-fill" style="width: 0%;"></div>
+                                        <div class="ai-progress-bar-fill" id="ai-progress-fill" style="width: 0%;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -350,13 +374,15 @@
                             <div class="ai-audit-breakdown">
                                 <div class="ai-audit-col ai-col-valid">
                                     <div class="ai-col-header">
-                                        <span class="ai-col-badge badge-valid"><i data-lucide="check"></i> SÍ tiene que ver (Detectado)</span>
+                                        <span class="ai-col-badge badge-valid"><i data-lucide="check"></i> SÍ tiene que
+                                            ver (Detectado)</span>
                                     </div>
                                     <ul class="ai-items-list" id="ai-relevant-list"></ul>
                                 </div>
                                 <div class="ai-audit-col ai-col-invalid">
                                     <div class="ai-col-header">
-                                        <span class="ai-col-badge badge-invalid"><i data-lucide="x"></i> Faltantes / No tiene que ver</span>
+                                        <span class="ai-col-badge badge-invalid"><i data-lucide="x"></i> Faltantes / No
+                                            tiene que ver</span>
                                     </div>
                                     <ul class="ai-items-list" id="ai-missing-list"></ul>
                                 </div>
@@ -369,10 +395,12 @@
                                         <i data-lucide="file-check-2"></i> Resumen Estructurado (Plantilla Oficial):
                                     </span>
                                     <div class="ai-summary-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs" id="btn-ai-copy-summary" title="Copiar resumen estructurado">
+                                        <button type="button" class="btn btn-secondary btn-xs" id="btn-ai-copy-summary"
+                                            title="Copiar resumen estructurado">
                                             <i data-lucide="copy"></i> Copiar Resumen
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs" id="btn-ai-apply-summary" title="Reemplazar datos del reclamo con este resumen oficial">
+                                        <button type="button" class="btn btn-primary btn-xs" id="btn-ai-apply-summary"
+                                            title="Reemplazar datos del reclamo con este resumen oficial">
                                             <i data-lucide="arrow-up-right"></i> Aplicar en Reclamo
                                         </button>
                                     </div>
@@ -382,11 +410,13 @@
 
                             <!-- Plantilla Oficial de Referencia (Colapsable) -->
                             <details class="ai-official-template-details">
-                                <summary><i data-lucide="clipboard-list"></i> Ver Plantilla Oficial y Protocolo de este RA</summary>
+                                <summary><i data-lucide="clipboard-list"></i> Ver Plantilla Oficial y Protocolo de este
+                                    RA</summary>
                                 <div class="ai-template-box">
                                     <div class="ai-template-usage" id="ai-template-usage"></div>
                                     <code class="ai-template-code" id="ai-template-code"></code>
-                                    <button type="button" class="btn btn-secondary btn-xs mt-2" id="btn-ai-copy-raw-template">
+                                    <button type="button" class="btn btn-secondary btn-xs mt-2"
+                                        id="btn-ai-copy-raw-template">
                                         <i data-lucide="copy"></i> Copiar Plantilla Vacía
                                     </button>
                                 </div>
@@ -402,7 +432,8 @@
                     </div>
 
                     <details class="tools-accordion" id="tools-accordion">
-                        <summary>🛠️ Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span></summary>
+                        <summary>🛠️ Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span>
+                        </summary>
                         <div class="tools-content">
                             <!-- MTA Calculator -->
                             <div class="tool-group">
@@ -410,8 +441,8 @@
                                 <div class="input-with-copy">
                                     <input type="text" id="mac-cm" class="mac-input" placeholder="AA:BB:CC:DD:EE:FF"
                                         autocomplete="off" maxlength="17">
-                                    <button type="button" class="btn-copy" data-target="mac-cm"
-                                        title="Copiar"><i data-lucide="copy"></i></button>
+                                    <button type="button" class="btn-copy" data-target="mac-cm" title="Copiar"><i
+                                            data-lucide="copy"></i></button>
                                 </div>
                             </div>
                             <div class="tool-group">
@@ -419,8 +450,8 @@
                                 <div class="input-with-copy">
                                     <input type="text" id="mac-mta" class="mac-input highlight-calc" placeholder="—"
                                         readonly tabindex="-1">
-                                    <button type="button" class="btn-copy" data-target="mac-mta"
-                                        title="Copiar"><i data-lucide="copy"></i></button>
+                                    <button type="button" class="btn-copy" data-target="mac-mta" title="Copiar"><i
+                                            data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
@@ -430,8 +461,8 @@
                                 <div class="input-with-copy">
                                     <input type="text" id="mac-ont" class="mac-input" placeholder="AA:BB:CC:DD:EE:FF"
                                         autocomplete="off" maxlength="17">
-                                    <button type="button" class="btn-copy" data-target="mac-ont"
-                                        title="Copiar"><i data-lucide="copy"></i></button>
+                                    <button type="button" class="btn-copy" data-target="mac-ont" title="Copiar"><i
+                                            data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
@@ -442,7 +473,8 @@
                                     <div class="input-with-copy">
                                         <input type="text" class="mac-input deco-input" placeholder="AA:BB:CC:DD:EE:FF"
                                             autocomplete="off" maxlength="17">
-                                        <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i data-lucide="copy"></i></button>
+                                        <button type="button" class="btn-copy btn-copy-deco" title="Copiar"><i
+                                                data-lucide="copy"></i></button>
                                         <button type="button" class="btn-add-deco" title="Agregar Deco"
                                             id="btn-add-deco"><i data-lucide="plus"></i></button>
                                     </div>
@@ -454,14 +486,14 @@
                                 <label for="linea-tel">Línea Telefónica</label>
                                 <div class="input-with-copy">
                                     <input type="text" id="linea-tel" placeholder="Ej. 1122334455" autocomplete="off">
-                                    <button type="button" class="btn-copy" data-target="linea-tel"
-                                        title="Copiar"><i data-lucide="copy"></i></button>
+                                    <button type="button" class="btn-copy" data-target="linea-tel" title="Copiar"><i
+                                            data-lucide="copy"></i></button>
                                 </div>
                             </div>
 
                             <div style="display:flex; justify-content: flex-end; margin-top: 0.25rem;">
-                                <button type="button" class="btn btn-secondary btn-sm"
-                                    id="btn-clear-tools"><i data-lucide="trash-2"></i> Limpiar</button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-tools"><i
+                                        data-lucide="trash-2"></i> Limpiar</button>
                             </div>
                         </div>
                     </details>
@@ -479,7 +511,8 @@
             <section class="stats-section card" id="stats-section">
                 <div class="stats-header">
                     <h2>Estadísticas</h2>
-                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas"><i data-lucide="pie-chart"></i></button>
+                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas"><i
+                            data-lucide="pie-chart"></i></button>
                 </div>
                 <div id="stats-content" class="stats-content">
                     <div class="stats-grid">
@@ -524,14 +557,22 @@
 
                 <!-- Chips de Categoría Rápidos -->
                 <div class="history-chips-bar" id="history-chips">
-                    <button type="button" class="history-chip active" data-cat="">Todas <span class="chip-count" id="chip-cnt-all">0</span></button>
-                    <button type="button" class="history-chip" data-cat="INTERNET">Internet <span class="chip-count" id="chip-cnt-internet">0</span></button>
-                    <button type="button" class="history-chip" data-cat="TELEFONIA">Telefonía <span class="chip-count" id="chip-cnt-telefonia">0</span></button>
-                    <button type="button" class="history-chip" data-cat="TELEVISIÓN">TV <span class="chip-count" id="chip-cnt-tv">0</span></button>
-                    <button type="button" class="history-chip" data-cat="WEB / APP">Web/App <span class="chip-count" id="chip-cnt-webapp">0</span></button>
-                    <button type="button" class="history-chip" data-cat="ESCALAMIENTO N3">N3 <span class="chip-count" id="chip-cnt-n3">0</span></button>
-                    <button type="button" class="history-chip" data-cat="GESTIONES ESPECIALES">Especiales <span class="chip-count" id="chip-cnt-especiales">0</span></button>
-                    <button type="button" class="history-chip" data-cat="WIFI MESH">WiFi Mesh <span class="chip-count" id="chip-cnt-mesh">0</span></button>
+                    <button type="button" class="history-chip active" data-cat="">Todas <span class="chip-count"
+                            id="chip-cnt-all">0</span></button>
+                    <button type="button" class="history-chip" data-cat="INTERNET">Internet <span class="chip-count"
+                            id="chip-cnt-internet">0</span></button>
+                    <button type="button" class="history-chip" data-cat="TELEFONIA">Telefonía <span class="chip-count"
+                            id="chip-cnt-telefonia">0</span></button>
+                    <button type="button" class="history-chip" data-cat="TELEVISIÓN">TV <span class="chip-count"
+                            id="chip-cnt-tv">0</span></button>
+                    <button type="button" class="history-chip" data-cat="WEB / APP">Web/App <span class="chip-count"
+                            id="chip-cnt-webapp">0</span></button>
+                    <button type="button" class="history-chip" data-cat="ESCALAMIENTO N3">N3 <span class="chip-count"
+                            id="chip-cnt-n3">0</span></button>
+                    <button type="button" class="history-chip" data-cat="GESTIONES ESPECIALES">Especiales <span
+                            class="chip-count" id="chip-cnt-especiales">0</span></button>
+                    <button type="button" class="history-chip" data-cat="WIFI MESH">WiFi Mesh <span class="chip-count"
+                            id="chip-cnt-mesh">0</span></button>
                 </div>
 
                 <!-- Timeline container — JS injects .gestion-card divs here -->
@@ -736,9 +777,11 @@
                     <span class="checklist-checkmark"></span>
                     <div class="checklist-label">
                         <span class="checklist-text">Carga de form de inicio de jornada</span>
-                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la pestaña</span>
+                        <span class="checklist-hint" id="chk-form-hint">Abrí el form, completalo y cerrá la
+                            pestaña</span>
                     </div>
-                    <button type="button" class="btn btn-open-form" id="btn-open-form-inicio"><i data-lucide="external-link"></i> Abrir Form</button>
+                    <button type="button" class="btn btn-open-form" id="btn-open-form-inicio"><i
+                            data-lucide="external-link"></i> Abrir Form</button>
                 </div>
             </div>
 
