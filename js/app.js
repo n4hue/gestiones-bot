@@ -4509,6 +4509,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function sanitizeSensitiveDataForLlm(rawText, tipoRa) {
+        if (!rawText || typeof rawText !== 'string') return '';
+        let text = rawText;
+
+        // 1. Redactar todos los correos electrónicos estándar (RFC 5322 con @)
+        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gi;
+        text = text.replace(emailRegex, '[EMAIL_PROTEGIDO]');
+
+        // 2. Redactar usuarios etiquetados sin @ (ej: usuario sv: carlos123, email: user1)
+        text = text.replace(/((?:email|correo|mail|usuario\s*(?:sucursal\s*virtual|sv|app)?)\s*[:=]\s*)([^\s\n\r,\+\[\]\<\>\|\;\-\/]+)/gi, (match, prefix, val) => {
+            if (val.includes('EMAIL_PROTEGIDO')) return match;
+            const trailing = val.match(/\s*$/)[0];
+            return `${prefix}[EMAIL_PROTEGIDO]${trailing}`;
+        });
+
+        // 3. Redactar contraseñas y claves (con o sin corchetes)
+        // Ejemplo: Contraseña: 1234, [Contraseña: 1234], Pass: MiClave, Clave Wifi: 87654321, pin:, wpa2:
+        const pwdRegex = /((?:\[\s*)?(?:contrase[ñn]a|clave|password|pass|pwd|pin|wpa2?)(?:\s+(?:de\s+)?(?:wifi|red|cpe|router|modem|acceso|sucursal|app|cliente|usuario|crm|anterior|actual|nueva|provisoria|temporal))?\s*[:=]\s*)([^\n\r,\+\[\]\<\>\|\;\-\/]+)(\]?)/gi;
+        text = text.replace(pwdRegex, (match, prefix, val, closingBracket) => {
+            const trimmed = val.trim();
+            if (trimmed.includes('PASSWORD_PROTEGIDO')) return match;
+            if (typeof isPasswordEvaded === 'function' && isPasswordEvaded(trimmed)) {
+                return match;
+            }
+            const trailing = val.match(/\s*$/)[0];
+            return `${prefix}[PASSWORD_PROTEGIDO]${trailing}${closingBracket}`;
+        });
+
+        // 4. Delimitados por '+' en plantillas de Web/App (donde la posición 2 es contraseña)
+        if (!text.includes('[PASSWORD_PROTEGIDO]') && text.includes('+')) {
+            const parts = text.split('+');
+            if (parts.length >= 4) {
+                if (parts[1].includes('[EMAIL_PROTEGIDO]') || /usuario|email|correo/i.test(parts[1])) {
+                    const rawField = parts[2];
+                    const trimmed = rawField.trim();
+                    if (trimmed && !isPasswordEvaded(trimmed)) {
+                        parts[2] = rawField.replace(trimmed, '[PASSWORD_PROTEGIDO]');
+                        text = parts.join('+');
+                    }
+                }
+            }
+        }
+
+        return text;
+    }
+
     async function handleLlmAudit() {
         if (!geminiApiKey) {
             showToast('API Key requerida. Configurá tu clave de Gemini en Ajustes.', 'warning');
@@ -4517,13 +4563,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-        const text = inputReclamoTexto ? inputReclamoTexto.value.trim() : '';
+        const rawText = inputReclamoTexto ? inputReclamoTexto.value.trim() : '';
         const tipoRa = selectRa ? selectRa.value : '';
-        if (!text || !tipoRa) {
+        if (!rawText || !tipoRa) {
             showToast('Completá el tipo de reclamo y los datos del reclamo.', 'warning');
             return;
         }
         
+        // Sanitización estricta de privacidad (DLP) antes de enviar cualquier dato al LLM
+        const sanitizedText = sanitizeSensitiveDataForLlm(rawText, tipoRa);
+        const hadRedaction = sanitizedText !== rawText;
+        if (hadRedaction) {
+            console.log('[DLP / Privacidad] Datos sensibles del cliente (email / contraseña) enmascarados antes del envío a Gemini.');
+        }
+
         btnAiLlmAudit.disabled = true;
         const originalText = btnAiLlmAudit.innerHTML;
         btnAiLlmAudit.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Razonando con Gemini...';
@@ -4534,6 +4587,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const systemPrompt = `Sos un experto en auditoría de reclamos técnicos de un ISP (Internet Service Provider).
 Reglas para el tipo de reclamo "${tipoRa}":
 ${rule ? JSON.stringify(rule) : 'No hay plantilla estricta. Verificá que tenga sentido.'}
+
+POLÍTICA ESTRICTA DE PRIVACIDAD Y SEGURIDAD (DLP / PII):
+Por normativa de confidencialidad del cliente, los correos electrónicos y contraseñas reales han sido enmascarados/redactados localmente antes del envío utilizando tokens protectores:
+- [EMAIL_PROTEGIDO]: Debe considerarse como un correo o usuario válido y suministrado por el operador.
+- [PASSWORD_PROTEGIDO]: Debe considerarse como una contraseña válida y suministrada por el operador.
+- Si en cambio observás indicaciones explícitas de omisión o evasión de contraseña (por ejemplo: "no la brinda", "no la sabe", "vacio", "se niega", "faltante"), trátalo como contraseña FALTANTE / NO BRINDADA (motivo de rechazo para reclamos que la exigen).
 
 Analizá el reclamo ingresado por el operador. Verificá si contiene todos los campos obligatorios y si tiene coherencia técnica para redes HFC DOCSIS 3.1 o FTTH GPON.
 Devolvé tu respuesta ÚNICAMENTE en formato JSON estricto con esta estructura (no markdown):
@@ -4548,7 +4607,7 @@ Devolvé tu respuesta ÚNICAMENTE en formato JSON estricto con esta estructura (
 }
 Reclamo a analizar:
 """
-${text}
+${sanitizedText}
 """
 Solo JSON puro, sin tags HTML.`;
 
@@ -4634,7 +4693,7 @@ Solo JSON puro, sin tags HTML.`;
 
             resData.verdictDesc = `✨ (${modelToUse}) ` + resData.verdictDesc;
             renderAiAuditWithData(resData, tipoRa);
-            showToast(`Análisis profundo completado (${modelToUse})`, 'success');
+            showToast(`Análisis profundo completado (${modelToUse})` + (hadRedaction ? ' 🛡️ Datos sensibles protegidos' : ''), 'success');
 
         } catch (error) {
             console.error('Gemini Error:', error);
