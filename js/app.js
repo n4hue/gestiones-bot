@@ -117,6 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiTemplateUsage = document.getElementById('ai-template-usage');
     const aiTemplateCode = document.getElementById('ai-template-code');
     const btnAiCopyRawTemplate = document.getElementById('btn-ai-copy-raw-template');
+    const aiCoherenceBox = document.getElementById('ai-coherence-box');
+    const aiCoherenceTitle = document.getElementById('ai-coherence-title');
+    const aiCoherenceReason = document.getElementById('ai-coherence-reason');
+    const aiCoherenceAdvice = document.getElementById('ai-coherence-advice');
 
     // ============================================
     // Constants
@@ -454,6 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 aiObsPanel.classList.add('hidden');
                 if (btnAiAudit) btnAiAudit.classList.remove('active');
             }
+            if (aiCoherenceBox) aiCoherenceBox.classList.add('hidden');
 
             // Reset conditional fields (Gestiones Especiales)
             if (camposEspeciales) {
@@ -590,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 aiObsPanel.classList.add('hidden');
                 if (btnAiAudit) btnAiAudit.classList.remove('active');
             }
+            if (aiCoherenceBox) aiCoherenceBox.classList.add('hidden');
 
             if (chkReiterado) chkReiterado.checked = false;
             if (reiteradoPanel) reiteradoPanel.classList.add('hidden');
@@ -2849,6 +2855,108 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     }
 
+    function isPasswordEvaded(rawPass) {
+        if (!rawPass || !rawPass.trim()) return true;
+        const clean = rawPass.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (/^(?:-+|\.+|\?+|n\/?a|no|none|null|undefined|falta|ningun[ao])$/i.test(clean)) return true;
+        if (/(?:no\s*(?:la\s*)?(?:brinda|dice|sabe|pasa|tiene|posee|recuerda|quiere|da|informa)|cliente\s*no\s*(?:brinda|dice|sabe|recuerda|tiene)|se\s*niega|vaci[ao]|faltante|sin\s*(?:contrasena|clave|pass|password)|desconoce|\bfalta\b|\bningun[ao]\b)/i.test(clean)) return true;
+        return false;
+    }
+
+    const NETWORK_INCOHERENCE_RULES = [
+        {
+            id: 'ip_publica_fija',
+            label: 'IP Pública Estática / Fija en Conexión Residencial',
+            regex: /(?:ip\s*fija|ip\s*est[aá]tica|ip\s*publica\s*fija|ip\s*publica\s*est[aá]tica|fijar\s*ip\s*p[uú]blica|reserva\s*de\s*ip\s*p[uú]blica|pool\s*de\s*ips?\s*p[uú]blicas?|subnet\s*p[uú]blica|ip\s*fija\s*en\s*(?:wan|cpe|modem|router))/i,
+            motivo: 'IP Pública Estática / Fija en Conexión Residencial DHCP/CGNAT',
+            technicalReason: 'El servicio masivo residencial sobre DOCSIS 3.1 y GPON opera exclusivamente con direccionamiento WAN dinámico por DHCP o pool CGNAT (100.64.0.0/10). El firmware Sagemcom residencial no cuenta con soporte ni aprovisionamiento de IP pública fija. La asignación de direccionamiento estático público requiere un servicio Corporativo / Empresas con ruteo dedicado en Core.',
+            rejectionAdvice: 'Corresponde rechazar el RA y devolver a Front. Informar al cliente que su abono es residencial dinámico y que para IP pública estática debe ser derivado a ventas Corporativas / Empresas.'
+        },
+        {
+            id: 'velocidad_imposible_24',
+            label: 'Velocidad Imposible por Límite Físico de Espectro WiFi 2.4 GHz',
+            regex: /(?:(?:[3-9]\d{2}|1000)\s*(?:mbps?|megas?)\s*(?:en|por|con)\s*(?:wifi\s*)?2\.4|(?:no\s*llega\s*a\s*(?:[2-9]\d{2}|1000)\s*(?:mbps?|megas?)|exige\s*(?:[2-9]\d{2}|1000)\s*(?:mbps?|megas?))\s*(?:en|por|con)\s*(?:wifi\s*)?2\.4|2\.4\s*ghz[^\n\.\+]*?(?:[3-9]\d{2}|1000)\s*(?:mbps?|megas?))/i,
+            motivo: 'Velocidad Imposible por Límite Físico de Espectro WiFi 2.4 GHz (802.11n)',
+            technicalReason: 'La banda de 2.4 GHz (802.11n) posee una limitación física en 20 MHz que en entornos residenciales urbanos saturados rinde entre 40 y 70 Mbps reales. Es técnicamente imposible alcanzar 300, 500 o 1000 Mbps por WiFi 2.4 GHz. La velocidad contratada se valida únicamente por cable de red Ethernet CAT 5e/6 conectado a puerto Gigabit o por red WiFi 5 GHz / 6 GHz (802.11ac/ax) a corta distancia.',
+            rejectionAdvice: 'Corresponde rechazar el RA. Reclamar velocidad superior a 100 Mbps sobre WiFi 2.4 GHz no constituye una falla de red. Asesorar al cliente a conectar a la red 5.8 GHz (SSID_5G) o por cable directo.'
+        },
+        {
+            id: 'vpn_server_cpe',
+            label: 'Servidor VPN dentro de CPE Residencial Sagemcom',
+            regex: /(?:(?:servidor|server)\s*vpn|montar\s*(?:openvpn|wireguard|ipsec|vpn)\s*en\s*(?:el\s*)?(?:sagemcom|modem|cpe|ont|router)|instalar\s*(?:openvpn|wireguard|vpn)\s*en\s*(?:el\s*)?(?:sagemcom|modem|ont))/i,
+            motivo: 'Servidor VPN en Firmware de CPE Residencial Sagemcom',
+            technicalReason: 'Los Sagemcom DOCSIS 3.1 y ONT GPON residenciales incorporan únicamente la función de VPN Passthrough (dejar pasar tráfico VPN hacia un equipo en la LAN). Su firmware no cuenta con servidor VPN integrado (ni OpenVPN ni WireGuard) ni permite ejecutar daemons VPN.',
+            rejectionAdvice: 'Corresponde rechazar el RA. El módem ya posee VPN Passthrough activo. El cliente debe montar el servidor VPN en su propio host local (PC/Servidor/NAS) o en su router personal en LAN.'
+        },
+        {
+            id: 'routing_corporativo',
+            label: 'Protocolos de Enrutamiento Corporativo (BGP/OSPF/MPLS/VLAN)',
+            regex: /(?:configurar\s*(?:bgp|ospf|mpls|rip|t[uú]nel\s*gre)|enrutamiento\s*din[aá]mico|ruteo\s*din[aá]mico|vlan\s*tagging\s*802\.1q\s*en\s*puertos?\s*lan|trunk\s*802\.1q\s*en\s*lan|multiples\s*subredes\s*wan)/i,
+            motivo: 'Protocolo de Enrutamiento Corporativo / VLAN Trunking Fuera de Alcance de GUI Sagemcom',
+            technicalReason: 'Los Sagemcom son Gateway Home NAT residenciales. No soportan protocolos de enrutamiento dinámico (BGP, OSPF, MPLS) ni configuración de puertos LAN en modo Trunk 802.1Q desde su interfaz web.',
+            rejectionAdvice: 'Corresponde rechazar el RA. Estas funciones corresponden a enlaces corporativos dedicados.'
+        },
+        {
+            id: 'acceso_root_firmware',
+            label: 'Acceso Root / SSH / Flasheo de Firmware Custom',
+            regex: /(?:habilitar\s*(?:ssh|telnet)|acceso\s*(?:root|consola|shell|terminal)\s*(?:al|del|en)\s*(?:sagemcom|modem|ont|cpe)|flashear\s*(?:openwrt|dd-wrt|firmware\s*custom)|modificar\s*firmware\s*del\s*(?:cm|ont|sagemcom))/i,
+            motivo: 'Petición de Acceso Root / SSH / Flasheo de Firmware Inviolable',
+            technicalReason: 'El firmware de los Sagemcom está firmado criptográficamente y los servicios SSH/Telnet están estrictamente aislados en la VLAN de gestión interna del ISP. La GUI no expone consola shell ni permite flasheo de terceros.',
+            rejectionAdvice: 'Corresponde rechazar el RA de inmediato por políticas de seguridad de planta externa y resguardo de la red del ISP.'
+        },
+        {
+            id: 'puertos_bloqueados_cgnat',
+            label: 'Puertos Críticos Bloqueados o Apertura bajo CGNAT',
+            regex: /(?:abrir\s*(?:puerto|puertos)\s*(?:25|53|80|443|135|137|138|139|445|161|1900)\s*(?:en\s*wan|wan|hacia\s*afuera|entrante)|abrir\s*puertos\s*(?:estando|bajo)\s*cgnat)/i,
+            motivo: 'Apertura de Puertos Bloqueados por Política de Seguridad ISP o bajo CGNAT',
+            technicalReason: 'Puertos de infraestructura (25, 53, 80/443 WAN, 135-139, 445) están filtrados en la capa Core del ISP por seguridad perimetral anti-spam y anti-botnets. Además, bajo CGNAT (100.64.0.0/10) ningún puerto entrante es accesible sin salir previamente de CGNAT.',
+            rejectionAdvice: 'Corresponde rechazar el RA. Si requiere apertura para cámaras con IP 100.64.x.x, primero debe tramitarse el reclamo de Salida de CGNAT / IP Pública Dinámica.'
+        },
+        {
+            id: 'simetrico_docsis',
+            label: 'Velocidad Simétrica de Subida en Red Coaxial DOCSIS 3.1 HFC',
+            regex: /(?:(?:[1-9]\d{2}|1000)\s*(?:mbps?|megas?)\s*(?:de\s*)?subida\s*en\s*(?:docsis|cablemodem|cm|coaxil|hfc)|(?:subida\s*sim[eé]trica|servicio\s*sim[eé]trico|igual\s*subida\s*que\s*bajada)\s*en\s*(?:docsis|cablemodem|cm|hfc)|exige\s*(?:[1-9]\d{2}|1000)\s*(?:mbps?|megas?)\s*upstream\s*(?:en\s*)?(?:docsis|cm))/i,
+            motivo: 'Petición de Velocidad Simétrica en Red DOCSIS 3.1 HFC Residencial',
+            technicalReason: 'La arquitectura HFC de DOCSIS 3.1 residencial es asimétrica por diseño de espectro de retorno, con velocidades de subida topes de entre 20 y 50 Mbps. Es físicamente inviable brindar 300 o 500 Mbps de subida sobre cablemódem residencial.',
+            rejectionAdvice: 'Corresponde rechazar el RA. El servicio HFC es asimétrico por diseño de ingeniería.'
+        },
+        {
+            id: 'parametros_rf_omci',
+            label: 'Parámetros Físicos de RF DOCSIS / OMCI GPON Fuera de GUI',
+            regex: /(?:cambiar\s*(?:frecuencia|canal\s*rf)\s*(?:de\s*)?(?:downstream|upstream)|cambiar\s*potencia\s*[oó]ptica\s*(?:ont|olt)|cambiar\s*longitud\s*de\s*onda\s*gpon|forzar\s*qam\s*(?:4096|1024|256)|modificar\s*(?:t-cont|gem\s*port)\s*gpon|cambiar\s*mtu\s*(?:de\s*la\s*fibra|de\s*la\s*red\s*externa)|cambiar\s*frecuencia\s*del\s*cmts)/i,
+            motivo: 'Parámetros Físicos de RF DOCSIS / OMCI GPON Administrados Exclusivamente por CMTS/OLT',
+            technicalReason: 'Frecuencias, niveles de potencia (dBmV/dBm), modulaciones QAM/OFDM, T-CONT y perfiles OMCI son aprovisionados y controlados exclusivamente por el CMTS / OLT a través de archivos de configuración de red. Son de sólo lectura o completamente inaccesibles en la GUI del Sagemcom.',
+            rejectionAdvice: 'Corresponde rechazar el RA de configuración. Si el cliente experimenta niveles fuera de norma, debe generarse un RA técnico de planta externa, no de configuración en CPE.'
+        },
+        {
+            id: 'bridge_en_deco_mesh',
+            label: 'Modo Bridge en Dispositivo Terminal (Deco o Nodo Mesh)',
+            regex: /(?:poner\s*en\s*bridge\s*(?:el|al)\s*(?:deco|decodificador|stb|extensor|mesh|nodo)|modo\s*bridge\s*en\s*(?:deco|decodificador|stb|extensor|mesh|nodo)|bridge\s*en\s*deco\s*iptv)/i,
+            motivo: 'Petición de Modo Bridge en Dispositivo Terminal (Deco o Extensor Mesh)',
+            technicalReason: 'Los decodificadores IPTV y los nodos mesh son clientes terminales de la LAN. Carecen de interfaz WAN puente. La función de Bridge aplica exclusivamente en el Cablemódem Sagemcom o la ONT principal.',
+            rejectionAdvice: 'Corresponde rechazar el RA por incoherencia de topología de red. El modo bridge sólo puede configurarse en el equipo principal.'
+        },
+        {
+            id: 'incompatibilidad_medios',
+            label: 'Incompatibilidad de Medios Físicos (Fibra en Coaxil o Coaxil en ONT)',
+            regex: /(?:conectar\s*fibra\s*en\s*cablemodem|conectar\s*cable\s*coaxil\s*en\s*ont\s*gpon|puerto\s*sfp\s*en\s*sagemcom\s*docsis)/i,
+            motivo: 'Incompatibilidad de Medios Físicos de Conexión',
+            technicalReason: 'Confusión física de tecnología entre infraestructura coaxial HFC y fibra óptica GPON.',
+            rejectionAdvice: 'Corresponde rechazar el RA por incompatibilidad física de medios.'
+        }
+    ];
+
+    function checkInternetNetworkSanity(text, tipoRa) {
+        if (!text || !text.trim()) return null;
+        const isNetworkClaim = /INTERNET|WIFI|BANDA ANCHA|CONFIGURACI[OÓ]N|ACCESO|INSUMOS/i.test(tipoRa || '') ||
+            /sagemcom|modem|router|cpe|ont|cm|wifi|puertos?|ip|velocidad|bridge|vpn/i.test(text);
+
+        if (!isNetworkClaim) return null;
+
+        const found = NETWORK_INCOHERENCE_RULES.find(rule => rule.regex.test(text));
+        return found || null;
+    }
+
     const RA_AI_RULES = {
         // === ESCALAMIENTO N3 ===
         'Inconveniente con insumos': {
@@ -3145,28 +3253,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 detectedItems: [],
                 missingItems: [],
                 structuredSummary: '',
-                noiseItems: []
+                noiseItems: [],
+                incoherenceData: null
             };
         }
+
+        // Check network coherence for Sagemcom DOCSIS 3.1 & ONT GPON
+        const incoherence = checkInternetNetworkSanity(text, tipoRa);
 
         const rule = RA_AI_RULES[tipoRa];
         if (!rule) {
             return {
                 hasRule: false,
-                score: text.trim().length > 20 ? 85 : 45,
-                verdict: text.trim().length > 20 ? 'Gestionable' : 'Poco Detalle',
-                verdictClass: text.trim().length > 20 ? 'success' : 'warning',
-                verdictDesc: 'Esta gestión no posee plantilla estricta obligatoria. Verificá que el motivo y soporte brindado sean claros.',
+                score: incoherence ? 15 : (text.trim().length > 20 ? 85 : 45),
+                verdict: incoherence ? 'Apto para Rechazo' : (text.trim().length > 20 ? 'Gestionable' : 'Poco Detalle'),
+                verdictClass: incoherence ? 'danger' : (text.trim().length > 20 ? 'success' : 'warning'),
+                verdictDesc: incoherence
+                    ? `⛔ INCOHERENCIA DE RED DETECTADA: ${incoherence.motivo}. Petición técnicamente inviable o fuera del alcance de la GUI de un CPE Sagemcom DOCSIS 3.1 / ONT GPON. ${incoherence.rejectionAdvice}`
+                    : 'Esta gestión no posee plantilla estricta obligatoria. Verificá que el motivo y soporte brindado sean claros.',
                 detectedItems: [{ label: 'Texto libre ingresado', val: text.trim().substring(0, 100) + (text.trim().length > 100 ? '...' : ''), critical: false }],
-                missingItems: [],
+                missingItems: incoherence ? [{
+                    label: 'Incoherencia Técnica de Red',
+                    critical: true,
+                    isIncoherence: true,
+                    desc: `${incoherence.motivo}. ${incoherence.technicalReason}`
+                }] : [],
                 structuredSummary: text.trim(),
-                noiseItems: []
+                noiseItems: [],
+                incoherenceData: incoherence
             };
         }
 
         let foundCount = 0;
         let criticalMissing = 0;
         let passwordMissing = false;
+        let passwordEvaded = false;
+        let evasionText = '';
         let keywordsMissing = false;
         const detectedItems = [];
         const missingItems = [];
@@ -3188,20 +3310,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (matchVal && matchVal.trim()) {
-                foundCount++;
-                extractedData[item.id] = matchVal.trim().replace(/^[?:=\s]+/, '');
-                detectedItems.push({
-                    label: item.label,
-                    val: extractedData[item.id],
-                    critical: item.critical
-                });
+                const trimmedVal = matchVal.trim().replace(/^[?:=\s]+/, '');
+                // Check password evasion (e.g. "no la brinda", "no la dice", "vacio", "no sabe")
+                if (item.isPassword && isPasswordEvaded(trimmedVal)) {
+                    passwordMissing = true;
+                    passwordEvaded = true;
+                    evasionText = trimmedVal;
+                    if (item.critical) criticalMissing++;
+                    missingItems.push({
+                        label: item.label,
+                        critical: true,
+                        isPassword: true,
+                        isEvaded: true,
+                        evasionText: trimmedVal
+                    });
+                } else {
+                    foundCount++;
+                    extractedData[item.id] = trimmedVal;
+                    detectedItems.push({
+                        label: item.label,
+                        val: extractedData[item.id],
+                        critical: item.critical
+                    });
+                }
             } else {
                 if (item.critical) criticalMissing++;
                 if (item.isPassword) passwordMissing = true;
                 missingItems.push({
                     label: item.label,
                     critical: item.critical,
-                    isPassword: item.isPassword
+                    isPassword: item.isPassword,
+                    isEvaded: false
                 });
             }
         }
@@ -3220,18 +3359,37 @@ document.addEventListener('DOMContentLoaded', () => {
             score = Math.min(score, Math.max(15, 100 - (criticalMissing * 25)));
         }
 
+        // Apply Network Incoherence Penalty (Sagemcom DOCSIS 3.1 / ONT GPON)
+        if (incoherence) {
+            score = Math.min(score, 15);
+        }
+
         let verdict = 'Gestionable';
         let verdictClass = 'success';
         let verdictDesc = 'El reclamo cuenta con la información reglamentaria requerida para ser gestionado y escalado.';
 
-        if (score < 50) {
+        if (incoherence) {
+            verdict = 'Apto para Rechazo';
+            verdictClass = 'danger';
+            verdictDesc = `⛔ INCOHERENCIA DE RED DETECTADA: ${incoherence.motivo}. Petición técnicamente inviable o fuera del alcance de la GUI de un CPE Sagemcom DOCSIS 3.1 / ONT GPON. ${incoherence.rejectionAdvice}`;
+            missingItems.unshift({
+                label: 'Incoherencia Técnica de Red',
+                critical: true,
+                isIncoherence: true,
+                desc: `${incoherence.motivo}. ${incoherence.technicalReason}`
+            });
+        } else if (score < 50) {
             verdict = 'Rechazable';
             verdictClass = 'danger';
-            verdictDesc = passwordMissing 
-                ? 'Corresponde rechazar el RA / devolver a Front: La contraseña es estrictamente necesaria y no fue brindada.'
-                : (keywordsMissing 
-                    ? 'Corresponde rechazar el RA: No se especificó ninguna de las palabras clave requeridas de CONFIGURAR.'
-                    : 'Corresponde rechazar el RA / devolver a Front: Falta información crítica exigida por la plantilla oficial.');
+            if (passwordEvaded) {
+                verdictDesc = `Corresponde rechazar el RA / devolver a Front: El operador indicó que la contraseña "${escapeHtml(evasionText)}" (vacía o no brindada). La contraseña del cliente es estrictamente obligatoria para validar credenciales en NOC Aplicaciones.`;
+            } else if (passwordMissing) {
+                verdictDesc = 'Corresponde rechazar el RA / devolver a Front: La contraseña es estrictamente necesaria y no fue brindada.';
+            } else if (keywordsMissing) {
+                verdictDesc = 'Corresponde rechazar el RA: No se especificó ninguna de las palabras clave requeridas de CONFIGURAR.';
+            } else {
+                verdictDesc = 'Corresponde rechazar el RA / devolver a Front: Falta información crítica exigida por la plantilla oficial.';
+            }
         } else if (score < 80) {
             verdict = 'Parcialmente Gestionable';
             verdictClass = 'warning';
@@ -3257,6 +3415,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const shortLabel = it.label.split('(')[0].trim();
             if (extractedData[it.id]) {
                 summaryParts.push(`[${shortLabel}: ${extractedData[it.id]}]`);
+            } else if (it.isPassword && passwordEvaded) {
+                summaryParts.push(`[${shortLabel}: NO BRINDADA ("${evasionText}")]`);
             } else {
                 summaryParts.push(`[${shortLabel}: FALTA]`);
             }
@@ -3275,7 +3435,8 @@ document.addEventListener('DOMContentLoaded', () => {
             detectedItems,
             missingItems,
             noiseItems,
-            structuredSummary
+            structuredSummary,
+            incoherenceData: incoherence
         };
     }
 
@@ -3291,6 +3452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tipoRa = selectRa ? selectRa.value : '';
 
         if (!tipoRa) {
+            if (aiCoherenceBox) aiCoherenceBox.classList.add('hidden');
             if (aiRaTag) aiRaTag.textContent = 'Seleccioná un RA primero';
             if (aiScoreNum) aiScoreNum.textContent = '0%';
             if (aiProgressFill) {
@@ -3313,6 +3475,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const res = analyzeClaimWithAI(text, tipoRa);
+
+        // Update Coherence Alert Box
+        if (aiCoherenceBox) {
+            if (res.incoherenceData) {
+                aiCoherenceBox.classList.remove('hidden');
+                if (aiCoherenceTitle) {
+                    aiCoherenceTitle.textContent = `⛔ ${res.incoherenceData.motivo}`;
+                }
+                if (aiCoherenceReason) {
+                    aiCoherenceReason.innerHTML = `<strong>Límite de Red / GUI:</strong> ${escapeHtml(res.incoherenceData.technicalReason)}`;
+                }
+                if (aiCoherenceAdvice) {
+                    aiCoherenceAdvice.innerHTML = `<strong>Acción Sugerida:</strong> ${escapeHtml(res.incoherenceData.rejectionAdvice)}`;
+                }
+            } else {
+                aiCoherenceBox.classList.add('hidden');
+            }
+        }
 
         if (aiRaTag) aiRaTag.textContent = tipoRa;
         if (aiScoreNum) aiScoreNum.textContent = res.score + '%';
@@ -3340,9 +3520,11 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
         if (aiVerdictTitle) {
-            aiVerdictTitle.textContent = res.score >= 80
-                ? '✓ Reclamo Gestionable'
-                : (res.score >= 50 ? '⚠️ Reclamo Parcialmente Gestionable' : '✕ Reclamo Rechazable');
+            aiVerdictTitle.textContent = res.incoherenceData
+                ? '⛔ Reclamo Apto para Rechazo Técnico'
+                : (res.score >= 80
+                    ? '✓ Reclamo Gestionable'
+                    : (res.score >= 50 ? '⚠️ Reclamo Parcialmente Gestionable' : '✕ Reclamo Rechazable'));
         }
         if (aiVerdictDesc) {
             aiVerdictDesc.textContent = res.verdictDesc;
@@ -3383,23 +3565,38 @@ document.addEventListener('DOMContentLoaded', () => {
             aiRelevantList.innerHTML = relevantHtml;
         }
 
-        // Render Missing / Non-compliant
+        // Render Missing / Non-compliant / Incoherence
         if (aiMissingList) {
             let missingHtml = '';
             if (res.missingItems && res.missingItems.length > 0) {
                 res.missingItems.forEach(item => {
-                    const tag = item.isPassword
-                        ? '<span class="ai-pwd-alert">¡Estrictamente Necesaria!</span>'
-                        : (item.critical ? '<span class="ai-critical-tag">Obligatorio</span>' : '<span class="ai-optional-tag">Sugerido</span>');
-                    missingHtml += `
-                        <li class="ai-item-missing ${item.critical ? 'is-critical' : ''}">
-                            <i data-lucide="alert-circle"></i>
-                            <div class="ai-item-body">
-                                <span class="ai-item-label">${escapeHtml(item.label)}</span>
-                                ${tag}
-                            </div>
-                        </li>
-                    `;
+                    if (item.isIncoherence) {
+                        missingHtml += `
+                            <li class="ai-item-incoherent">
+                                <i data-lucide="shield-alert"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}:</span>
+                                    <span class="ai-item-desc">${escapeHtml(item.desc)}</span>
+                                </div>
+                            </li>
+                        `;
+                    } else {
+                        let tag = item.critical ? '<span class="ai-critical-tag">Obligatorio</span>' : '<span class="ai-optional-tag">Sugerido</span>';
+                        if (item.isPassword) {
+                            tag = item.isEvaded 
+                                ? `<span class="ai-pwd-alert">¡Contraseña No Brindada / Vacía ("${escapeHtml(item.evasionText)}")!</span>`
+                                : '<span class="ai-pwd-alert">¡Estrictamente Necesaria!</span>';
+                        }
+                        missingHtml += `
+                            <li class="ai-item-missing ${item.critical ? 'is-critical' : ''}">
+                                <i data-lucide="alert-circle"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}</span>
+                                    ${tag}
+                                </div>
+                            </li>
+                        `;
+                    }
                 });
             } else {
                 missingHtml = '<li class="ai-item-empty success-text">✓ Cumple con todos los requisitos oficiales de la plantilla.</li>';
