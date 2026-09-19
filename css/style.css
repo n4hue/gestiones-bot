@@ -3665,3 +3665,20 @@ html.compact-mode .ai-summary-text {
     margin: 0;
     line-height: 1.4;
 }
+
+/* Smart Paste Info Icon */
+.smart-paste-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.smart-paste-wrapper .info-icon {
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+    cursor: help;
+    transition: color var(--transition);
+}
+.smart-paste-wrapper .info-icon:hover {
+    color: var(--accent);
+}
