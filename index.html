@@ -368,6 +368,13 @@
                                 <p class="ai-coherence-reason" id="ai-coherence-reason"></p>
                                 <div class="ai-coherence-advice" id="ai-coherence-advice"></div>
                             </div>
+                            
+                            <div class="ai-llm-actions">
+                                <button type="button" id="btn-ai-llm-audit" class="btn btn-primary btn-sm" title="Analizar el caso completo utilizando Google Gemini LLM">
+                                    <i data-lucide="brain-circuit"></i> Análisis Profundo (Gemini LLM)
+                                </button>
+                                <small class="ai-llm-hint">Utiliza el modelo avanzado para un razonamiento exhaustivo del reclamo.</small>
+                            </div>
 
 
                             <!-- Desglose: Qué SÍ tiene que ver y qué NO / qué FALTA -->
@@ -617,6 +624,15 @@
             <div class="settings-section checkbox-group">
                 <input type="checkbox" id="break-alarm-toggle" checked>
                 <label for="break-alarm-toggle">⏰ Activar alarma de breaks</label>
+            </div>
+
+            <hr class="settings-divider">
+            <p class="settings-group-title">🧠 Inteligencia Artificial (Auditoría Profunda)</p>
+            
+            <div class="settings-section">
+                <label for="gemini-api-key-input">Gemini API Key:</label>
+                <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
+                <small class="settings-hint">Necesaria para usar el motor de IA LLM. Se guarda de forma segura localmente en tu navegador.</small>
             </div>
 
             <hr class="settings-divider">

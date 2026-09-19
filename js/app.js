@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputSheetsUrl = document.getElementById('sheets-url-input');
     const soundToggleEl = document.getElementById('sound-toggle');
     const breakAlarmToggleEl = document.getElementById('break-alarm-toggle');
+    const inputGeminiApiKey = document.getElementById('gemini-api-key-input');
     const btnSaveSettings = document.getElementById('btn-save-settings');
     const btnCerrarModal = document.getElementById('btn-cerrar-modal');
 
@@ -112,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiVerdictDesc = document.getElementById('ai-verdict-desc');
     const aiRelevantList = document.getElementById('ai-relevant-list');
     const aiMissingList = document.getElementById('ai-missing-list');
+    const aiNoiseList = document.getElementById('ai-noise-list');
+    const btnAiLlmAudit = document.getElementById('btn-ai-llm-audit');
     const aiSummaryContent = document.getElementById('ai-summary-content');
     const btnAiCopySummary = document.getElementById('btn-ai-copy-summary');
     const btnAiApplySummary = document.getElementById('btn-ai-apply-summary');
@@ -139,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const BREAK_ALARM_KEY = 'bot_break_alarm_enabled';
     const STATS_COLLAPSED_KEY = 'bot_stats_collapsed';
     const OPERATOR_NAME_KEY = 'bot_operator_name';
+    const GEMINI_API_KEY_STORAGE = 'bot_gemini_api_key';
     const PASS_CRM_KEY = 'bot_pass_crm';
 
     // ============================================
@@ -298,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
+    let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
 
     // Break alarm state
@@ -335,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
+    if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
 
     // Password visibility toggle
     if (btnTogglePass && inputPassCrm) {
@@ -1809,6 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soundToggleEl) soundToggleEl.checked = soundEnabled;
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
+            if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
             settingsModal.classList.remove('hidden');
         });
     }
@@ -1857,6 +1864,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
             localStorage.setItem(PASS_CRM_KEY, passCrm);
+
+            // Save Gemini API Key
+            const newGeminiKey = inputGeminiApiKey ? inputGeminiApiKey.value.trim() : '';
+            geminiApiKey = newGeminiKey;
+            localStorage.setItem(GEMINI_API_KEY_STORAGE, geminiApiKey);
 
             settingsModal.classList.add('hidden');
             showToast('Configuración guardada', 'success');
@@ -3975,6 +3987,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const res = analyzeClaimWithAI(text, tipoRa);
+        renderAiAuditWithData(res, tipoRa);
+    }
+
+    function renderAiAuditWithData(res, tipoRa) {
 
         // Si es rechazable y no tiene incoherencia de red, generar un motivo general de rechazo
         if (!res.incoherenceData && (res.score < 50 || res.verdictClass === 'danger')) {
@@ -4248,7 +4264,86 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('Error al copiar plantilla', 'error');
                 }
             });
+            if (btnAiLlmAudit) {
+            btnAiLlmAudit.addEventListener('click', handleLlmAudit);
         }
+    }
+
+    async function handleLlmAudit() {
+        if (!geminiApiKey) {
+            showToast('API Key requerida. Configurá tu clave de Gemini en Ajustes.', 'warning');
+            if (typeof window.openConfigModal === 'function') {
+                window.openConfigModal();
+            }
+            return;
+        }
+        const text = inputReclamoTexto ? inputReclamoTexto.value.trim() : '';
+        const tipoRa = selectRa ? selectRa.value : '';
+        if (!text || !tipoRa) {
+            showToast('Completá el tipo de reclamo y los datos del reclamo.', 'warning');
+            return;
+        }
+        
+        btnAiLlmAudit.disabled = true;
+        const originalText = btnAiLlmAudit.innerHTML;
+        btnAiLlmAudit.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Analizando...';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        try {
+            const rule = RA_AI_RULES[tipoRa];
+            const systemPrompt = `Sos un experto en auditoría de reclamos técnicos de un ISP (Internet Service Provider).
+Reglas para el tipo de reclamo "${tipoRa}":
+${rule ? JSON.stringify(rule) : 'No hay plantilla estricta. Verificá que tenga sentido.'}
+
+Analizá el reclamo ingresado por el operador. Verificá si contiene todos los campos obligatorios y si tiene coherencia técnica para redes HFC DOCSIS 3.1 o FTTH GPON.
+Devolvé tu respuesta ÚNICAMENTE en formato JSON estricto con esta estructura (no markdown):
+{
+  "score": 0 a 100,
+  "verdictClass": "success", "warning" o "danger",
+  "verdictDesc": "breve explicación del veredicto",
+  "detectedItems": [{"label": "nombre", "val": "valor extraído", "critical": true/false}],
+  "missingItems": [{"label": "nombre", "critical": true/false, "desc": "por qué falta"}],
+  "noiseItems": [{"type": "ruido", "text": "ruido detectado"}],
+  "incoherenceData": null o {"isGeneralRejection": true/false, "motivo": "motivo", "technicalReason": "razón", "rejectionAdvice": "consejo"}
+}
+Reclamo a analizar:
+"""
+${text}
+"""
+Solo JSON puro, sin tags HTML.`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemPrompt }] }],
+                    generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || 'Error en Gemini API');
+            }
+
+            const data = await response.json();
+            const textResponse = data.candidates[0].content.parts[0].text;
+            let cleanedText = textResponse.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+            const resData = JSON.parse(cleanedText);
+
+            resData.verdictDesc = "✨ (Gemini LLM) " + resData.verdictDesc;
+            renderAiAuditWithData(resData, tipoRa);
+            showToast('Análisis profundo LLM completado', 'success');
+
+        } catch (error) {
+            console.error('Gemini Error:', error);
+            showToast('Error LLM: ' + error.message, 'error');
+        } finally {
+            btnAiLlmAudit.disabled = false;
+            btnAiLlmAudit.innerHTML = originalText;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    }
     }
 
     // ============================================
