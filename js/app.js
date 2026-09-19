@@ -4982,8 +4982,8 @@ Solo JSON puro, sin tags HTML.`;
                     if (left < minLeft) left = minLeft;
                     
                     globalTooltip.className = `global-tooltip ${positionClass}`;
-                    globalTooltip.style.top = `${top + window.scrollY}px`;
-                    globalTooltip.style.left = `${left + window.scrollX}px`;
+                    globalTooltip.style.top = `${top}px`;
+                    globalTooltip.style.left = `${left}px`;
                     
                     clearTimeout(tooltipTimeout);
                     globalTooltip.classList.add('visible');
