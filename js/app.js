@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('registro-form');
     const inputCliente = document.getElementById('cliente-id');
     const selectRa = document.getElementById('tipo-ra');
+    const inputReclamoTexto = document.getElementById('reclamo-texto');
     const inputObservaciones = document.getElementById('observaciones');
     const checkForm = document.getElementById('form-check');
     const btnSubmit = document.getElementById('btn-submit');
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // New features DOM
     const paceIndicator = document.getElementById('pace-indicator');
-    const btnQuickSummary = document.getElementById('btn-quick-summary');
+    const btnClearForm = document.getElementById('btn-clear-form');
 
     // Break Alarm DOM
     const breakIndicator = document.getElementById('break-indicator');
@@ -403,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cliente = inputCliente.value.trim();
         const tipoRa = selectRa.value;
+        const reclamoTexto = inputReclamoTexto ? inputReclamoTexto.value.trim() : '';
         const snValue = inputSn ? inputSn.value.trim() : '';
         let observaciones = inputObservaciones ? inputObservaciones.value.trim() : '';
 
@@ -450,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset form
             inputCliente.value = '';
             selectRa.value = '';
+            if (inputReclamoTexto) inputReclamoTexto.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
 
@@ -499,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (index !== -1) {
                 gestiones[index].cliente = cliente;
                 gestiones[index].tipo_ra = tipoRa;
+                gestiones[index].reclamo_datos = reclamoTexto;
                 gestiones[index].observaciones = observaciones;
                 gestiones[index].is_reiterado = chkReiterado ? chkReiterado.checked : false;
                 gestiones[index].ra_id = reiteradoRaId ? reiteradoRaId.value.trim() : '';
@@ -521,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: Date.now().toString(),
                     cliente: cliente,
                     tipo_ra: tipoRa,
+                    reclamo_datos: reclamoTexto,
                     observaciones: observaciones,
                     is_reiterado: isReiterado,
                     ra_id: raId,
@@ -557,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSubmit.disabled = true;
                     inputCliente.disabled = true;
                     selectRa.disabled = true;
+                    if (inputReclamoTexto) inputReclamoTexto.disabled = true;
                     if (inputObservaciones) inputObservaciones.disabled = true;
 
                     const checkInterval = setInterval(() => {
@@ -567,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             btnSubmit.disabled = false;
                             inputCliente.disabled = false;
                             selectRa.disabled = false;
+                            if (inputReclamoTexto) inputReclamoTexto.disabled = false;
                             if (inputObservaciones) inputObservaciones.disabled = false;
 
                             processNewGestion();
@@ -588,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editingId = null;
             inputCliente.value = '';
             selectRa.value = '';
+            if (inputReclamoTexto) inputReclamoTexto.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
 
@@ -667,6 +675,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             toggleCompactMode();
         }
+        // Alt+L to clear all form fields
+        if (e.altKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            if (btnClearForm) btnClearForm.click();
+        }
         // Ctrl+K to focus history search input
         if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) {
             e.preventDefault();
@@ -728,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filtered = filtered.filter(g =>
                 g.cliente.toLowerCase().includes(searchTerm) ||
                 g.tipo_ra.toLowerCase().includes(searchTerm) ||
+                (g.reclamo_datos && g.reclamo_datos.toLowerCase().includes(searchTerm)) ||
                 (g.observaciones && g.observaciones.toLowerCase().includes(searchTerm))
             );
         }
@@ -780,12 +794,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Build secondary details row (obs + equipos)
+            // Build secondary details row (reclamo_datos + obs + equipos)
             let detailsHtml = '';
-            if ((g.observaciones && g.observaciones.trim()) || equiposHtml) {
+            const hasReclamo = g.reclamo_datos && g.reclamo_datos.trim();
+            const hasObs = g.observaciones && g.observaciones.trim();
+            if (hasReclamo || hasObs || equiposHtml) {
                 detailsHtml = `<div class="gestion-details">`;
-                if (g.observaciones && g.observaciones.trim()) {
-                    detailsHtml += `<div class="gestion-obs">${g.observaciones}</div>`;
+                if (hasReclamo) {
+                    detailsHtml += `<div class="gestion-reclamo-datos">${escapeHtml(g.reclamo_datos)}</div>`;
+                }
+                if (hasObs) {
+                    detailsHtml += `<div class="gestion-obs">${escapeHtml(g.observaciones)}</div>`;
                 }
                 detailsHtml += equiposHtml + `</div>`;
             }
@@ -1410,6 +1429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editingId = id;
             inputCliente.value = gestion.cliente;
             selectRa.value = gestion.tipo_ra;
+            if (inputReclamoTexto) inputReclamoTexto.value = gestion.reclamo_datos || '';
             if (inputObservaciones) inputObservaciones.value = gestion.observaciones || '';
             if (checkForm) checkForm.checked = true;
 
@@ -1671,7 +1691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // CSV Creation
-        const headers = ['ID', 'Fecha', 'Hora', 'N_Cliente', 'Tipo_RA', 'Observaciones', 'CM_MAC', 'MTA_MAC', 'ONT_MAC', 'Decos', 'Linea'];
+        const headers = ['ID', 'Fecha', 'Hora', 'N_Cliente', 'Tipo_RA', 'Datos_Reclamo', 'Observaciones', 'CM_MAC', 'MTA_MAC', 'ONT_MAC', 'Decos', 'Linea'];
         const csvRows = [];
         csvRows.push(headers.join(','));
 
@@ -1679,6 +1699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         exportData.forEach(g => {
             const tipoRaEscaped = `"${g.tipo_ra.replace(/"/g, '""')}"`;
+            const reclamoEscaped = g.reclamo_datos ? `"${g.reclamo_datos.replace(/"/g, '""')}"` : '""';
             const obsEscaped = g.observaciones ? `"${g.observaciones.replace(/"/g, '""')}"` : '""';
             const eq = g.equipos || {};
             const cm = eq.cm || '';
@@ -1687,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const decos = eq.decos && eq.decos.length ? `"${eq.decos.join(' / ')}"` : '""';
             const linea = eq.linea || '';
 
-            const row = [g.id, g.fecha, g.hora, g.cliente, tipoRaEscaped, obsEscaped, cm, mta, ont, decos, linea];
+            const row = [g.id, g.fecha, g.hora, g.cliente, tipoRaEscaped, reclamoEscaped, obsEscaped, cm, mta, ont, decos, linea];
             csvRows.push(row.join(','));
         });
 
@@ -1708,53 +1729,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ============================================
-    // Feature: Quick Summary (Resumen Rápido)
+    // Feature: Limpiar Campos (Clear All Form Fields)
     // ============================================
-    if (btnQuickSummary) {
-        btnQuickSummary.addEventListener('click', () => {
-            if (gestiones.length === 0) {
-                showToast('No hay gestiones registradas aún', 'info');
-                return;
-            }
+    function clearAllFormFields() {
+        if (inputCliente) inputCliente.value = '';
+        if (selectRa) {
+            selectRa.value = '';
+            selectRa.dispatchEvent(new Event('change'));
+            const raSearch = document.querySelector('.ra-search-wrapper input');
+            if (raSearch) raSearch.value = '';
+        }
+        if (inputReclamoTexto) inputReclamoTexto.value = '';
+        if (inputObservaciones) inputObservaciones.value = '';
+        if (checkForm) checkForm.checked = false;
 
-            const today = new Date();
-            const dateStr = today.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
-            const count = gestiones.length;
+        // Reset AI audit panel & Coherence box
+        if (aiObsPanel) {
+            aiObsPanel.classList.add('hidden');
+            if (btnAiAudit) btnAiAudit.classList.remove('active');
+        }
+        if (aiCoherenceBox) aiCoherenceBox.classList.add('hidden');
 
-            // Calculate per-hour rate
-            let perHour = '—';
-            if (count > 0) {
-                const firstG = gestiones[gestiones.length - 1];
-                const [h, m, s] = firstG.hora.split(':').map(Number);
-                const startTime = new Date();
-                startTime.setHours(h, m, s, 0);
-                const elapsedH = (Date.now() - startTime) / 3600000;
-                if (elapsedH > 0.05) perHour = (count / elapsedH).toFixed(1);
-            }
+        // Reset SN field
+        if (campoSn) {
+            campoSn.classList.remove('visible');
+            setTimeout(() => campoSn.classList.add('hidden'), 350);
+            if (inputSn) inputSn.value = '';
+        }
 
-            // Top categories
-            const catCounts = {};
-            gestiones.forEach(g => {
-                const cat = getCategory(g.tipo_ra);
-                catCounts[cat] = (catCounts[cat] || 0) + 1;
-            });
-            const topCats = Object.entries(catCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([cat, c]) => `${cat} (${c})`)
-                .join(' | ');
+        // Reset Gestiones Especiales conditional fields
+        if (camposEspeciales) {
+            camposEspeciales.classList.remove('visible');
+            setTimeout(() => camposEspeciales.classList.add('hidden'), 350);
+            if (selectContactoEsp) selectContactoEsp.value = '';
+            if (selectEstadoEsp) selectEstadoEsp.value = '';
+        }
 
-            const streak = calculateStreak();
+        // Reset Reclamo Reiterado
+        if (chkReiterado) chkReiterado.checked = false;
+        if (reiteradoPanel) reiteradoPanel.classList.add('hidden');
+        const reiteradoSec = document.querySelector('.reiterado-section');
+        if (reiteradoSec) reiteradoSec.classList.remove('active');
+        if (badgeRecurrencia) {
+            badgeRecurrencia.classList.add('hidden');
+            badgeRecurrencia.innerHTML = '';
+        }
+        if (reiteradoRaId) reiteradoRaId.value = '';
+        updateSinContactoTemplate();
 
-            const summary = `Jornada ${dateStr} | ${count} gestiones | ${perHour} g/h\nTop: ${topCats}\nRacha: ${streak} días 🔥`;
+        // Clear equipment tools
+        if (btnClearTools) btnClearTools.click();
 
-            navigator.clipboard.writeText(summary).then(() => {
-                showToast('📋 Resumen copiado al portapapeles', 'success');
-            }).catch(() => {
-                // Fallback: show in toast
-                showToast(summary, 'info');
-            });
-        });
+        // Cancel edit mode if active
+        if (editingId) {
+            editingId = null;
+            if (btnSubmit) btnSubmit.innerHTML = 'Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
+            if (btnCancelEdit) btnCancelEdit.classList.add('hidden');
+        }
+
+        if (inputCliente) inputCliente.focus();
+        showToast('🧹 Todos los campos fueron limpiados', 'info');
+    }
+
+    if (btnClearForm) {
+        btnClearForm.addEventListener('click', clearAllFormFields);
     }
 
     function saveData() {
@@ -2183,7 +2221,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (visibleOpts.length > 0) {
                     visibleOpts[0].selected = true;
                     selectRa.dispatchEvent(new Event('change'));
-                    if (inputObservaciones) inputObservaciones.focus();
+                    if (inputReclamoTexto) inputReclamoTexto.focus();
+                    else if (inputObservaciones) inputObservaciones.focus();
                 }
             } else if (e.key === 'Escape') {
                 if (searchInput.value) {
@@ -2808,12 +2847,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 8. Observaciones (captura completa del bloque multi-línea)
+            // 8. Datos del Reclamo (captura completa del bloque multi-línea)
             const obsMatch = text.match(/(?:observaciones|obs|detalles|detalle|nota|comentarios)[:=\s]*\n?([\s\S]*?)(?=(?:\n\s*(?:id\s*cliente|cliente|usuario|clasificaci[oó]n|subclasificaci[oó]n|recurrencia|reclamo\s*administrativo|informaci[oó]n\s*del\s*ra)\b|$))/i);
-            if (obsMatch && obsMatch[1] && inputObservaciones) {
+            if (obsMatch && obsMatch[1] && inputReclamoTexto) {
                 const cleanObs = obsMatch[1].trim();
                 if (cleanObs.length > 2) {
-                    inputObservaciones.value = cleanObs;
+                    inputReclamoTexto.value = cleanObs;
                     detected++;
                 }
             }
@@ -2825,12 +2864,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detected > 0) {
                 const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
                 showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
-                if (inputObservaciones && inputObservaciones.value.trim() && selectRa && selectRa.value) {
+                if (inputReclamoTexto && inputReclamoTexto.value.trim() && selectRa && selectRa.value) {
                     renderAiAudit(true);
                 }
             } else {
                 if (inputCliente && !inputCliente.value) {
                     inputCliente.value = text.trim().substring(0, 40);
+                } else if (inputReclamoTexto) {
+                    inputReclamoTexto.value = (inputReclamoTexto.value ? inputReclamoTexto.value + '\n' : '') + text.trim();
                 } else if (inputObservaciones) {
                     inputObservaciones.value = (inputObservaciones.value ? inputObservaciones.value + ' | ' : '') + text.trim();
                 }
@@ -2990,22 +3031,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // === INTERNET & WIFI MESH (Configuración & Acceso) ===
         'NOC - INTERNET - SOLICITUD DE CONFIGURACIÓN': {
-            usos: 'Se requiera aplicar una configuración en CPE por motivos como falla herramientas, no existe herramienta, etc.',
-            plantilla: '[SUGERENCIA/SOLICITUD: "CONFIGURAR PUERTOS" / "CONFIGURAR VPN" / "CONFIGURAR RED 2.4" / "CONFIGURAR RED 5" / "CONFIGURAR MODO RED PC/NAT" / "CONFIGURAR BANDSTEERING" / "CONFIGURAR ROUTER / BRIDGE"]',
-            keywords: ['CONFIGURAR PUERTOS', 'CONFIGURAR VPN', 'CONFIGURAR RED 2.4', 'CONFIGURAR RED 5', 'CONFIGURAR MODO RED PC/NAT', 'CONFIGURAR BANDSTEERING', 'CONFIGURAR ROUTER / BRIDGE'],
-            items: [
-                { id: 'solicitud', label: 'Sugerencia / Solicitud con palabra clave obligatoria', critical: true, checkKeywords: true },
-                { id: 'motivo', label: 'Motivo de falla o necesidad de CPE', critical: false, regex: /(?:falla|motivo|solicitud|no\s*existe|herramienta)[:=\s]*([^\n\]\+]+)/i }
-            ]
+            usos: 'Se requiera aplicar una configuración técnica viable en CPE (apertura de puertos con TCP/UDP/IP Clase C, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
+            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada Clase C 192.168.x.x)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
+            isFlexibleConfig: true
         },
         'NOC - WIFI MESH - SOLICITUD DE CONFIGURACION': {
-            usos: 'Se requiera aplicar una configuración en CPE / Extensor por motivos como falla herramientas, no existe herramienta, etc.',
-            plantilla: '[SUGERENCIA/SOLICITUD: "CONFIGURAR PUERTOS" / "CONFIGURAR VPN" / "CONFIGURAR RED 2.4" / "CONFIGURAR RED 5" / "CONFIGURAR MODO RED PC/NAT" / "CONFIGURAR BANDSTEERING" / "CONFIGURAR ROUTER / BRIDGE"]',
-            keywords: ['CONFIGURAR PUERTOS', 'CONFIGURAR VPN', 'CONFIGURAR RED 2.4', 'CONFIGURAR RED 5', 'CONFIGURAR MODO RED PC/NAT', 'CONFIGURAR BANDSTEERING', 'CONFIGURAR ROUTER / BRIDGE'],
-            items: [
-                { id: 'solicitud', label: 'Sugerencia / Solicitud con palabra clave obligatoria', critical: true, checkKeywords: true },
-                { id: 'motivo', label: 'Motivo de falla o necesidad de CPE/Extensor', critical: false, regex: /(?:falla|motivo|solicitud|no\s*existe|herramienta)[:=\s]*([^\n\]\+]+)/i }
-            ]
+            usos: 'Se requiera aplicar una configuración técnica viable en CPE / Extensor (apertura de puertos con TCP/UDP/IP Clase C, cambio de service package, reaprovisionamiento, sacar morosidad, WiFi, bridge, etc.)',
+            plantilla: 'Solicitud técnica viable: [Apertura de Puertos (Protocolo TCP/UDP, Puerto e IP Privada Clase C 192.168.x.x)] / [Cambiar Service Package] / [Reaprovisionar] / [Sacar Morosidad] / [WiFi] / [Bridge] / [Red PC/NAT]',
+            isFlexibleConfig: true
         },
         'NOC - INTERNET - PROBLEMAS PARTICULARES DE ACCESO': {
             usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
@@ -3242,6 +3275,195 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    function analyzeSolicitudConfiguracion(text, tipoRa, incoherence, rule) {
+        if (incoherence) {
+            return {
+                hasRule: true,
+                tipoRa,
+                usos: rule.usos,
+                plantillaOficial: rule.plantilla,
+                score: 15,
+                verdict: 'Apto para Rechazo',
+                verdictClass: 'danger',
+                verdictDesc: `⛔ INCOHERENCIA DE RED DETECTADA: ${incoherence.motivo}. Petición técnicamente inviable o fuera del alcance de la GUI de un CPE Sagemcom DOCSIS 3.1 / ONT GPON. ${incoherence.rejectionAdvice}`,
+                detectedItems: [{ label: 'Texto libre ingresado', val: text.trim().substring(0, 80) + '...', critical: false }],
+                missingItems: [{
+                    label: 'Incoherencia Técnica de Red',
+                    critical: true,
+                    isIncoherence: true,
+                    desc: `${incoherence.motivo}. ${incoherence.technicalReason}`
+                }],
+                noiseItems: [],
+                structuredSummary: text.trim(),
+                incoherenceData: incoherence
+            };
+        }
+
+        const isPortForwarding = /(?:abrir\s*puertos?|apertura\s*(?:de\s*)?puertos?|port\s*forward(?:ing)?|redirecci[oó]n\s*(?:de\s*)?puertos?|mapeo\s*(?:de\s*)?puertos?|forwarding|abrir\s*(?:el|los|un)?\s*puertos?|\bpuertos?\b|\bports?\b|\bdmz\b)/i.test(text);
+
+        if (isPortForwarding) {
+            const protoMatch = text.match(/\b(tcp\s*[\/\-y]\s*udp|ambos|tcp|udp)\b/i);
+            const portMatch = text.match(/(?:puertos?|port|ports|dst\s*port)[:=\s#]*([0-9]{1,5}(?:\s*(?:-|–|y|,|\/)\s*[0-9]{1,5})*)/i) ||
+                              text.match(/\b([1-9][0-9]{0,4})\b(?!\s*(?:megas|mbps|mb|gb|d[ií]as|meses|pesos|usd|cliente|id|ra))/i);
+            const ipClassCMatch = text.match(/\b(192\.168\.\d{1,3}\.\d{1,3})\b/);
+            const genericIpMatch = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/);
+
+            const proto = protoMatch ? protoMatch[0].toUpperCase() : null;
+            const port = portMatch ? (portMatch[1] || portMatch[0]) : null;
+            const ipClassC = ipClassCMatch ? ipClassCMatch[1] : null;
+
+            const detectedItems = [];
+            const missingItems = [];
+
+            if (proto) {
+                detectedItems.push({ label: 'Protocolo de Red', val: proto, critical: true });
+            } else {
+                missingItems.push({ label: 'Protocolo de Red (TCP o UDP obligatorio)', critical: true, isPassword: false });
+            }
+
+            if (port) {
+                detectedItems.push({ label: 'Puerto(s) a redireccionar', val: port, critical: true });
+            } else {
+                missingItems.push({ label: 'Número de Puerto o Rango a abrir', critical: true, isPassword: false });
+            }
+
+            if (ipClassC) {
+                detectedItems.push({ label: 'Dirección IP Privada Clase C', val: ipClassC, critical: true });
+            } else if (genericIpMatch) {
+                missingItems.push({
+                    label: 'IP Privada Clase C (192.168.x.x)',
+                    critical: true,
+                    isPassword: false,
+                    desc: `La dirección ${genericIpMatch[1]} no pertenece al rango privado Clase C (192.168.0.0/16)`
+                });
+            } else {
+                missingItems.push({ label: 'Dirección IPv4 Privada de Clase C (192.168.x.x)', critical: true, isPassword: false });
+            }
+
+            const destMatch = text.match(/(?:dvr|c[aá]mara|camaras|servidor|server|playstation|ps[45]|xbox|nvr|torrent|nas|pc|ipcam)/i);
+            if (destMatch) {
+                detectedItems.push({ label: 'Dispositivo / Servicio Destino', val: destMatch[0].toUpperCase(), critical: false });
+            }
+
+            const isComplete = proto && port && ipClassC;
+            const missingCount = (!proto ? 1 : 0) + (!port ? 1 : 0) + (!ipClassC ? 1 : 0);
+            const score = isComplete ? 100 : (missingCount === 1 ? 50 : 25);
+            const verdict = isComplete ? 'Gestionable' : (score >= 50 ? 'Parcialmente Gestionable' : 'Rechazable');
+            const verdictClass = isComplete ? 'success' : (score >= 50 ? 'warning' : 'danger');
+            const verdictDesc = isComplete
+                ? 'Solicitud de Apertura de Puertos completa y técnicamente viable: Especifica protocolo (TCP/UDP), puerto(s) e IP privada Clase C (192.168.x.x) para aplicar Port Forwarding en el router CPE.'
+                : 'Faltan parámetros obligatorios para apertura de puertos: Se requiere especificar protocolo (TCP o UDP), número de puerto y la dirección IP privada de Clase C (192.168.x.x) de destino para configurar el forwarding en el equipo.';
+
+            const structuredSummary = `[SOLICITUD: APERTURA DE PUERTOS] + [PROTOCOLO: ${proto || 'FALTA (TCP/UDP)'}] + [PUERTO: ${port || 'FALTA'}] + [IP PRIVADA: ${ipClassC || 'FALTA (192.168.x.x)'}]${destMatch ? ` + [DESTINO: ${destMatch[0].toUpperCase()}]` : ''}`;
+
+            return {
+                hasRule: true,
+                tipoRa,
+                usos: rule.usos,
+                plantillaOficial: rule.plantilla,
+                score,
+                verdict,
+                verdictClass,
+                verdictDesc,
+                detectedItems,
+                missingItems,
+                noiseItems: [],
+                structuredSummary,
+                incoherenceData: null
+            };
+        }
+
+        const viableConfigs = [
+            {
+                id: 'REAPROVISIONAR',
+                name: 'Reaprovisionamiento de Equipo',
+                regex: /(?:reaprovisionar|reaprovisionamiento|provisionar|aprovisionamiento|enviar\s*bootfile|actualizar\s*perfil\s*(?:cmts|olt)|reiniciar\s*desde\s*sistema|re-aprovisionar)/i,
+                desc: 'Solicitud viable: Reaprovisionamiento de CPE o actualización de bootfile en CMTS u OLT.'
+            },
+            {
+                id: 'SERVICE_PACKAGE',
+                name: 'Cambio de Service Package / Velocidad',
+                regex: /(?:service\s*package|perfil\s*(?:de\s*)?(?:velocidad|navegaci[oó]n|paquete|servicio)|cambi(?:o|ar)\s*(?:de\s*)?(?:plan|velocidad|pack|service)|subir\s*megas|bajar\s*megas|plan\s*de\s*\d+\s*(?:megas|mbps|mb)|modificar\s*(?:el\s*)?(?:ancho\s*de\s*banda|velocidad))/i,
+                desc: 'Solicitud viable: Modificación de Service Package o perfil de velocidad asignado al cliente.'
+            },
+            {
+                id: 'MOROSIDAD',
+                name: 'Retirar Mensaje de Morosidad / Suspensión',
+                regex: /(?:(?:sacar|quitar|levantar|eliminar|desbloquear)\s*(?:el\s*)?(?:mensaje|aviso|pantalla|cartel)?\s*(?:de\s*)?morosidad|morosidad|aviso\s*de\s*pago|portal\s*cautivo|mensaje\s*de\s*deuda|bloqueo\s*por\s*morosidad)/i,
+                desc: 'Solicitud viable: Retiro del portal de morosidad o aviso de deuda tras confirmación de pago.'
+            },
+            {
+                id: 'WIFI',
+                name: 'Configuración de Red WiFi',
+                regex: /(?:(?:cambi(?:o|ar)|configurar|modificar)\s*(?:de\s*)?(?:clave|contrase[nñ]a|ssid|nombre\s*de\s*red|wifi)|clave\s*wifi|contrase[nñ]a\s*wifi|ssid|red\s*2\.4(?:\s*ghz)?|red\s*5(?:\s*ghz)?|frecuencia|wpa2)/i,
+                desc: 'Solicitud viable: Configuración de parámetros de red inalámbrica WiFi en el CPE.'
+            },
+            {
+                id: 'BANDSTEERING',
+                name: 'Configuración de Bandsteering',
+                regex: /(?:bandsteering|band\s*steering|unificar\s*redes|separar\s*(?:las\s*)?redes)/i,
+                desc: 'Solicitud viable: Configuración de Bandsteering para unificar o separar frecuencias 2.4 y 5 GHz.'
+            },
+            {
+                id: 'BRIDGE',
+                name: 'Configuración Modo Bridge / Router',
+                regex: /(?:modo\s*bridge|pasar\s*a\s*bridge|poner\s*en\s*bridge|router\s*\/\s*bridge|modo\s*puente|desactivar\s*router)/i,
+                desc: 'Solicitud viable: Cambio de modo de operación del CPE a Bridge o Router.'
+            },
+            {
+                id: 'PC_NAT',
+                name: 'Modo Red PC/NAT, DMZ o UPnP',
+                regex: /(?:modo\s*red\s*pc\/?nat|dmz|upnp)/i,
+                desc: 'Solicitud viable: Configuración de Modo Red PC/NAT, DMZ o UPnP.'
+            }
+        ];
+
+        for (const cfg of viableConfigs) {
+            if (cfg.regex.test(text)) {
+                const matchSnippet = text.match(cfg.regex)[0];
+                return {
+                    hasRule: true,
+                    tipoRa,
+                    usos: rule.usos,
+                    plantillaOficial: rule.plantilla,
+                    score: 100,
+                    verdict: 'Gestionable',
+                    verdictClass: 'success',
+                    verdictDesc: cfg.desc,
+                    detectedItems: [
+                        { label: 'Configuración Solicitada', val: cfg.name, critical: true },
+                        { label: 'Parámetro detectado', val: matchSnippet, critical: false }
+                    ],
+                    missingItems: [],
+                    noiseItems: [],
+                    structuredSummary: `[SOLICITUD: ${cfg.name.toUpperCase()}] + [DETALLE: ${text.trim().substring(0, 80)}]`,
+                    incoherenceData: null
+                };
+            }
+        }
+
+        return {
+            hasRule: true,
+            tipoRa,
+            usos: rule.usos,
+            plantillaOficial: rule.plantilla,
+            score: 35,
+            verdict: 'Rechazable',
+            verdictClass: 'danger',
+            verdictDesc: 'Falta especificar qué configuración técnica viable se requiere (ej: apertura de puertos con protocolo/puerto/IP Clase C, cambio de service package, reaprovisionar, sacar morosidad, WiFi, bridge, etc.).',
+            detectedItems: text.trim().length > 8 ? [{ label: 'Texto ingresado', val: text.trim().substring(0, 70) + '...', critical: false }] : [],
+            missingItems: [{
+                label: 'Configuración técnica viable y detallada',
+                critical: true,
+                isPassword: false,
+                desc: 'Debe especificar el cambio técnico (puertos con TCP/UDP/IP 192.168.x.x, service package, reaprovisionar, morosidad, WiFi, bridge, etc.)'
+            }],
+            noiseItems: [],
+            structuredSummary: text.trim() ? `[SOLICITUD: CONFIGURACIÓN] + [DETALLE: ${text.trim().substring(0, 80)}]` : '',
+            incoherenceData: null
+        };
+    }
+
     function analyzeClaimWithAI(text, tipoRa) {
         if (!text || !text.trim()) {
             return {
@@ -3249,7 +3471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 score: 0,
                 verdict: 'Sin Datos',
                 verdictClass: 'neutral',
-                verdictDesc: 'Pegá las observaciones o redactá el caso para analizar su gestionabilidad.',
+                verdictDesc: 'Pegá los datos del reclamo o redactá el caso para analizar su gestionabilidad.',
                 detectedItems: [],
                 missingItems: [],
                 structuredSummary: '',
@@ -3262,6 +3484,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const incoherence = checkInternetNetworkSanity(text, tipoRa);
 
         const rule = RA_AI_RULES[tipoRa];
+        if (rule && rule.isFlexibleConfig) {
+            return analyzeSolicitudConfiguracion(text, tipoRa, incoherence, rule);
+        }
         if (!rule) {
             return {
                 hasRule: false,
@@ -3448,7 +3673,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnAiAudit) btnAiAudit.classList.add('active');
         }
 
-        const text = inputObservaciones ? inputObservaciones.value : '';
+        const text = inputReclamoTexto ? inputReclamoTexto.value : '';
         const tipoRa = selectRa ? selectRa.value : '';
 
         if (!tipoRa) {
@@ -3465,7 +3690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 aiVerdictBadge.className = 'ai-verdict-badge badge-warning';
             }
             if (aiVerdictTitle) aiVerdictTitle.textContent = 'Falta Tipo de Reclamo';
-            if (aiVerdictDesc) aiVerdictDesc.textContent = 'Seleccioná un tipo de reclamo en el selector superior para que la IA audite las observaciones con las plantillas oficiales.';
+            if (aiVerdictDesc) aiVerdictDesc.textContent = 'Seleccioná un tipo de reclamo en el selector superior para que la IA audite el reclamo con las plantillas oficiales.';
             if (aiRelevantList) aiRelevantList.innerHTML = '<li class="ai-item-empty">Esperando selección de RA...</li>';
             if (aiMissingList) aiMissingList.innerHTML = '<li class="ai-item-empty">Seleccioná una gestión para evaluar requisitos.</li>';
             if (aiSummaryContent) aiSummaryContent.textContent = '(Seleccioná un RA primero)';
@@ -3636,8 +3861,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let aiAuditDebounce = null;
-        if (inputObservaciones) {
-            inputObservaciones.addEventListener('input', () => {
+        if (inputReclamoTexto) {
+            inputReclamoTexto.addEventListener('input', () => {
                 if (aiObsPanel && !aiObsPanel.classList.contains('hidden')) {
                     clearTimeout(aiAuditDebounce);
                     aiAuditDebounce = setTimeout(() => {
@@ -3671,17 +3896,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (btnAiApplySummary && aiSummaryContent && inputObservaciones) {
+        if (btnAiApplySummary && aiSummaryContent && inputReclamoTexto) {
             btnAiApplySummary.addEventListener('click', () => {
                 const text = aiSummaryContent.textContent;
                 if (!text || text.startsWith('(')) {
                     showToast('No hay resumen válido para aplicar', 'warning');
                     return;
                 }
-                inputObservaciones.value = text;
-                inputObservaciones.dispatchEvent(new Event('input'));
-                inputObservaciones.focus();
-                showToast('✨ Resumen estructurado aplicado a Observaciones', 'success');
+                inputReclamoTexto.value = text;
+                inputReclamoTexto.dispatchEvent(new Event('input'));
+                inputReclamoTexto.focus();
+                showToast('✨ Resumen estructurado aplicado a Datos del Reclamo', 'success');
             });
         }
 

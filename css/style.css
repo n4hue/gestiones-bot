@@ -868,6 +868,18 @@ option {
     border-top: 1px solid var(--border);
 }
 
+.gestion-reclamo-datos {
+    font-size: 0.7rem;
+    color: var(--text-color);
+    background: rgba(99, 102, 241, 0.08);
+    border-left: 2px solid #818CF8;
+    padding: 0.25rem 0.45rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.25rem;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
 .gestion-obs {
     font-size: 0.7rem;
     color: var(--text-muted);
@@ -2887,6 +2899,7 @@ html.compact-mode .plantilla-code {
 /* ==========================================
    Auditoría IA de Observaciones & Reclamos
    ========================================== */
+.reclamo-header-flex,
 .obs-header-flex {
     display: flex;
     justify-content: space-between;
@@ -2894,6 +2907,7 @@ html.compact-mode .plantilla-code {
     margin-bottom: 0.35rem;
 }
 
+.reclamo-header-flex label,
 .obs-header-flex label {
     margin-bottom: 0;
 }
