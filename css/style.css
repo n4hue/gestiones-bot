@@ -3674,10 +3674,13 @@ html.compact-mode .ai-summary-text {
 }
 .smart-paste-wrapper .info-icon {
     color: var(--text-muted);
-    width: 16px;
-    height: 16px;
+    display: inline-flex;
     cursor: help;
     transition: color var(--transition);
+}
+.smart-paste-wrapper .info-icon svg {
+    width: 16px;
+    height: 16px;
 }
 .smart-paste-wrapper .info-icon:hover {
     color: var(--accent);
