@@ -9,6 +9,8 @@ Permite registrar interacciones rápidamente, calcular automáticamente parámet
 ## 🚀 Características Principales
 
 *   **Registro Rápido y Optimizado:** Carga de gestiones estructuradas por categoría, cliente y observaciones con atajos de teclado para flujo de trabajo veloz.
+*   **🧠 Auditoría Inteligente con IA (Gemini):** Análisis automático y profundo de reclamos utilizando modelos de Google Gemini. Verifica coherencia técnica, evalúa si el caso es gestionable, extrae datos clave, oculta datos sensibles automáticamente y genera resúmenes estructurados oficiales.
+*   **✨ Pegado Inteligente (Smart Paste):** Extrae automáticamente el N° de Cliente, IDs de Reclamos, direcciones MAC (CM, ONT, Decos), Teléfonos, Números de Serie y subclasificaciones de texto pegado directamente desde el portapapeles.
 *   **🛠️ Herramientas de Equipos (Calculadora de MACs):**
     *   **Formateo Automático:** Agrega dos puntos (`:`) y convierte a mayúsculas automáticamente a medida que escribes las direcciones MAC.
     *   **Cálculo de MTA MAC:** Calcula la dirección MTA MAC de forma automática a partir de la CM MAC (sumando `3` en hexadecimal).

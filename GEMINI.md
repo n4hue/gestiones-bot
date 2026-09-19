@@ -19,3 +19,6 @@ Este documento establece las pautas de comportamiento y flujo de trabajo para el
 - Mantener la arquitectura existente (Vanilla JS, Vanilla CSS, HTML modular).
 - Preservar comentarios y lógica preexistente intactos a menos que deban ser modificados por el requerimiento.
 - Al modificar listas de opciones, gestiones o mappings, asegurar la coherencia entre `index.html`, `js/app.js` (incluyendo `GFORM_RA_MAPPING`, `GFORM_ESP_MAPPING`, `GESTIONES_ESPECIALES_VALUES`, `getCategory`, etc.).
+
+## 4. Testing y Verificación Constante
+- **Pruebas integrales:** Realizar validación y testeo exhaustivo de las funcionalidades del código (mediante ejecución, revisión o confirmación con el usuario) cada vez que se agreguen o modifiquen características. Asegurar que no se rompan lógicas previas (regresiones) y que el comportamiento en la interfaz sea correcto.

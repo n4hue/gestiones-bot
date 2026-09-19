@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tools Elements
     const toolsAccordion = document.getElementById('tools-accordion');
+    const reclamoAccordion = document.getElementById('reclamo-accordion');
     const macCm = document.getElementById('mac-cm');
     const macMta = document.getElementById('mac-mta');
     const macOnt = document.getElementById('mac-ont');
@@ -529,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (checkForm) checkForm.checked = false;
 
             // Reset AI audit panel
+            if (reclamoAccordion) reclamoAccordion.open = false;
             if (aiObsPanel) {
                 aiObsPanel.classList.add('hidden');
                 if (btnAiAudit) btnAiAudit.classList.remove('active');
@@ -1816,6 +1818,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkForm) checkForm.checked = false;
 
         // Reset AI audit panel & Coherence box
+        if (reclamoAccordion) reclamoAccordion.open = false;
         if (aiObsPanel) {
             aiObsPanel.classList.add('hidden');
             if (btnAiAudit) btnAiAudit.classList.remove('active');
@@ -2947,6 +2950,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detected > 0) {
                 const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
                 showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
+                if (reclamoAccordion) reclamoAccordion.open = true;
                 if (inputReclamoTexto && inputReclamoTexto.value.trim() && selectRa && selectRa.value) {
                     renderAiAudit(true);
                 }
@@ -2955,6 +2959,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputCliente.value = text.trim().substring(0, 40);
                 } else if (inputReclamoTexto) {
                     inputReclamoTexto.value = (inputReclamoTexto.value ? inputReclamoTexto.value + '\n' : '') + text.trim();
+                    if (reclamoAccordion) reclamoAccordion.open = true;
                 } else if (inputObservaciones) {
                     inputObservaciones.value = (inputObservaciones.value ? inputObservaciones.value + ' | ' : '') + text.trim();
                 }

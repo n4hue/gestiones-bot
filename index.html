@@ -310,8 +310,18 @@
                         </div>
                     </div>
 
-                    <!-- Datos del Reclamo / CRM -->
-                    <div class="form-group reclamo-group">
+                    <!-- Observaciones (Notas Personales) -->
+                    <div class="form-group obs-group">
+                        <label for="observaciones">Observaciones / Notas Personales (Opcional)</label>
+                        <textarea id="observaciones" name="observaciones" rows="2"
+                            placeholder="Notas personales del operador sobre la gestión..."></textarea>
+                    </div>
+
+                    <details class="tools-accordion" id="reclamo-accordion">
+                        <summary>📄 Datos del Reclamo y Auditoría IA (Opcional)</summary>
+                        <div class="tools-content">
+                            <!-- Datos del Reclamo / CRM -->
+                            <div class="form-group reclamo-group">
                         <div class="reclamo-header-flex">
                             <label for="reclamo-texto">Datos del Reclamo CRM / VIENA (Opcional)</label>
                             <div class="reclamo-header-actions">
@@ -430,13 +440,8 @@
                             </details>
                         </div>
                     </div>
-
-                    <!-- Observaciones (Notas Personales) -->
-                    <div class="form-group obs-group">
-                        <label for="observaciones">Observaciones / Notas Personales (Opcional)</label>
-                        <textarea id="observaciones" name="observaciones" rows="2"
-                            placeholder="Notas personales del operador sobre la gestión..."></textarea>
-                    </div>
+                        </div>
+                    </details>
 
                     <details class="tools-accordion" id="tools-accordion">
                         <summary>🛠️ Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span>
