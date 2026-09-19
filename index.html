@@ -74,7 +74,8 @@
                             title="Pegar texto del portapapeles y autocompletar campos (Alt+P)">
                             <i data-lucide="sparkles"></i> Pegado Inteligente
                         </button>
-                        <i data-lucide="info" class="info-icon" title="Copia y pegá el contenido completo del reclamo en Viena, y al presionar Pegado Inteligente se rellenarán todos los campos, ¡incluso la recurrencia!"></i>
+                        <i data-lucide="info" class="info-icon"
+                            title="Copia y pegá el contenido completo del reclamo en Viena, y al presionar Pegado Inteligente se rellenarán todos los campos, ¡incluso la recurrencia!"></i>
                     </div>
                 </div>
                 <form id="registro-form">
@@ -325,124 +326,134 @@
                         <div class="tools-content">
                             <!-- Datos del Reclamo / CRM -->
                             <div class="form-group reclamo-group">
-                        <div class="reclamo-header-flex">
-                            <label for="reclamo-texto">Datos del Reclamo CRM / VIENA (Opcional)</label>
-                            <div class="reclamo-header-actions">
-                                <button type="button" class="btn-ai-audit" id="btn-ai-audit"
-                                    title="Auditar información del reclamo con IA">
-                                    <i data-lucide="sparkles"></i> Auditar con IA
-                                </button>
-                            </div>
-                        </div>
-                        <textarea id="reclamo-texto" name="reclamo_texto" rows="3"
-                            placeholder="Pegá aquí el reclamo del CRM o detalles técnicos para análisis IA..."></textarea>
-
-                        <!-- Panel de Análisis Inteligente de Reclamos con IA -->
-                        <div id="ai-obs-panel" class="ai-obs-panel hidden">
-                            <!-- Header del panel con Barra de % Gestionable -->
-                            <div class="ai-panel-header">
-                                <div class="ai-title-row">
-                                    <div class="ai-badge-title">
-                                        <i data-lucide="brain-circuit"></i> Auditoría IA de Reclamo
+                                <div class="reclamo-header-flex">
+                                    <label for="reclamo-texto">Datos del Reclamo CRM / VIENA (Opcional)</label>
+                                    <div class="reclamo-header-actions">
+                                        <button type="button" class="btn-ai-audit" id="btn-ai-audit"
+                                            title="Auditar información del reclamo con IA RPA (Robotic Process Automation). Esta auditoría va a determinar, según el cumplimiento de parámetros cargados (plantillas, coherencia técnica, etc.), qué tan conforme y si corresponde la gestión.">
+                                            <i data-lucide="sparkles"></i> Auditar con IA
+                                        </button>
                                     </div>
-                                    <span class="ai-ra-tag" id="ai-ra-tag">Subclasificación</span>
                                 </div>
+                                <textarea id="reclamo-texto" name="reclamo_texto" rows="3"
+                                    placeholder="Pegá acá el reclamo de CRM/Viena o detalles técnicos para análisis IA..."></textarea>
 
-                                <div class="ai-gauge-container">
-                                    <div class="ai-gauge-header">
-                                        <span class="ai-gauge-title">Nivel de Gestionabilidad:</span>
-                                        <span class="ai-gauge-percent" id="ai-score-num">0%</span>
-                                    </div>
-                                    <div class="ai-progress-bar-track">
-                                        <div class="ai-progress-bar-fill" id="ai-progress-fill" style="width: 0%;">
+                                <!-- Panel de Análisis Inteligente de Reclamos con IA -->
+                                <div id="ai-obs-panel" class="ai-obs-panel hidden">
+                                    <!-- Header del panel con Barra de % Gestionable -->
+                                    <div class="ai-panel-header">
+                                        <div class="ai-title-row">
+                                            <div class="ai-badge-title">
+                                                <i data-lucide="brain-circuit"></i> Auditoría IA de Reclamo
+                                            </div>
+                                            <span class="ai-ra-tag" id="ai-ra-tag">Subclasificación</span>
+                                        </div>
+
+                                        <div class="ai-gauge-container">
+                                            <div class="ai-gauge-header">
+                                                <span class="ai-gauge-title">Nivel de Gestionabilidad:</span>
+                                                <span class="ai-gauge-percent" id="ai-score-num">0%</span>
+                                            </div>
+                                            <div class="ai-progress-bar-track">
+                                                <div class="ai-progress-bar-fill" id="ai-progress-fill"
+                                                    style="width: 0%;">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Veredicto de Aceptación / Rechazo -->
-                            <div class="ai-verdict-box" id="ai-verdict-box">
-                                <div class="ai-verdict-header">
-                                    <span class="ai-verdict-badge" id="ai-verdict-badge">Evaluando...</span>
-                                    <span class="ai-verdict-title" id="ai-verdict-title"></span>
-                                </div>
-                                <p class="ai-verdict-desc" id="ai-verdict-desc"></p>
-                            </div>
-
-                            <!-- Alerta de Incoherencia Técnica / Fuera de Alcance Sagemcom -->
-                            <div class="ai-coherence-box hidden" id="ai-coherence-box">
-                                <div class="ai-coherence-header">
-                                    <span class="ai-coherence-badge">
-                                        <i data-lucide="shield-alert"></i> Incoherencia Técnica Detectada
-                                    </span>
-                                    <span class="ai-coherence-cpe">Sagemcom DOCSIS 3.1 / ONT GPON</span>
-                                </div>
-                                <div class="ai-coherence-title" id="ai-coherence-title"></div>
-                                <p class="ai-coherence-reason" id="ai-coherence-reason"></p>
-                                <div class="ai-coherence-advice" id="ai-coherence-advice"></div>
-                            </div>
-                            
-                            <div class="ai-llm-actions">
-                                <button type="button" id="btn-ai-llm-audit" class="btn btn-primary btn-sm" title="Analizar el caso completo utilizando Google Gemini LLM">
-                                    <i data-lucide="brain-circuit"></i> Análisis Profundo (Gemini LLM)
-                                </button>
-                                <small class="ai-llm-hint"><i data-lucide="shield-check" style="width: 12px; height: 12px; vertical-align: -2px; display: inline-block;"></i> Privacidad activa: Emails y contraseñas son enmascarados antes del envío.</small>
-                            </div>
-
-
-                            <!-- Desglose: Qué SÍ tiene que ver y qué NO / qué FALTA -->
-                            <div class="ai-audit-breakdown">
-                                <div class="ai-audit-col ai-col-valid">
-                                    <div class="ai-col-header">
-                                        <span class="ai-col-badge badge-valid"><i data-lucide="check"></i> SÍ tiene que
-                                            ver (Detectado)</span>
+                                    <!-- Veredicto de Aceptación / Rechazo -->
+                                    <div class="ai-verdict-box" id="ai-verdict-box">
+                                        <div class="ai-verdict-header">
+                                            <span class="ai-verdict-badge" id="ai-verdict-badge">Evaluando...</span>
+                                            <span class="ai-verdict-title" id="ai-verdict-title"></span>
+                                        </div>
+                                        <p class="ai-verdict-desc" id="ai-verdict-desc"></p>
                                     </div>
-                                    <ul class="ai-items-list" id="ai-relevant-list"></ul>
-                                </div>
-                                <div class="ai-audit-col ai-col-invalid">
-                                    <div class="ai-col-header">
-                                        <span class="ai-col-badge badge-invalid"><i data-lucide="x"></i> Faltantes / No
-                                            tiene que ver</span>
-                                    </div>
-                                    <ul class="ai-items-list" id="ai-missing-list"></ul>
-                                </div>
-                            </div>
 
-                            <!-- Resumen Estructurado Oficial -->
-                            <div class="ai-summary-box">
-                                <div class="ai-summary-header">
-                                    <span class="ai-summary-label">
-                                        <i data-lucide="file-check-2"></i> Resumen Estructurado (Plantilla Oficial):
-                                    </span>
-                                    <div class="ai-summary-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs" id="btn-ai-copy-summary"
-                                            title="Copiar resumen estructurado">
-                                            <i data-lucide="copy"></i> Copiar Resumen
+                                    <!-- Alerta de Incoherencia Técnica / Fuera de Alcance Sagemcom -->
+                                    <div class="ai-coherence-box hidden" id="ai-coherence-box">
+                                        <div class="ai-coherence-header">
+                                            <span class="ai-coherence-badge">
+                                                <i data-lucide="shield-alert"></i> Incoherencia Técnica Detectada
+                                            </span>
+                                            <span class="ai-coherence-cpe">Sagemcom DOCSIS 3.1 / ONT GPON</span>
+                                        </div>
+                                        <div class="ai-coherence-title" id="ai-coherence-title"></div>
+                                        <p class="ai-coherence-reason" id="ai-coherence-reason"></p>
+                                        <div class="ai-coherence-advice" id="ai-coherence-advice"></div>
+                                    </div>
+
+                                    <div class="ai-llm-actions">
+                                        <button type="button" id="btn-ai-llm-audit" class="btn btn-primary btn-sm"
+                                            title="Analizar el caso completo utilizando Google Gemini LLM">
+                                            <i data-lucide="brain-circuit"></i> Análisis Profundo (Gemini LLM)
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs" id="btn-ai-apply-summary"
-                                            title="Reemplazar datos del reclamo con este resumen oficial">
-                                            <i data-lucide="arrow-up-right"></i> Aplicar en Reclamo
-                                        </button>
+                                        <small class="ai-llm-hint"><i data-lucide="shield-check"
+                                                style="width: 12px; height: 12px; vertical-align: -2px; display: inline-block;"></i>
+                                            Privacidad activa: Emails y contraseñas son enmascarados antes del
+                                            envío.</small>
                                     </div>
-                                </div>
-                                <div class="ai-summary-text" id="ai-summary-content"></div>
-                            </div>
 
-                            <!-- Plantilla Oficial de Referencia (Colapsable) -->
-                            <details class="ai-official-template-details">
-                                <summary><i data-lucide="clipboard-list"></i> Ver Plantilla Oficial y Protocolo de este
-                                    RA</summary>
-                                <div class="ai-template-box">
-                                    <div class="ai-template-usage" id="ai-template-usage"></div>
-                                    <code class="ai-template-code" id="ai-template-code"></code>
-                                    <button type="button" class="btn btn-secondary btn-xs mt-2"
-                                        id="btn-ai-copy-raw-template">
-                                        <i data-lucide="copy"></i> Copiar Plantilla Vacía
-                                    </button>
+
+                                    <!-- Desglose: Qué SÍ tiene que ver y qué NO / qué FALTA -->
+                                    <div class="ai-audit-breakdown">
+                                        <div class="ai-audit-col ai-col-valid">
+                                            <div class="ai-col-header">
+                                                <span class="ai-col-badge badge-valid"><i data-lucide="check"></i> SÍ
+                                                    tiene que
+                                                    ver / SÍ corresponde (Detectado)</span>
+                                            </div>
+                                            <ul class="ai-items-list" id="ai-relevant-list"></ul>
+                                        </div>
+                                        <div class="ai-audit-col ai-col-invalid">
+                                            <div class="ai-col-header">
+                                                <span class="ai-col-badge badge-invalid"><i data-lucide="x"></i>
+                                                    Faltantes / No
+                                                    tiene que ver / No corresponde</span>
+                                            </div>
+                                            <ul class="ai-items-list" id="ai-missing-list"></ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- Resumen Estructurado Oficial -->
+                                    <div class="ai-summary-box">
+                                        <div class="ai-summary-header">
+                                            <span class="ai-summary-label">
+                                                <i data-lucide="file-check-2"></i> Resumen Estructurado (Plantilla
+                                                Oficial):
+                                            </span>
+                                            <div class="ai-summary-actions">
+                                                <button type="button" class="btn btn-secondary btn-xs"
+                                                    id="btn-ai-copy-summary" title="Copiar resumen estructurado">
+                                                    <i data-lucide="copy"></i> Copiar Resumen
+                                                </button>
+                                                <button type="button" class="btn btn-primary btn-xs"
+                                                    id="btn-ai-apply-summary"
+                                                    title="Reemplazar datos del reclamo con este resumen oficial">
+                                                    <i data-lucide="arrow-up-right"></i> Aplicar en Reclamo
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="ai-summary-text" id="ai-summary-content"></div>
+                                    </div>
+
+                                    <!-- Plantilla Oficial de Referencia (Colapsable) -->
+                                    <details class="ai-official-template-details">
+                                        <summary><i data-lucide="clipboard-list"></i> Ver Plantilla Oficial y Protocolo
+                                            de este
+                                            RA</summary>
+                                        <div class="ai-template-box">
+                                            <div class="ai-template-usage" id="ai-template-usage"></div>
+                                            <code class="ai-template-code" id="ai-template-code"></code>
+                                            <button type="button" class="btn btn-secondary btn-xs mt-2"
+                                                id="btn-ai-copy-raw-template">
+                                                <i data-lucide="copy"></i> Copiar Plantilla Vacía
+                                            </button>
+                                        </div>
+                                    </details>
                                 </div>
-                            </details>
-                        </div>
-                    </div>
+                            </div>
                         </div>
                     </details>
 
@@ -639,18 +650,22 @@
 
             <div class="settings-disclaimer">
                 <i data-lucide="info"></i>
-                <p><strong>Aviso Importante:</strong> Las respuestas y auditorías generadas por la IA son <strong>a modo orientativo</strong>. No debes realizar exactamente lo que la IA indica sin antes verificar la coherencia técnica.</p>
+                <p><strong>Aviso Importante:</strong> Las respuestas y auditorías generadas por la IA son <strong>a modo
+                        orientativo</strong>. No debes realizar exactamente lo que la IA indica sin antes verificar la
+                    coherencia técnica.</p>
             </div>
-            
+
             <div class="settings-section">
                 <label for="gemini-api-key-input">Gemini API Key:</label>
                 <div class="input-with-toggle">
                     <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." autocomplete="off">
-                    <button type="button" class="btn-toggle-pass" id="btn-toggle-gemini-key" title="Mostrar/Ocultar API Key">
+                    <button type="button" class="btn-toggle-pass" id="btn-toggle-gemini-key"
+                        title="Mostrar/Ocultar API Key">
                         <i data-lucide="eye"></i>
                     </button>
                 </div>
-                <small class="settings-hint">Necesaria para usar el motor de IA LLM. Se guarda de forma segura localmente en tu navegador.</small>
+                <small class="settings-hint">Necesaria para usar el motor de IA LLM. Se guarda de forma segura
+                    localmente en tu navegador.</small>
             </div>
 
             <div class="settings-section">
@@ -666,11 +681,14 @@
                         <option value="gemini-3.1-pro-preview">🧠 Gemini 3.1 Pro Preview (Razonamiento)</option>
                         <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro</option>
                     </select>
-                    <button type="button" id="btn-test-gemini" class="btn btn-secondary btn-sm" title="Probar conexión y listar modelos disponibles" style="padding: 0.45rem 0.75rem; white-space: nowrap; height: 38px;">
+                    <button type="button" id="btn-test-gemini" class="btn btn-secondary btn-sm"
+                        title="Probar conexión y listar modelos disponibles"
+                        style="padding: 0.45rem 0.75rem; white-space: nowrap; height: 38px;">
                         <i data-lucide="refresh-cw"></i> Probar
                     </button>
                 </div>
-                <small class="settings-hint" id="gemini-model-status">Detecta y selecciona los modelos soportados por tu API Key.</small>
+                <small class="settings-hint" id="gemini-model-status">Detecta y selecciona los modelos soportados por tu
+                    API Key.</small>
             </div>
 
             <hr class="settings-divider">
