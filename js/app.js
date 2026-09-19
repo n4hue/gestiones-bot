@@ -400,9 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 geminiModel = best;
                 localStorage.setItem(GEMINI_MODEL_STORAGE, best);
                 if (geminiModelStatus) {
-                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>`;
+                    const isFlash = best.toLowerCase().includes('flash');
+                    const speedNote = isFlash ? ' (Modo Rápido ⚡)' : '';
+                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>${speedNote}`;
                 }
-                showToast(`Conexión exitosa y validada (${best})`, 'success');
+                showToast(`Modelo más rápido asignado: ${best}`, 'success');
             } catch (err) {
                 console.error('Error al probar Gemini:', err);
                 if (geminiModelStatus) {
@@ -4358,7 +4360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function pickBestGeminiModel(modelsList) {
-        if (!modelsList || modelsList.length === 0) return 'gemini-3.1-pro-preview';
+        if (!modelsList || modelsList.length === 0) return 'gemini-3.1-flash';
         
         // Descartar modelos obsoletos que Google rechaza para generateContent en cuentas nuevas
         const blacklist = ['gemini-2.5-pro', 'gemini-1.0-pro'];
@@ -4369,24 +4371,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const candidateList = validModels.length > 0 ? validModels : modelsList;
 
-        const priority = [
-            'gemini-3.1-pro-preview',
+        // Prioridad ESTRICTA POR VELOCIDAD (Modelos Flash más rápidos primero):
+        const speedPriority = [
             'gemini-3.1-flash',
             'gemini-3.0-flash',
             'gemini-3-flash',
             'gemini-2.5-flash',
             'gemini-2.0-flash',
+            'gemini-1.5-flash-8b',
             'gemini-1.5-flash-latest',
             'gemini-1.5-flash-002',
             'gemini-1.5-flash-001',
             'gemini-1.5-flash',
-            'gemini-2.0-flash-exp',
-            'gemini-3.1-pro',
-            'gemini-3-pro',
-            'gemini-1.5-pro'
+            'gemini-2.0-flash-exp'
         ];
 
-        for (const p of priority) {
+        for (const p of speedPriority) {
             const found = candidateList.find(m => {
                 const name = m.name.replace(/^models\//, '');
                 return name === p;
@@ -4394,11 +4394,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (found) return found.name.replace(/^models\//, '');
         }
 
-        const anyModern = candidateList.find(m => m.name.includes('3.1') || m.name.includes('preview'));
-        if (anyModern) return anyModern.name.replace(/^models\//, '');
-
+        // Si no está en la lista exacta pero contiene 'flash', es rápido
         const anyFlash = candidateList.find(m => m.name.toLowerCase().includes('flash'));
         if (anyFlash) return anyFlash.name.replace(/^models\//, '');
+
+        // Solo si NO hay ningún modelo Flash, recurrir a los modelos Pro (más lentos):
+        const proPriority = [
+            'gemini-3.1-pro-preview',
+            'gemini-3.1-pro',
+            'gemini-3-pro',
+            'gemini-1.5-pro'
+        ];
+        for (const p of proPriority) {
+            const found = candidateList.find(m => {
+                const name = m.name.replace(/^models\//, '');
+                return name === p;
+            });
+            if (found) return found.name.replace(/^models\//, '');
+        }
 
         return candidateList[0].name.replace(/^models\//, '');
     }
@@ -4454,14 +4467,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateGeminiModelOptions(modelsList) {
         if (!selectGeminiModel || !modelsList || modelsList.length === 0) return;
         const currentVal = selectGeminiModel.value;
-        selectGeminiModel.innerHTML = '<option value="auto">⚡ Auto-detectar modelo compatible</option>';
-        modelsList.forEach(m => {
+        selectGeminiModel.innerHTML = '<option value="auto">⚡ Auto-detectar modelo más rápido (Recomendado)</option>';
+
+        // Descartar obsoletos
+        const blacklist = ['gemini-2.5-pro', 'gemini-1.0-pro'];
+        const validModels = modelsList.filter(m => !blacklist.includes(m.name.replace(/^models\//, '')));
+
+        // Ordenar con Flash (más rápidos) arriba de todo
+        const sorted = [...validModels].sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            const isFlashA = nameA.includes('flash');
+            const isFlashB = nameB.includes('flash');
+            if (isFlashA && !isFlashB) return -1;
+            if (!isFlashA && isFlashB) return 1;
+
+            const getScore = (n) => {
+                if (n.includes('3.1')) return 50;
+                if (n.includes('3.')) return 45;
+                if (n.includes('2.5')) return 40;
+                if (n.includes('2.0') || n.includes('2.')) return 30;
+                if (n.includes('1.5')) return 20;
+                return 10;
+            };
+            return getScore(nameB) - getScore(nameA);
+        });
+
+        sorted.forEach(m => {
             const cleanName = m.name.replace(/^models\//, '');
             const opt = document.createElement('option');
             opt.value = cleanName;
-            opt.textContent = m.displayName ? `${cleanName} (${m.displayName})` : cleanName;
+            const isFlash = cleanName.toLowerCase().includes('flash');
+            const icon = isFlash ? '⚡ ' : '🧠 ';
+            const tag = isFlash ? ' (Rápido)' : ' (Razonamiento)';
+            opt.textContent = `${icon}${cleanName}${tag}`;
             selectGeminiModel.appendChild(opt);
         });
+
         if (currentVal && Array.from(selectGeminiModel.options).some(o => o.value === currentVal)) {
             selectGeminiModel.value = currentVal;
         }
@@ -4519,10 +4561,10 @@ Solo JSON puro, sin tags HTML.`;
                     if (available && available.length > 0) {
                         modelToUse = pickBestGeminiModel(available);
                     } else {
-                        modelToUse = 'gemini-3.1-pro-preview';
+                        modelToUse = 'gemini-3.1-flash';
                     }
                 } catch {
-                    modelToUse = 'gemini-3.1-pro-preview';
+                    modelToUse = 'gemini-3.1-flash';
                 }
             }
 
