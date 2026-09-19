@@ -4635,6 +4635,7 @@ Por normativa de confidencialidad del cliente, los correos electrónicos y contr
 - Si en cambio observás indicaciones explícitas de omisión o evasión de contraseña (por ejemplo: "no la brinda", "no la sabe", "vacio", "se niega", "faltante"), trátalo como contraseña FALTANTE / NO BRINDADA (motivo de rechazo para reclamos que la exigen).
 
 Analizá el reclamo ingresado por el operador. Verificá si contiene todos los campos obligatorios y si tiene coherencia técnica para redes HFC DOCSIS 3.1 o FTTH GPON.
+¡IMPORTANTE!: Si detectás errores, datos faltantes críticos o incoherencias técnicas, asegurate de ser EXTENSO, sumamente DETALLADO y DIDÁCTICO en tus explicaciones (especialmente en los campos verdictDesc, missingItems.desc y technicalReason). Explicá exactamente por qué está mal y cómo debería corregirse según los protocolos del ISP.
 Devolvé tu respuesta ÚNICAMENTE en formato JSON estricto con esta estructura (no markdown):
 {
   "score": 0 a 100,
