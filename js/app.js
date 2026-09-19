@@ -4329,10 +4329,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('Error al copiar plantilla', 'error');
                 }
             });
-            if (btnAiLlmAudit) {
+        }
+
+        if (btnAiLlmAudit) {
             btnAiLlmAudit.addEventListener('click', handleLlmAudit);
         }
     }
+
+    // ============================================
+    // Feature: Gemini LLM Integration & Discovery
+    // ============================================
 
     async function getAvailableGeminiModels(apiKey) {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -4511,7 +4517,6 @@ Solo JSON puro, sin tags HTML.`;
             btnAiLlmAudit.innerHTML = originalText;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
-    }
     }
 
     // ============================================
