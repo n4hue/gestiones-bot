@@ -2904,6 +2904,176 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
+    // ============================================
+    // Content Coherence Validation Engine
+    // ============================================
+    // Validates that extracted field values are semantically valid
+    // (e.g., a MAC is hexadecimal, a URL is a real host, etc.)
+    function validateContentCoherence(fieldId, value, coherenceType) {
+        if (!value || !value.trim()) return null;
+        const clean = value.trim();
+
+        switch (coherenceType) {
+            case 'mac': {
+                // MAC must be 12 hex chars (with or without separators : - .)
+                const macClean = clean.replace(/[:\-.\s]/g, '');
+                if (!/^[0-9A-Fa-f]{12}$/.test(macClean)) {
+                    return {
+                        valid: false,
+                        label: `MAC inválida: "${clean}"`,
+                        desc: `El valor "${clean}" no es una dirección MAC válida. Debe ser 12 caracteres hexadecimales (0-9, A-F), ej: AA:BB:CC:DD:EE:FF o AABBCCDDEEFF.`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'mac_multiple': {
+                // Can contain multiple MACs or "ninguna mac"
+                if (/ninguna\s*mac/i.test(clean)) return { valid: true };
+                const macMatches = clean.match(/[0-9A-Fa-f]{2}[:\-][0-9A-Fa-f]{2}[:\-][0-9A-Fa-f]{2}[:\-][0-9A-Fa-f]{2}[:\-][0-9A-Fa-f]{2}[:\-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12}/gi);
+                if (!macMatches || macMatches.length === 0) {
+                    // Check if the text at least references MAC concepts
+                    if (/mac|[0-9A-Fa-f]{6,}/i.test(clean)) return { valid: true };
+                    return {
+                        valid: false,
+                        label: `MACs no detectadas en: "${clean.substring(0, 50)}..."`,
+                        desc: `No se encontraron direcciones MAC válidas (12 hex: AA:BB:CC:DD:EE:FF). Si no hay equipos, indicar "Ninguna Mac".`
+                    };
+                }
+                // Validate each found MAC
+                for (const m of macMatches) {
+                    const hex = m.replace(/[:\-.\s]/g, '');
+                    if (hex.length !== 12) {
+                        return {
+                            valid: false,
+                            label: `MAC con longitud incorrecta: "${m}"`,
+                            desc: `La MAC "${m}" no tiene los 12 caracteres hexadecimales obligatorios.`
+                        };
+                    }
+                }
+                return { valid: true };
+            }
+
+            case 'host_url': {
+                // Must be a valid URL, domain, IP, or at least look like a destination
+                // Reject obvious garbage like single words without dots, or greetings
+                const lc = clean.toLowerCase();
+                if (/^(hola|chau|si|no|ok|test|nada|todo|ayuda|gracias|buenas|porfa|favor|ninguno|varios|muchos)$/i.test(lc)) {
+                    return {
+                        valid: false,
+                        label: `Destino inválido: "${clean}"`,
+                        desc: `"${clean}" no es un host, dominio, URL o dirección IP válida para testear acceso. Debe ser algo como: google.com, 8.8.8.8, https://example.com, etc.`
+                    };
+                }
+                // Check if it looks like a domain, URL, or IP
+                const isUrl = /^https?:\/\//i.test(clean);
+                const isDomain = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.[a-zA-Z]{2,}/i.test(clean);
+                const isIp = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(clean);
+                const containsDomain = /[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}/.test(clean);
+                const containsIp = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(clean);
+                // Also accept descriptive destinations like "camaras IP", "servidor NAS"
+                const isDescriptive = /c[aá]mara|servidor|server|nvr|dvr|nas|impresora|printer|iot|smart\s*home|domotica|camara\s*ip/i.test(clean);
+
+                if (!isUrl && !isDomain && !isIp && !containsDomain && !containsIp && !isDescriptive) {
+                    // If it's a short string without any resemblance to a host
+                    if (clean.length < 4 || !/[.\/:0-9]/.test(clean)) {
+                        return {
+                            valid: false,
+                            label: `Destino dudoso: "${clean}"`,
+                            desc: `"${clean}" no parece ser un destino de red válido (URL, dominio o IP). Ejemplos válidos: google.com, 192.168.1.1, https://sitio.com, cámara IP Hikvision, etc.`
+                        };
+                    }
+                }
+                return { valid: true };
+            }
+
+            case 'ip_v4': {
+                // Must be a valid IPv4 address
+                const ipMatch = clean.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                if (!ipMatch) {
+                    return {
+                        valid: false,
+                        label: `IP inválida: "${clean}"`,
+                        desc: `No se encontró una dirección IPv4 válida en "${clean}". Formato esperado: X.X.X.X (ej: 192.168.0.10).`
+                    };
+                }
+                const parts = ipMatch[1].split('.').map(Number);
+                if (parts.some(p => p > 255)) {
+                    return {
+                        valid: false,
+                        label: `IP fuera de rango: "${ipMatch[1]}"`,
+                        desc: `La IP "${ipMatch[1]}" tiene octetos fuera del rango 0-255.`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'port_number': {
+                // Must be a port number 1-65535
+                const portNum = parseInt(clean.replace(/[^\d]/g, ''), 10);
+                if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                    return {
+                        valid: false,
+                        label: `Puerto inválido: "${clean}"`,
+                        desc: `"${clean}" no es un número de puerto válido. Los puertos van de 1 a 65535.`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'error_code': {
+                // Should contain an error code, message, or description, not just "no funciona"
+                if (/^\s*(no|si|nada|todo|ok|bien|mal)\s*$/i.test(clean)) {
+                    return {
+                        valid: false,
+                        label: `Error poco descriptivo: "${clean}"`,
+                        desc: `"${clean}" no describe un error específico. Debe incluir el código de error, mensaje en pantalla, o una descripción clara de la falla (ej: "error 404", "pantalla en negro", "no carga login", etc.).`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'soporte_brindado': {
+                // Should describe actual support steps, not just "si" or "no"
+                if (/^\s*(si|no|ok|nada)\s*$/i.test(clean)) {
+                    return {
+                        valid: false,
+                        label: `Soporte poco detallado: "${clean}"`,
+                        desc: `"${clean}" no describe el soporte brindado. Debe detallar las acciones realizadas (refresco CRM, batch I3, reseteo manual deco, reseteo de fábrica, reseteo CM/ONT, etc.).`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'velocidad': {
+                // Should contain a numeric speed value
+                if (!/\d/.test(clean)) {
+                    return {
+                        valid: false,
+                        label: `Velocidad sin valor numérico: "${clean}"`,
+                        desc: `"${clean}" no contiene un valor de velocidad medible (ej: "150 Mbps", "50 megas por WiFi", etc.).`
+                    };
+                }
+                return { valid: true };
+            }
+
+            case 'canal_tv': {
+                // Should mention specific channels, IDs, or "todos"
+                if (/^\s*(si|no|ok|nada|hola)\s*$/i.test(clean)) {
+                    return {
+                        valid: false,
+                        label: `Canales no especificados: "${clean}"`,
+                        desc: `"${clean}" no identifica canales. Debe especificar cuáles (ej: "canal 5, 10, 30" o "todos los canales con placa ID121").`
+                    };
+                }
+                return { valid: true };
+            }
+
+            default:
+                return { valid: true };
+        }
+    }
+
     const NETWORK_INCOHERENCE_RULES = [
         {
             id: 'ip_publica_fija',
@@ -3005,9 +3175,9 @@ document.addEventListener('DOMContentLoaded', () => {
             plantilla: '[Problemática] + [Macs que posee el cliente] + [Mac registradas en CRM] + [Nombre + Teléfono]',
             items: [
                 { id: 'problematica', label: 'Problemática detallada', critical: true, regex: /(?:problem[aá]tica|problema|inconveniente|falla|diferencia|motivo)[:=\s]*([^\n\]\+]+)/i },
-                { id: 'macs_cliente', label: 'MACs que posee el cliente en domicilio', critical: true, regex: /(?:macs?\s*(?:que\s*posee|cliente|en\s*domicilio|reales?|f[ií]sicas?))[:=\s]*([^\n\]\+]+)|(?:cm|ont|deco)?\s*mac[:=\s]*([0-9A-Fa-f:.-]{12,17})/i },
-                { id: 'macs_crm', label: 'MACs registradas en CRM', critical: true, regex: /(?:macs?\s*(?:registradas?\s*en\s*crm|crm|sistema))[:=\s]*([^\n\]\+]+)/i },
-                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i }
+                { id: 'macs_cliente', label: 'MACs que posee el cliente en domicilio', critical: true, coherenceType: 'mac_multiple', regex: /(?:macs?\s*(?:que\s*posee|cliente|en\s*domicilio|reales?|f[ií]sicas?))[:=\s]*([^\n\]\+]+)|(?:cm|ont|deco)?\s*mac[:=\s]*([0-9A-Fa-f:.-]{12,17})/i },
+                { id: 'macs_crm', label: 'MACs registradas en CRM', critical: true, coherenceType: 'mac_multiple', regex: /(?:macs?\s*(?:registradas?\s*en\s*crm|crm|sistema))[:=\s]*([^\n\]\+]+)/i },
+                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: false, isContactInfo: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i }
             ]
         },
         'Reposición de Equipos CM/DD': {
@@ -3015,8 +3185,8 @@ document.addEventListener('DOMContentLoaded', () => {
             plantilla: '[Problemática] + [Mac de equipos existentes en domicilio o Ninguna Mac] + [Nombre + Teléfono] + [Costo informado USD 100 Deco, USD 100 Modem, USD 100 Wifi Mesh, USD 200 Deco Alexa]',
             items: [
                 { id: 'problematica', label: 'Problemática (robo, pérdida, quemado)', critical: true, regex: /(?:problem[aá]tica|motivo|robo|perdid[ao]|quemad[ao]|falla|siniestro)[:=\s]*([^\n\]\+]+)/i },
-                { id: 'macs_existentes', label: 'MAC de equipos existentes o Ninguna Mac', critical: true, regex: /(?:macs?\s*(?:existentes?|en\s*domicilio|domicilio|posee)|ninguna\s*mac)[:=\s]*([^\n\]\+]+)|([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
-                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i },
+                { id: 'macs_existentes', label: 'MAC de equipos existentes o Ninguna Mac', critical: true, coherenceType: 'mac_multiple', regex: /(?:macs?\s*(?:existentes?|en\s*domicilio|domicilio|posee)|ninguna\s*mac)[:=\s]*([^\n\]\+]+)|([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Nombre + Teléfono de contacto', critical: false, isContactInfo: true, regex: /(?:nombre|contacto|titular)[:=\s]*([^\n\]\+]+)|(?:tel[eé]fono|tel|cel|movil)[:=\s]*([0-9\s\-]{7,})/i },
                 { id: 'costo_informado', label: 'Costo informado (USD 100 Deco/Modem/Mesh, USD 200 Alexa)', critical: true, regex: /(?:costo|precio|usd|dolares|arancel|informa\s*costo|costo\s*informado)/i }
             ]
         },
@@ -3044,7 +3214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
             plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
             items: [
-                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
+                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, coherenceType: 'host_url', regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
                 { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo, app o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
@@ -3052,7 +3222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
             plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
             items: [
-                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
+                { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, coherenceType: 'host_url', regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
                 { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
@@ -3070,7 +3240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'El cliente percibe que le funciona lento, tardan en cargar páginas, no llega a la velocidad contratada, etc.',
             plantilla: '[Informar velocidades máximas alcanzadas, información del dispositivo de prueba, velocidad de enlace. ¿En qué sitios o APPs percibe lentitud?]',
             items: [
-                { id: 'velocidad_max', label: 'Velocidades máximas alcanzadas (Mbps / Test)', critical: true, regex: /(?:velocidad|megas|mbps|mb|speedtest|test|alcanzad[ao]|llega\s*a)[:=\s]*([0-9]+)/i },
+                { id: 'velocidad_max', label: 'Velocidades máximas alcanzadas (Mbps / Test)', critical: true, coherenceType: 'velocidad', regex: /(?:velocidad|megas|mbps|mb|speedtest|test|alcanzad[ao]|llega\s*a)[:=\s]*([0-9]+)/i },
                 { id: 'disp_prueba', label: 'Dispositivo de prueba y velocidad de enlace', critical: true, regex: /(?:dispositivo|celular|pc|notebook|enlace|conexion)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'sitios_apps', label: 'Sitios o APPs donde percibe lentitud', critical: true, regex: /(?:sitios?|apps?|aplicaci[oó]n|en\s*qu[eé]|youtube|netflix|navegar)[:=\s]*([^\n\]\+]+)/i }
             ]
@@ -3104,10 +3274,10 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'No ve los canales contratados',
             plantilla: '[Mac del equipo con problema] + [Canal/les o todos los canales con placa ID121] + [marca del equipo] + [Nombre y apellido de la persona que se contacta] + [Conciliacion OK, IQ Verde] (Constatar conectado a internet y deco encendido)',
             items: [
-                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
-                { id: 'canales_id121', label: 'Canales con placa ID121 o todos los canales', critical: true, regex: /(?:canales?|todos|id121|121|placa)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, coherenceType: 'mac', regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'canales_id121', label: 'Canales con placa ID121 o todos los canales', critical: true, coherenceType: 'canal_tv', regex: /(?:canales?|todos|id121|121|placa)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'marca_equipo', label: 'Marca del equipo', critical: true, regex: /(?:marca|zte|sagemcom|kaon|skyworth)[:=\s]*([^\n\]\+]+)/i },
-                { id: 'contacto', label: 'Nombre y apellido de contacto', critical: true, regex: /(?:nombre|titular|apellido|contacto)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'contacto', label: 'Nombre y apellido de contacto', critical: false, isContactInfo: true, regex: /(?:nombre|titular|apellido|contacto)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'conciliacion', label: 'Conciliación OK, IQ Verde / Conectado y encendido', critical: true, regex: /(?:conciliaci[oó]n|iq\s*verde|conectado|encendido)/i }
             ]
         },
@@ -3115,34 +3285,34 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'El cliente percibe en 1 o varios canales pixelación o que la imagen se congela',
             plantilla: '[Mac del equipo con problema] + [Tel. de contacto] + [Horario de contacto] + [Problema] + [Soporte brindado: Refresco CRM (SI/NO), Batch I3 (SI/NO), Reseteo Manual del Deco (SI/NO), Reseteo de Fabrica (SI/NO), Reseteo de CM/ONT (SI/NO)]',
             items: [
-                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
-                { id: 'contacto', label: 'Teléfono y horario de contacto', critical: true, regex: /(?:tel|telefono|celular|horario)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, coherenceType: 'mac', regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Teléfono y horario de contacto', critical: false, isContactInfo: true, regex: /(?:tel|telefono|celular|horario)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'problema', label: 'Detalle del problema (canales, pixelación, freeze)', critical: true, regex: /(?:pixelaci[oó]n|freeze|congel|canales?|problema)[:=\s]*([^\n\]\+]+)/i },
-                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM, Batch I3, Reseteo Deco, Fabrica, CM/ONT)', critical: true, regex: /(?:soporte|refresco|batch|reseteo|reinicio)/i }
+                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM, Batch I3, Reseteo Deco, Fabrica, CM/ONT)', critical: true, coherenceType: 'soporte_brindado', regex: /(?:soporte|refresco|batch|reseteo|reinicio)/i }
             ]
         },
         'NOC - TELEVISION - Internal Error/Error 310 o 410 sin Solución Online': {
             usos: 'Cuando el cliente visualiza alguno de los errores 310 o 410',
             plantilla: '[Mac del equipo con problema] + [APP con error]',
             items: [
-                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
-                { id: 'app_error', label: 'APP con error (310 / 410 / Internal Error)', critical: true, regex: /(?:app|aplicaci[oó]n|error\s*310|error\s*410|internal\s*error)[:=\s]*([^\n\]\+]+)/i }
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, coherenceType: 'mac', regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'app_error', label: 'APP con error (310 / 410 / Internal Error)', critical: true, coherenceType: 'error_code', regex: /(?:app|aplicaci[oó]n|error\s*310|error\s*410|internal\s*error)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
         'NOC - TELEVISIÓN - PANTALLA EN NEGRO': {
             usos: 'Si luego de brindar soporte o ante la reiteración del problema, el cliente continúa sin solución',
             plantilla: '[Mac del equipo con problema] + [Tel. de contacto] + [Soporte brindado: Refresco CRM (SI/NO), Reseteo Manual del Deco (SI/NO)]',
             items: [
-                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
-                { id: 'contacto', label: 'Teléfono de contacto', critical: true, regex: /(?:tel|telefono|celular|contacto)[:=\s]*([0-9\s\-]+)/i },
-                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM SI/NO, Reseteo Manual Deco SI/NO)', critical: true, regex: /(?:soporte|refresco|reseteo|reinicio)/i }
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, coherenceType: 'mac', regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'contacto', label: 'Teléfono de contacto', critical: false, isContactInfo: true, regex: /(?:tel|telefono|celular|contacto)[:=\s]*([0-9\s\-]+)/i },
+                { id: 'soporte_brindado', label: 'Soporte brindado (Refresco CRM SI/NO, Reseteo Manual Deco SI/NO)', critical: true, coherenceType: 'soporte_brindado', regex: /(?:soporte|refresco|reseteo|reinicio)/i }
             ]
         },
         'NOC - APLICACIONES - DECO - DESAPARECEN APPS': {
             usos: 'Desaparecen aplicaciones en el decodificador',
             plantilla: '[Mac del equipo con problema] + [Apps que desaparecen] + [Soporte brindado]',
             items: [
-                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
+                { id: 'mac_equipo', label: 'MAC del equipo con problema', critical: true, coherenceType: 'mac', regex: /(?:mac|stb|deco)[:=\s]*([0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}|[0-9A-Fa-f]{12})/i },
                 { id: 'apps', label: 'Apps que desaparecen', critical: true, regex: /(?:app|apps|aplicaci[oó]n|desaparecen)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
@@ -3193,7 +3363,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas de acceso o activación en Disney+',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3204,7 +3374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas de acceso o activación en Max',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3215,7 +3385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas de acceso o activación en Amazon Prime Video',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3226,7 +3396,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas de acceso o activación en Netflix',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3237,7 +3407,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas de acceso a Sucursal Virtual',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3248,7 +3418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas con la aplicación Tplay',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3259,7 +3429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Problemas con la aplicación Tphone',
             plantilla: '[Tipo de error] + [Usuario sucursal virtual] + [Contraseña] + [Equipo donde falla] + [¿Funcionó en otro momento?]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
+                { id: 'tipo_error', label: 'Tipo de error', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema|inconveniente)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'usuario_sv', label: 'Usuario sucursal virtual', critical: true, regex: /(?:usuario\s*(?:sucursal\s*virtual|sv|app)?|email|correo)[:=\s]*([^\n\]\+\s]+@[^\n\]\+\s]+|[^\n\]\+]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i },
                 { id: 'password', label: 'Contraseña (ESTRICTAMENTE NECESARIA)', critical: true, isPassword: true, regex: /(?:contrase[ñn]a|clave|pass|password)[:=\s]*([^\n\]\+]+)/i },
                 { id: 'equipo_falla', label: 'Equipo donde falla', critical: true, regex: /(?:equipo\s*donde\s*falla|equipo|dispositivo|falla\s*en)[:=\s]*([^\n\]\+]+)/i },
@@ -3270,7 +3440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             usos: 'Cliente reclama que tiene problemas con la app Tplay con su Televisor Samsung Crystal con sistema Tizen',
             plantilla: '[Tipo de error]',
             items: [
-                { id: 'tipo_error', label: 'Tipo de error detallado en TV Samsung Tizen', critical: true, regex: /(?:tipo\s*de\s*error|error|falla|problema)[:=\s]*([^\n\]\+]+)|.{5,}/i }
+                { id: 'tipo_error', label: 'Tipo de error detallado en TV Samsung Tizen', critical: true, coherenceType: 'error_code', regex: /(?:tipo\s*de\s*error|error|falla|problema)[:=\s]*([^\n\]\+]+)|.{5,}/i }
             ]
         }
     };
@@ -3515,6 +3685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let passwordEvaded = false;
         let evasionText = '';
         let keywordsMissing = false;
+        let contentIncoherenceCount = 0;
         const detectedItems = [];
         const missingItems = [];
         const extractedData = {};
@@ -3550,23 +3721,61 @@ document.addEventListener('DOMContentLoaded', () => {
                         evasionText: trimmedVal
                     });
                 } else {
-                    foundCount++;
-                    extractedData[item.id] = trimmedVal;
-                    detectedItems.push({
-                        label: item.label,
-                        val: extractedData[item.id],
-                        critical: item.critical
-                    });
+                    // Run coherence validation if a coherenceType is defined
+                    let coherenceResult = null;
+                    if (item.coherenceType) {
+                        coherenceResult = validateContentCoherence(item.id, trimmedVal, item.coherenceType);
+                    }
+
+                    if (coherenceResult && !coherenceResult.valid) {
+                        // Value was found but is semantically invalid
+                        foundCount++; // Still counts as "found" (not missing)
+                        extractedData[item.id] = trimmedVal;
+                        detectedItems.push({
+                            label: item.label,
+                            val: trimmedVal,
+                            critical: item.critical,
+                            hasCoherenceIssue: true
+                        });
+                        missingItems.push({
+                            label: coherenceResult.label,
+                            critical: false,
+                            isIncoherence: true,
+                            isContentIncoherence: true,
+                            desc: coherenceResult.desc
+                        });
+                        contentIncoherenceCount++;
+                    } else {
+                        foundCount++;
+                        extractedData[item.id] = trimmedVal;
+                        detectedItems.push({
+                            label: item.label,
+                            val: extractedData[item.id],
+                            critical: item.critical
+                        });
+                    }
                 }
             } else {
-                if (item.critical) criticalMissing++;
-                if (item.isPassword) passwordMissing = true;
-                missingItems.push({
-                    label: item.label,
-                    critical: item.critical,
-                    isPassword: item.isPassword,
-                    isEvaded: false
-                });
+                // Handle missing items - isContactInfo fields are non-grave
+                if (item.isContactInfo) {
+                    // Contact info missing is not critical, just informational
+                    missingItems.push({
+                        label: item.label,
+                        critical: false,
+                        isContactInfo: true,
+                        isPassword: false,
+                        isEvaded: false
+                    });
+                } else {
+                    if (item.critical) criticalMissing++;
+                    if (item.isPassword) passwordMissing = true;
+                    missingItems.push({
+                        label: item.label,
+                        critical: item.critical,
+                        isPassword: item.isPassword,
+                        isEvaded: false
+                    });
+                }
             }
         }
 
@@ -3587,6 +3796,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Apply Network Incoherence Penalty (Sagemcom DOCSIS 3.1 / ONT GPON)
         if (incoherence) {
             score = Math.min(score, 15);
+        }
+
+        // Apply Content Coherence Penalty (invalid MACs, garbage URLs, etc.)
+        if (contentIncoherenceCount > 0) {
+            score = Math.max(20, score - (contentIncoherenceCount * 10));
         }
 
         let verdict = 'Gestionable';
@@ -3760,15 +3974,28 @@ document.addEventListener('DOMContentLoaded', () => {
             let relevantHtml = '';
             if (res.detectedItems && res.detectedItems.length > 0) {
                 res.detectedItems.forEach(item => {
-                    relevantHtml += `
-                        <li class="ai-item-valid">
-                            <i data-lucide="check-circle-2"></i>
-                            <div class="ai-item-body">
-                                <span class="ai-item-label">${escapeHtml(item.label)}:</span>
-                                <span class="ai-item-val">${escapeHtml(item.val)}</span>
-                            </div>
-                        </li>
-                    `;
+                    if (item.hasCoherenceIssue) {
+                        relevantHtml += `
+                            <li class="ai-item-warning">
+                                <i data-lucide="alert-triangle"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}:</span>
+                                    <span class="ai-item-val ai-val-incoherent">${escapeHtml(item.val)}</span>
+                                    <span class="ai-coherence-tag">⚠ Formato dudoso</span>
+                                </div>
+                            </li>
+                        `;
+                    } else {
+                        relevantHtml += `
+                            <li class="ai-item-valid">
+                                <i data-lucide="check-circle-2"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}:</span>
+                                    <span class="ai-item-val">${escapeHtml(item.val)}</span>
+                                </div>
+                            </li>
+                        `;
+                    }
                 });
             }
             if (res.noiseItems && res.noiseItems.length > 0) {
@@ -3795,13 +4022,35 @@ document.addEventListener('DOMContentLoaded', () => {
             let missingHtml = '';
             if (res.missingItems && res.missingItems.length > 0) {
                 res.missingItems.forEach(item => {
-                    if (item.isIncoherence) {
+                    if (item.isContentIncoherence) {
+                        // Content coherence issue (orange/amber warning)
+                        missingHtml += `
+                            <li class="ai-item-content-incoherent">
+                                <i data-lucide="alert-triangle"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}</span>
+                                    <span class="ai-item-desc">${escapeHtml(item.desc)}</span>
+                                </div>
+                            </li>
+                        `;
+                    } else if (item.isIncoherence) {
                         missingHtml += `
                             <li class="ai-item-incoherent">
                                 <i data-lucide="shield-alert"></i>
                                 <div class="ai-item-body">
                                     <span class="ai-item-label">${escapeHtml(item.label)}:</span>
                                     <span class="ai-item-desc">${escapeHtml(item.desc)}</span>
+                                </div>
+                            </li>
+                        `;
+                    } else if (item.isContactInfo) {
+                        // Contact info missing - non-grave, just informational
+                        missingHtml += `
+                            <li class="ai-item-missing">
+                                <i data-lucide="user"></i>
+                                <div class="ai-item-body">
+                                    <span class="ai-item-label">${escapeHtml(item.label)}</span>
+                                    <span class="ai-contact-tag">Info. de contacto (no grave)</span>
                                 </div>
                             </li>
                         `;
