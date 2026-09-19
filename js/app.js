@@ -2950,16 +2950,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detected > 0) {
                 const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
                 showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
-                if (reclamoAccordion) reclamoAccordion.open = true;
-                if (inputReclamoTexto && inputReclamoTexto.value.trim() && selectRa && selectRa.value) {
-                    renderAiAudit(true);
-                }
             } else {
                 if (inputCliente && !inputCliente.value) {
                     inputCliente.value = text.trim().substring(0, 40);
                 } else if (inputReclamoTexto) {
                     inputReclamoTexto.value = (inputReclamoTexto.value ? inputReclamoTexto.value + '\n' : '') + text.trim();
-                    if (reclamoAccordion) reclamoAccordion.open = true;
                 } else if (inputObservaciones) {
                     inputObservaciones.value = (inputObservaciones.value ? inputObservaciones.value + ' | ' : '') + text.trim();
                 }
