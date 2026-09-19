@@ -4062,6 +4062,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderAiAuditWithData(res, tipoRa) {
+        if (!res) return;
+
+        // Asegurar que la plantilla oficial y los usos siempre estén presentes
+        const rule = typeof RA_AI_RULES !== 'undefined' ? RA_AI_RULES[tipoRa] : null;
+        if (rule) {
+            if (!res.plantillaOficial) res.plantillaOficial = rule.plantilla;
+            if (!res.usos) res.usos = rule.usos;
+
+            // Si el resumen estructurado no vino del analizador/LLM, construirlo a partir de la plantilla y los datos detectados
+            if (!res.structuredSummary && Array.isArray(rule.items)) {
+                const summaryParts = [];
+                rule.items.forEach(it => {
+                    const shortLabel = it.label.split('(')[0].trim();
+                    const detected = (res.detectedItems || []).find(d => {
+                        const dl = (d.label || '').toLowerCase();
+                        const sl = shortLabel.toLowerCase();
+                        return dl.includes(sl) || sl.includes(dl) || (it.id && dl.includes(it.id.toLowerCase()));
+                    });
+                    if (detected && detected.val) {
+                        summaryParts.push(`[${shortLabel}: ${detected.val}]`);
+                    } else if (it.isPassword && res.verdictDesc && res.verdictDesc.toLowerCase().includes('no la brinda')) {
+                        summaryParts.push(`[${shortLabel}: NO BRINDADA]`);
+                    } else {
+                        summaryParts.push(`[${shortLabel}: FALTA]`);
+                    }
+                });
+                if (summaryParts.length > 0) {
+                    res.structuredSummary = summaryParts.join(' + ');
+                }
+            }
+        }
+
+        if (!res.verdict) {
+            res.verdict = res.score >= 80 ? 'Válido y Completo' : (res.score >= 50 ? 'Incompleto / Advertencia' : 'Rechazable');
+        }
 
         // Si es rechazable y no tiene incoherencia de red, generar un motivo general de rechazo
         if (!res.incoherenceData && (res.score < 50 || res.verdictClass === 'danger')) {
@@ -4600,6 +4635,7 @@ Devolvé tu respuesta ÚNICAMENTE en formato JSON estricto con esta estructura (
   "score": 0 a 100,
   "verdictClass": "success", "warning" o "danger",
   "verdictDesc": "breve explicación del veredicto",
+  "structuredSummary": "resumen con corchetes [Campo: valor] siguiendo la plantilla oficial o null",
   "detectedItems": [{"label": "nombre", "val": "valor extraído", "critical": true/false}],
   "missingItems": [{"label": "nombre", "critical": true/false, "desc": "por qué falta"}],
   "noiseItems": [{"type": "ruido", "text": "ruido detectado"}],
@@ -4690,6 +4726,17 @@ Solo JSON puro, sin tags HTML.`;
             }
             let cleanedText = textResponse.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
             const resData = JSON.parse(cleanedText);
+
+            // Combinar con análisis base local para garantizar plantilla oficial, usos y resumen estructurado
+            const localBase = analyzeClaimWithAI(rawText, tipoRa);
+            resData.plantillaOficial = localBase.plantillaOficial || (rule ? rule.plantilla : '');
+            resData.usos = localBase.usos || (rule ? rule.usos : '');
+            if (!resData.structuredSummary || resData.structuredSummary.trim().length === 0 || resData.structuredSummary === 'null') {
+                resData.structuredSummary = localBase.structuredSummary;
+            }
+            if (!resData.verdict) {
+                resData.verdict = localBase.verdict || (resData.score >= 80 ? 'Válido y Completo' : (resData.score >= 50 ? 'Incompleto / Advertencia' : 'Rechazable'));
+            }
 
             resData.verdictDesc = `✨ (${modelToUse}) ` + resData.verdictDesc;
             renderAiAuditWithData(resData, tipoRa);
