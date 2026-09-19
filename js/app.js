@@ -391,14 +391,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('No se encontraron modelos con soporte para generateContent');
                 }
                 populateGeminiModelOptions(models);
-                const best = pickBestGeminiModel(models);
+                let best = pickBestGeminiModel(models);
+
+                // Validar generación con el modelo elegido (reintenta y auto-resuelve si Google sugiere otro)
+                best = await testAndResolveWorkingModel(key, best, models);
+
                 if (selectGeminiModel) selectGeminiModel.value = best;
                 geminiModel = best;
                 localStorage.setItem(GEMINI_MODEL_STORAGE, best);
                 if (geminiModelStatus) {
-                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>`;
+                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>`;
                 }
-                showToast(`Conexión exitosa: ${models.length} modelos disponibles (${best})`, 'success');
+                showToast(`Conexión exitosa y validada (${best})`, 'success');
             } catch (err) {
                 console.error('Error al probar Gemini:', err);
                 if (geminiModelStatus) {
@@ -4354,9 +4358,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function pickBestGeminiModel(modelsList) {
-        if (!modelsList || modelsList.length === 0) return 'gemini-2.0-flash';
+        if (!modelsList || modelsList.length === 0) return 'gemini-3.1-pro-preview';
         
+        // Descartar modelos obsoletos que Google rechaza para generateContent en cuentas nuevas
+        const blacklist = ['gemini-2.5-pro', 'gemini-1.0-pro'];
+        const validModels = modelsList.filter(m => {
+            const clean = m.name.replace(/^models\//, '');
+            return !blacklist.includes(clean);
+        });
+
+        const candidateList = validModels.length > 0 ? validModels : modelsList;
+
         const priority = [
+            'gemini-3.1-pro-preview',
+            'gemini-3.1-flash',
+            'gemini-3.0-flash',
+            'gemini-3-flash',
             'gemini-2.5-flash',
             'gemini-2.0-flash',
             'gemini-1.5-flash-latest',
@@ -4364,23 +4381,74 @@ document.addEventListener('DOMContentLoaded', () => {
             'gemini-1.5-flash-001',
             'gemini-1.5-flash',
             'gemini-2.0-flash-exp',
-            'gemini-2.5-pro',
-            'gemini-2.0-pro-exp',
+            'gemini-3.1-pro',
+            'gemini-3-pro',
             'gemini-1.5-pro'
         ];
 
         for (const p of priority) {
-            const found = modelsList.find(m => {
+            const found = candidateList.find(m => {
                 const name = m.name.replace(/^models\//, '');
                 return name === p;
             });
             if (found) return found.name.replace(/^models\//, '');
         }
 
-        const anyFlash = modelsList.find(m => m.name.toLowerCase().includes('flash'));
+        const anyModern = candidateList.find(m => m.name.includes('3.1') || m.name.includes('preview'));
+        if (anyModern) return anyModern.name.replace(/^models\//, '');
+
+        const anyFlash = candidateList.find(m => m.name.toLowerCase().includes('flash'));
         if (anyFlash) return anyFlash.name.replace(/^models\//, '');
 
-        return modelsList[0].name.replace(/^models\//, '');
+        return candidateList[0].name.replace(/^models\//, '');
+    }
+
+    async function testAndResolveWorkingModel(apiKey, candidateModel, modelsList = []) {
+        let toTest = candidateModel;
+        const tested = new Set();
+
+        for (let i = 0; i < 4; i++) {
+            if (!toTest || tested.has(toTest)) break;
+            tested.add(toTest);
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${toTest}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: 'ping' }] }],
+                        generationConfig: { maxOutputTokens: 2 }
+                    })
+                });
+
+                if (res.ok) {
+                    return toTest;
+                }
+
+                const errData = await res.json().catch(() => ({}));
+                const errMsg = errData.error?.message || '';
+
+                // Si Google sugiere explícitamente un modelo en el mensaje
+                const match = errMsg.match(/models\/([a-zA-Z0-9._-]+)/);
+                if (match && match[1] && !tested.has(match[1])) {
+                    toTest = match[1];
+                    continue;
+                }
+
+                // Si no, elegir el siguiente mejor modelo de la lista
+                const remaining = modelsList.filter(m => !tested.has(m.name.replace(/^models\//, '')));
+                if (remaining.length > 0) {
+                    toTest = pickBestGeminiModel(remaining);
+                } else {
+                    break;
+                }
+            } catch (e) {
+                console.warn(`Error al verificar modelo ${toTest}:`, e);
+                break;
+            }
+        }
+
+        return toTest;
     }
 
     function populateGeminiModelOptions(modelsList) {
@@ -4444,19 +4512,17 @@ Solo JSON puro, sin tags HTML.`;
 
             // Determinar modelo a usar
             let modelToUse = geminiModel;
+            let available = null;
             if (!modelToUse || modelToUse === 'auto') {
                 try {
-                    const available = await getAvailableGeminiModels(geminiApiKey);
+                    available = await getAvailableGeminiModels(geminiApiKey);
                     if (available && available.length > 0) {
                         modelToUse = pickBestGeminiModel(available);
-                        geminiModel = modelToUse;
-                        localStorage.setItem(GEMINI_MODEL_STORAGE, modelToUse);
-                        if (selectGeminiModel) selectGeminiModel.value = modelToUse;
                     } else {
-                        modelToUse = 'gemini-2.0-flash';
+                        modelToUse = 'gemini-3.1-pro-preview';
                     }
                 } catch {
-                    modelToUse = 'gemini-2.0-flash';
+                    modelToUse = 'gemini-3.1-pro-preview';
                 }
             }
 
@@ -4471,30 +4537,49 @@ Solo JSON puro, sin tags HTML.`;
                 });
             };
 
-            let response = await executeCall(modelToUse);
+            const testedModels = new Set();
+            let response = null;
+            let finalErrorMsg = '';
 
-            // Si el modelo específico da error (ej. 404, not found, not supported), auto-descubrir y reintentar
-            if (!response.ok) {
+            for (let attempt = 0; attempt < 4; attempt++) {
+                testedModels.add(modelToUse);
+                response = await executeCall(modelToUse);
+
+                if (response.ok) {
+                    geminiModel = modelToUse;
+                    localStorage.setItem(GEMINI_MODEL_STORAGE, modelToUse);
+                    if (selectGeminiModel) selectGeminiModel.value = modelToUse;
+                    break;
+                }
+
                 const errData = await response.json().catch(() => ({}));
-                const errMsg = errData.error?.message || '';
-                if (response.status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
-                    console.warn(`Modelo ${modelToUse} rechazado. Buscando modelos activos en la cuenta...`);
-                    const freshModels = await getAvailableGeminiModels(geminiApiKey).catch(() => null);
-                    if (freshModels && freshModels.length > 0) {
-                        const fallbackModel = pickBestGeminiModel(freshModels.filter(m => !m.name.includes(modelToUse)));
-                        if (fallbackModel && fallbackModel !== modelToUse) {
-                            modelToUse = fallbackModel;
-                            geminiModel = fallbackModel;
-                            localStorage.setItem(GEMINI_MODEL_STORAGE, fallbackModel);
-                            if (selectGeminiModel) selectGeminiModel.value = fallbackModel;
-                            response = await executeCall(modelToUse);
-                        }
+                finalErrorMsg = errData.error?.message || `HTTP ${response.status}`;
+                console.warn(`Modelo ${modelToUse} falló: ${finalErrorMsg}`);
+
+                // 1. Si Google sugiere explícitamente un modelo en el mensaje de error:
+                const match = finalErrorMsg.match(/models\/([a-zA-Z0-9._-]+)/);
+                if (match && match[1] && !testedModels.has(match[1])) {
+                    modelToUse = match[1];
+                    continue;
+                }
+
+                // 2. Si no, consultar modelos disponibles y elegir el siguiente mejor
+                if (!available) {
+                    available = await getAvailableGeminiModels(geminiApiKey).catch(() => null);
+                }
+                if (available && available.length > 0) {
+                    const next = pickBestGeminiModel(available.filter(m => !testedModels.has(m.name.replace(/^models\//, ''))));
+                    if (next && !testedModels.has(next)) {
+                        modelToUse = next;
+                        continue;
                     }
                 }
-                if (!response.ok) {
-                    const finalErr = await response.json().catch(() => ({}));
-                    throw new Error(finalErr.error?.message || errMsg || 'Error en Gemini API');
-                }
+
+                break;
+            }
+
+            if (!response || !response.ok) {
+                throw new Error(finalErrorMsg || 'Error en Gemini API');
             }
 
             const data = await response.json();
