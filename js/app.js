@@ -3308,18 +3308,18 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'NOC - INTERNET - PROBLEMAS PARTICULARES DE ACCESO': {
             usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
-            plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
+            plantilla: '[Detallar a qué destino no puede acceder el cliente. Idealmente indicar si se probó en otros dispositivos o con datos móviles. IMPORTANTE: La información del dispositivo solo es obligatoria si el inconveniente es con CÁMARAS]',
             items: [
                 { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, coherenceType: 'host_url', regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
-                { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo, app o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
+                { id: 'dispositivo_camara', label: 'Información del dispositivo (Solo obligatorio para reclamos de CÁMARAS)', critical: false, regex: /(?:c[aá]mara|cam|dvr|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
         'NOC - WIFI MESH - PROBLEMAS PARTICULARES DE ACCESO': {
             usos: 'Sin acceso a páginas particulares, cámara IP, problemas de navegación a determinados sitios',
-            plantilla: '[Detallar a qué destino no puede acceder el cliente, si el problema es con cámaras detallar información del dispositivo]',
+            plantilla: '[Detallar a qué destino no puede acceder el cliente. Idealmente indicar si se probó en otros dispositivos o con datos móviles. IMPORTANTE: La información del dispositivo solo es obligatoria si el inconveniente es con CÁMARAS]',
             items: [
                 { id: 'destino', label: 'Destino, web o IP al que no puede acceder', critical: true, coherenceType: 'host_url', regex: /(?:destino|sitio|p[aá]gina|web|url|ip|puerto|dominio)[:=\s]*([^\n\]\+]+)|(?:https?:\/\/|\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i },
-                { id: 'dispositivo_camara', label: 'Información del dispositivo (marca, modelo o cámara si aplica)', critical: false, regex: /(?:c[aá]mara|cam|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
+                { id: 'dispositivo_camara', label: 'Información del dispositivo (Solo obligatorio para reclamos de CÁMARAS)', critical: false, regex: /(?:c[aá]mara|cam|dvr|dispositivo|marca|modelo|equipo)[:=\s]*([^\n\]\+]+)/i }
             ]
         },
 
