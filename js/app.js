@@ -3976,6 +3976,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const res = analyzeClaimWithAI(text, tipoRa);
 
+        // Si es rechazable y no tiene incoherencia de red, generar un motivo general de rechazo
+        if (!res.incoherenceData && (res.score < 50 || res.verdictClass === 'danger')) {
+            const hasPasswordEvasion = res.verdictDesc && res.verdictDesc.toLowerCase().includes('contraseña');
+            res.incoherenceData = {
+                isGeneralRejection: true,
+                motivo: hasPasswordEvasion ? 'Datos Incompletos - Evasión de Contraseña' : 'Datos Obligatorios Faltantes o Incompletos',
+                technicalReason: hasPasswordEvasion 
+                    ? 'La contraseña es estrictamente necesaria para validar credenciales y realizar la gestión. No se puede avanzar si no es proporcionada.'
+                    : 'El reclamo omite parámetros críticos exigidos por la plantilla oficial. Sin esta información explícita, el área técnica no puede proceder con la gestión ni aplicar cambios en los sistemas.',
+                rejectionAdvice: 'Corresponde rechazar el RA y devolver al área emisora (Front). Solicitar que se proporcionen los datos faltantes que se detallan en el panel de auditoría (marcados en color rojo).'
+            };
+        }
+
         // Update Coherence Alert Box
         if (aiCoherenceBox) {
             if (res.incoherenceData) {
@@ -3984,7 +3997,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     aiCoherenceTitle.textContent = `⛔ ${res.incoherenceData.motivo}`;
                 }
                 if (aiCoherenceReason) {
-                    aiCoherenceReason.innerHTML = `<strong>Límite de Red / GUI:</strong> ${escapeHtml(res.incoherenceData.technicalReason)}`;
+                    const reasonLabel = res.incoherenceData.isGeneralRejection ? 'Descripción de Rechazo:' : 'Límite de Red / GUI:';
+                    aiCoherenceReason.innerHTML = `<strong>${reasonLabel}</strong> ${escapeHtml(res.incoherenceData.technicalReason)}`;
                 }
                 if (aiCoherenceAdvice) {
                     aiCoherenceAdvice.innerHTML = `<strong>Acción Sugerida:</strong> ${escapeHtml(res.incoherenceData.rejectionAdvice)}`;
