@@ -4966,11 +4966,24 @@ Solo JSON puro, sin tags HTML.`;
                     globalTooltip.textContent = text;
                     const rect = el.getBoundingClientRect();
                     
-                    const top = rect.top - globalTooltip.offsetHeight + window.scrollY;
-                    const left = rect.left + (rect.width / 2) + window.scrollX;
+                    let positionClass = 'top';
+                    let top = rect.top - globalTooltip.offsetHeight - 8;
+                    let left = rect.left + (rect.width / 2);
                     
-                    globalTooltip.style.top = `${top}px`;
-                    globalTooltip.style.left = `${left}px`;
+                    if (top < 10) {
+                        top = rect.bottom + 8;
+                        positionClass = 'bottom';
+                    }
+                    
+                    const maxLeft = window.innerWidth - (globalTooltip.offsetWidth / 2) - 10;
+                    const minLeft = (globalTooltip.offsetWidth / 2) + 10;
+                    
+                    if (left > maxLeft) left = maxLeft;
+                    if (left < minLeft) left = minLeft;
+                    
+                    globalTooltip.className = `global-tooltip ${positionClass}`;
+                    globalTooltip.style.top = `${top + window.scrollY}px`;
+                    globalTooltip.style.left = `${left + window.scrollX}px`;
                     
                     clearTimeout(tooltipTimeout);
                     globalTooltip.classList.add('visible');

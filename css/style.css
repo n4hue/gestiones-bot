@@ -3699,7 +3699,7 @@ html.compact-mode .ai-summary-text {
     border: 1px solid rgba(255, 255, 255, 0.1);
     opacity: 0;
     visibility: hidden;
-    transform: translate(-50%, -10px) scale(0.95);
+    transform: translate(-50%, 0) scale(0.95);
     transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
     z-index: 9999;
     pointer-events: none;
@@ -3707,12 +3707,21 @@ html.compact-mode .ai-summary-text {
     max-width: 280px;
     text-align: center;
 }
+.global-tooltip.top {
+    transform: translate(-50%, -10px) scale(0.95);
+}
+.global-tooltip.bottom {
+    transform: translate(-50%, 10px) scale(0.95);
+}
 .global-tooltip.visible {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, -8px) scale(1);
 }
-.global-tooltip::after {
+.global-tooltip.visible.top,
+.global-tooltip.visible.bottom {
+    transform: translate(-50%, 0) scale(1);
+}
+.global-tooltip.top::after {
     content: '';
     position: absolute;
     bottom: -6px;
@@ -3721,4 +3730,14 @@ html.compact-mode .ai-summary-text {
     border-width: 6px 6px 0 6px;
     border-style: solid;
     border-color: #1e293b transparent transparent transparent;
+}
+.global-tooltip.bottom::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 6px 6px 6px;
+    border-style: solid;
+    border-color: transparent transparent #1e293b transparent;
 }
