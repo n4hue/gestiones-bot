@@ -3853,10 +3853,6 @@ html.compact-mode .ai-summary-text {
         display: none !important;
     }
 
-    .header-actions {
-        display: none !important;
-    }
-
     /* Mobile menu dropdown */
     .mobile-menu {
         display: block;

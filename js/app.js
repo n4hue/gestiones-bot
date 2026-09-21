@@ -2735,15 +2735,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'open-settings':
                     if (btnOpenSettings) btnOpenSettings.click();
                     break;
-                case 'clear-form':
-                    if (btnClearForm) btnClearForm.click();
-                    break;
-                case 'export':
-                    if (btnExport) btnExport.click();
-                    break;
-                case 'reset':
-                    if (btnReset) btnReset.click();
-                    break;
             }
         });
 
