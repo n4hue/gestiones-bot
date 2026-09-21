@@ -28,6 +28,9 @@
         <header class="app-header">
             <div class="header-top">
                 <h1>Gestiones BOT</h1>
+                <button id="btn-hamburger" class="btn btn-icon hamburger-toggle" title="Menú" aria-label="Abrir menú" aria-expanded="false">
+                    <i data-lucide="menu"></i>
+                </button>
                 <div class="header-controls">
                     <button id="btn-toggle-compact" class="btn btn-icon" title="Modo Compacto (Alt+M)"><i
                             data-lucide="minimize-2"></i></button>
@@ -57,6 +60,36 @@
                 <div id="pace-indicator" class="pace-indicator hidden"></div>
                 <div id="break-indicator" class="break-indicator hidden"></div>
             </div>
+
+            <!-- Mobile Dropdown Menu -->
+            <nav id="mobile-menu" class="mobile-menu" aria-label="Menú principal">
+                <div class="mobile-menu-section">
+                    <button class="mobile-menu-item" data-action="toggle-compact">
+                        <i data-lucide="minimize-2"></i><span>Modo Compacto</span>
+                    </button>
+                    <button class="mobile-menu-item" data-action="shortcuts-help">
+                        <i data-lucide="keyboard"></i><span>Atajos de Teclado</span>
+                    </button>
+                    <button class="mobile-menu-item" data-action="toggle-theme">
+                        <i data-lucide="moon"></i><span>Cambiar Tema</span>
+                    </button>
+                    <button class="mobile-menu-item" data-action="open-settings">
+                        <i data-lucide="settings"></i><span>Configuración</span>
+                    </button>
+                </div>
+                <div class="mobile-menu-divider"></div>
+                <div class="mobile-menu-section">
+                    <button class="mobile-menu-item" data-action="clear-form">
+                        <i data-lucide="eraser"></i><span>Limpiar Campos</span>
+                    </button>
+                    <button class="mobile-menu-item" data-action="export">
+                        <i data-lucide="download"></i><span>Exportar</span>
+                    </button>
+                    <button class="mobile-menu-item mobile-menu-item--danger" data-action="reset">
+                        <i data-lucide="rotate-ccw"></i><span>Nueva Jornada</span>
+                    </button>
+                </div>
+            </nav>
 
             <div class="header-actions">
                 <button type="button" id="btn-clear-form" class="btn btn-secondary"

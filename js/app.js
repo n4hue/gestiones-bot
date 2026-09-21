@@ -97,6 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileImportBackup = document.getElementById('file-import-backup');
     const historyChips = document.getElementById('history-chips');
 
+    // Hamburger Menu DOM
+    const btnHamburger = document.getElementById('btn-hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+
     // Reclamo Reiterado DOM
     const chkReiterado = document.getElementById('chk-reiterado');
     const badgeRecurrencia = document.getElementById('badge-recurrencia');
@@ -440,6 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAiClaimAudit();
     initBackupAndRestore();
     initOfflineSyncQueue();
+    initHamburgerMenu();
 
     // Initialize Lucide icons
     if (typeof lucide !== 'undefined') {
@@ -2668,6 +2673,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    }
+
+    // ============================================
+    // Feature: Hamburger Menu (Mobile Responsive)
+    // ============================================
+    function initHamburgerMenu() {
+        if (!btnHamburger || !mobileMenu) return;
+
+        // Create backdrop element
+        const backdrop = document.createElement('div');
+        backdrop.className = 'mobile-menu-backdrop';
+        document.body.appendChild(backdrop);
+
+        function toggleMobileMenu() {
+            const isOpen = mobileMenu.classList.toggle('open');
+            btnHamburger.setAttribute('aria-expanded', isOpen);
+            backdrop.classList.toggle('active', isOpen);
+
+            // Swap icon between menu and X
+            btnHamburger.innerHTML = isOpen
+                ? '<i data-lucide="x"></i>'
+                : '<i data-lucide="menu"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeMobileMenu() {
+            mobileMenu.classList.remove('open');
+            btnHamburger.setAttribute('aria-expanded', 'false');
+            backdrop.classList.remove('active');
+            btnHamburger.innerHTML = '<i data-lucide="menu"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Toggle on hamburger click
+        btnHamburger.addEventListener('click', toggleMobileMenu);
+
+        // Close on backdrop click
+        backdrop.addEventListener('click', closeMobileMenu);
+
+        // Handle menu item actions
+        mobileMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.mobile-menu-item');
+            if (!item) return;
+
+            const action = item.dataset.action;
+            closeMobileMenu();
+
+            // Map actions to existing button clicks
+            switch (action) {
+                case 'toggle-compact':
+                    toggleCompactMode();
+                    break;
+                case 'shortcuts-help':
+                    if (shortcutsModal) shortcutsModal.classList.remove('hidden');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    break;
+                case 'toggle-theme':
+                    if (btnTheme) btnTheme.click();
+                    break;
+                case 'open-settings':
+                    if (btnOpenSettings) btnOpenSettings.click();
+                    break;
+                case 'clear-form':
+                    if (btnClearForm) btnClearForm.click();
+                    break;
+                case 'export':
+                    if (btnExport) btnExport.click();
+                    break;
+                case 'reset':
+                    if (btnReset) btnReset.click();
+                    break;
+            }
+        });
+
+        // Close menu on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
+                closeMobileMenu();
+            }
+        });
     }
 
     // ============================================
