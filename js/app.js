@@ -312,9 +312,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
-    let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
+    let geminiApiKey = (() => {
+        try { const v = localStorage.getItem(GEMINI_API_KEY_STORAGE) || ''; return v.startsWith('AIza') ? v : atob(v); }
+        catch { return ''; }
+    })();
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
-    let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
+    let passCrm = (() => {
+        try { const v = localStorage.getItem(PASS_CRM_KEY) || ''; if (!v) return ''; return atob(v); }
+        catch { return localStorage.getItem(PASS_CRM_KEY) || ''; }
+    })();
 
     // Break alarm state
     let breakInterval = null;
@@ -407,13 +413,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (geminiModelStatus) {
                     const isFlash = best.toLowerCase().includes('flash');
                     const speedNote = isFlash ? ' (Modo Rápido ⚡)' : '';
-                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>${speedNote}`;
+                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${Number(models.length)} modelos detectados. Activo: <strong>${escapeHtml(best)}</strong>${escapeHtml(speedNote)}`;
                 }
                 showToast(`Modelo más rápido asignado: ${best}`, 'success');
             } catch (err) {
                 console.error('Error al probar Gemini:', err);
                 if (geminiModelStatus) {
-                    geminiModelStatus.innerHTML = `<span style="color: #EF4444; font-weight: 600;">✗ Error:</span> ${err.message}`;
+                    geminiModelStatus.innerHTML = `<span style="color: #EF4444; font-weight: 600;">✗ Error:</span> ${escapeHtml(err.message)}`;
                 }
                 showToast(`Error al conectar con Gemini: ${err.message}`, 'error');
             } finally {
@@ -863,11 +869,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (g.equipos) {
                 const eq = g.equipos;
                 const parts = [];
-                if (eq.cm) parts.push(`CM: ${eq.cm}`);
-                if (eq.mta) parts.push(`MTA: ${eq.mta}`);
-                if (eq.ont) parts.push(`ONT: ${eq.ont}`);
+                if (eq.cm) parts.push(`CM: ${escapeHtml(eq.cm)}`);
+                if (eq.mta) parts.push(`MTA: ${escapeHtml(eq.mta)}`);
+                if (eq.ont) parts.push(`ONT: ${escapeHtml(eq.ont)}`);
                 if (eq.decos && eq.decos.length) parts.push(`Decos: ${eq.decos.length}`);
-                if (eq.linea) parts.push(`Línea: ${eq.linea}`);
+                if (eq.linea) parts.push(`Línea: ${escapeHtml(eq.linea)}`);
                 if (parts.length > 0) {
                     equiposHtml = `<div class="gestion-equipos">🛠️ ${parts.join(' · ')}</div>`;
                 }
@@ -900,15 +906,15 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.cat = category;
             card.innerHTML = `
                 <div class="gestion-card-row">
-                    <span class="gestion-hora">${g.hora}</span>
-                    <span class="gestion-cliente">${g.cliente}</span>
-                    <span class="gestion-tipo" title="${g.tipo_ra}">
-                        ${shortRa}
-                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="Reclamo Reiterado ${g.ra_id ? '(RA: ' + g.ra_id + ')' : ''}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
+                    <span class="gestion-hora">${escapeHtml(g.hora)}</span>
+                    <span class="gestion-cliente">${escapeHtml(g.cliente)}</span>
+                    <span class="gestion-tipo" title="${escapeHtml(g.tipo_ra)}">
+                        ${escapeHtml(shortRa)}
+                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="Reclamo Reiterado ${g.ra_id ? '(RA: ' + escapeHtml(g.ra_id) + ')' : ''}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
                     </span>
                     <div class="gestion-actions">
-                        <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')"><i data-lucide="pencil"></i></button>
-                        <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')"><i data-lucide="trash-2"></i></button>
+                        <button class="btn-icon" title="Editar" data-action="edit" data-id="${escapeHtml(g.id)}"><i data-lucide="pencil"></i></button>
+                        <button class="btn-icon" title="Eliminar" data-action="delete" data-id="${escapeHtml(g.id)}"><i data-lucide="trash-2"></i></button>
                     </div>
                 </div>
                 ${detailsHtml}
@@ -1425,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.className = `toast ${type}`;
         toast.innerHTML = `
             <span class="toast-icon">${icons[type] || icons.info}</span>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         `;
 
         toastContainer.appendChild(toast);
@@ -1502,7 +1508,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Actions
     // ============================================
-    window.editGestion = function (id) {
+    // Event delegation para botones de historial (reemplaza onclick globales)
+    if (historyBody) {
+        historyBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === 'edit') editGestion(id);
+            if (action === 'delete') deleteGestion(id);
+        });
+    }
+
+    function editGestion(id) {
         const gestion = gestiones.find(g => g.id === id);
         if (gestion) {
             editingId = id;
@@ -1544,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.deleteGestion = async function (id) {
+    async function deleteGestion(id) {
         const confirmed = await showConfirm('¿Seguro que deseas eliminar esta gestión?');
         if (confirmed) {
             const gestionToDelete = gestiones.find(g => g.id === id);
@@ -1573,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Animate card removal before updating data
-            const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
+            const cardEl = historyBody.querySelector(`.gestion-card[data-id="${CSS.escape(id)}"]`);
             if (cardEl) {
                 cardEl.classList.add('removing');
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -1895,10 +1913,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Also expose for legacy compatibility
-    window.openConfigModal = function () {
+    // Helper to open settings
+    function openConfigModal() {
         if (btnOpenSettings) btnOpenSettings.click();
-    };
+    }
 
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {
@@ -1938,12 +1956,12 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(OPERATOR_NAME_KEY, operatorName);
 
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
-            localStorage.setItem(PASS_CRM_KEY, passCrm);
+            localStorage.setItem(PASS_CRM_KEY, passCrm ? btoa(passCrm) : '');
 
             // Save Gemini API Key & Model
             const newGeminiKey = inputGeminiApiKey ? inputGeminiApiKey.value.trim() : '';
             geminiApiKey = newGeminiKey;
-            localStorage.setItem(GEMINI_API_KEY_STORAGE, geminiApiKey);
+            localStorage.setItem(GEMINI_API_KEY_STORAGE, geminiApiKey ? btoa(geminiApiKey) : '');
 
             const newGeminiModel = selectGeminiModel ? selectGeminiModel.value : 'auto';
             geminiModel = newGeminiModel;
@@ -2617,9 +2635,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Expose break functions for console testing
-    window.showBreakAlert = showBreakAlert;
-    window.playBreakBeep = playBreakBeep;
+    // Break functions kept internal (no longer exposed on window for security)
 
     // ============================================
     // Feature: Compact Mode (Split Screen)
@@ -4634,7 +4650,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
 
     async function getAvailableGeminiModels(apiKey) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+            headers: { 'x-goog-api-key': apiKey }
+        });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.error?.message || `HTTP ${response.status}`);
@@ -4712,9 +4730,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tested.add(toTest);
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${toTest}:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${toTest}:generateContent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: 'ping' }] }],
                         generationConfig: { maxOutputTokens: 2 }
@@ -4845,9 +4866,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleLlmAudit() {
         if (!geminiApiKey) {
             showToast('API Key requerida. Configurá tu clave de Gemini en Ajustes.', 'warning');
-            if (typeof window.openConfigModal === 'function') {
-                window.openConfigModal();
-            }
+            openConfigModal();
             return;
         }
         const rawText = inputReclamoTexto ? inputReclamoTexto.value.trim() : '';
@@ -4917,9 +4936,12 @@ Solo JSON puro, sin tags HTML.`;
             }
 
             const executeCall = async (model) => {
-                return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+                return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': geminiApiKey
+                    },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: systemPrompt }] }],
                         generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
@@ -5149,8 +5171,14 @@ Solo JSON puro, sin tags HTML.`;
                 if (!data.localStorage || typeof data.localStorage !== 'object') {
                     throw new Error('Formato de backup inválido');
                 }
+                // Seguridad: solo permitir claves válidas del bot para evitar inyección
+                const ALLOWED_PREFIXES = ['bot_', 'gestiones_'];
+                const ALLOWED_EXACT_KEYS = ['operator_name', 'pass_crm'];
                 let count = 0;
                 for (const [key, val] of Object.entries(data.localStorage)) {
+                    const isAllowed = ALLOWED_PREFIXES.some(p => key.startsWith(p)) || ALLOWED_EXACT_KEYS.includes(key);
+                    if (!isAllowed) continue;
+                    if (typeof val !== 'string' || val.length > 500000) continue;
                     localStorage.setItem(key, val);
                     count++;
                 }

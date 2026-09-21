@@ -1,8 +1,9 @@
-const CACHE_NAME = 'bot-gestiones-v1';
+const CACHE_NAME = 'bot-gestiones-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/js/lucide.min.js',
   '/js/app.js',
   '/assets/icon.svg',
   '/manifest.json'
@@ -19,6 +20,16 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+
+  // Seguridad: No cachear peticiones a APIs externas (contienen datos sensibles / credenciales)
+  const url = event.request.url;
+  if (url.includes('generativelanguage.googleapis.com') ||
+      url.includes('script.google.com') ||
+      url.includes('script.googleusercontent.com') ||
+      url.includes('docs.google.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   // Estrategia: Network First (Red primero, luego caché como respaldo para offline)
   event.respondWith(
