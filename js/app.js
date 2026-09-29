@@ -1157,13 +1157,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Celebration sounds — one per day of the week (0=Domingo ... 6=Sábado)
     const CELEBRATION_SOUNDS = {
-        0: 'assets/level-up-sound.mp3',  // Domingo
+        0: 'assets/ZeldaOpenChestLoot-SoundEffectforediting.mp3',  // Domingo
         1: 'assets/level-up-sound.mp3',              // Lunes (FF Victory Fanfare)
         2: 'assets/congratulations-you-are-moving-to-the-next-level.mp3',         // Martes
-        3: 'assets/ZeldaOpenChestLoot-SoundEffectforediting.mp3',           // Miércoles
+        3: 'assets/en-la-radio-hay-tambien-un-toro-pollito-pio-letra.mp3',           // Miércoles
         4: 'assets/gta-sanandreas-missionpassed.mp3',               // Jueves
         5: 'assets/YouWinPerfect.mp3',                   // Viernes
         6: 'assets/YouWin-WiiSports.mp3'            // Sábado
+    };
+
+    // Specific playback start time (in seconds) per day if required (e.g. Wednesday starts at second 26)
+    const CELEBRATION_START_TIMES = {
+        3: 26 // Miércoles: arrancar desde el segundo 26
     };
 
     function triggerGoalCelebration() {
@@ -1173,9 +1178,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Play day-of-week celebration sound 🎶
         const dayOfWeek = new Date().getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
         const soundFile = CELEBRATION_SOUNDS[dayOfWeek] || 'assets/level-up-sound.mp3';
+        const startTime = CELEBRATION_START_TIMES[dayOfWeek] || (soundFile.includes('en-la-radio-hay-tambien-un-toro-pollito-pio-letra') ? 26 : 0);
         try {
             const celebrationAudio = new Audio(soundFile);
             celebrationAudio.volume = 0.7;
+            if (startTime > 0) {
+                celebrationAudio.currentTime = startTime;
+                celebrationAudio.addEventListener('loadedmetadata', () => {
+                    if (celebrationAudio.currentTime < startTime) {
+                        celebrationAudio.currentTime = startTime;
+                    }
+                }, { once: true });
+            }
             celebrationAudio.play().catch(() => {
                 // If the specific file is missing, try the default FF sound
                 const fallback = new Audio('assets/level-up-sound.mp3');
@@ -3817,7 +3831,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isPortForwarding) {
             const protoMatch = text.match(/\b(tcp\s*[\/\-y]\s*udp|ambos|tcp|udp)\b/i);
             const portMatch = text.match(/(?:puertos?|port|ports|dst\s*port)[:=\s#]*([0-9]{1,5}(?:\s*(?:-|–|y|,|\/)\s*[0-9]{1,5})*)/i) ||
-                              text.match(/\b([1-9][0-9]{0,4})\b(?!\s*(?:megas|mbps|mb|gb|d[ií]as|meses|pesos|usd|cliente|id|ra))/i);
+                text.match(/\b([1-9][0-9]{0,4})\b(?!\s*(?:megas|mbps|mb|gb|d[ií]as|meses|pesos|usd|cliente|id|ra))/i);
 
             // Extraer y clasificar direcciones IPv4 en el reclamo
             const allIpMatches = [...text.matchAll(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g)].map(m => m[1]);
@@ -4356,7 +4370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             res.incoherenceData = {
                 isGeneralRejection: true,
                 motivo: hasPasswordEvasion ? 'Datos Incompletos - Evasión de Contraseña' : 'Datos Obligatorios Faltantes o Incompletos',
-                technicalReason: hasPasswordEvasion 
+                technicalReason: hasPasswordEvasion
                     ? 'La contraseña es estrictamente necesaria para validar credenciales y realizar la gestión. No se puede avanzar si no es proporcionada.'
                     : 'El reclamo omite parámetros críticos exigidos por la plantilla oficial. Sin esta información explícita, el área técnica no puede proceder con la gestión ni aplicar cambios en los sistemas.',
                 rejectionAdvice: 'Corresponde rechazar el RA y devolver al área emisora (Front). Solicitar que se proporcionen los datos faltantes que se detallan en el panel de auditoría (marcados en color rojo).'
@@ -4506,7 +4520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         let tag = item.critical ? '<span class="ai-critical-tag">Obligatorio</span>' : '<span class="ai-optional-tag">Sugerido</span>';
                         if (item.isPassword) {
-                            tag = item.isEvaded 
+                            tag = item.isEvaded
                                 ? `<span class="ai-pwd-alert">¡Contraseña No Brindada / Vacía ("${escapeHtml(item.evasionText)}")!</span>`
                                 : '<span class="ai-pwd-alert">¡Estrictamente Necesaria!</span>';
                         }
@@ -4640,7 +4654,7 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error(err.error?.message || `HTTP ${response.status}`);
         }
         const data = await response.json();
-        const supported = (data.models || []).filter(m => 
+        const supported = (data.models || []).filter(m =>
             Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent')
         );
         return supported;
@@ -4648,7 +4662,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function pickBestGeminiModel(modelsList) {
         if (!modelsList || modelsList.length === 0) return 'gemini-3.1-flash';
-        
+
         // Descartar modelos obsoletos que Google rechaza para generateContent en cuentas nuevas
         const blacklist = ['gemini-2.5-pro', 'gemini-1.0-pro'];
         const validModels = modelsList.filter(m => {
@@ -4856,7 +4870,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Completá el tipo de reclamo y los datos del reclamo.', 'warning');
             return;
         }
-        
+
         // Sanitización estricta de privacidad (DLP) antes de enviar cualquier dato al LLM
         const sanitizedText = sanitizeSensitiveDataForLlm(rawText, tipoRa);
         const hadRedaction = sanitizedText !== rawText;
@@ -5203,40 +5217,40 @@ Solo JSON puro, sin tags HTML.`;
             elements.forEach(el => {
                 const title = el.getAttribute('title');
                 if (!title) return;
-                
+
                 el.setAttribute('data-original-title', title);
                 el.removeAttribute('title');
-                
+
                 el.addEventListener('mouseenter', () => {
                     const text = el.getAttribute('data-original-title');
                     if (!text) return;
-                    
+
                     globalTooltip.textContent = text;
                     const rect = el.getBoundingClientRect();
-                    
+
                     let positionClass = 'top';
                     let top = rect.top - globalTooltip.offsetHeight - 8;
                     let left = rect.left + (rect.width / 2);
-                    
+
                     if (top < 10) {
                         top = rect.bottom + 8;
                         positionClass = 'bottom';
                     }
-                    
+
                     const maxLeft = window.innerWidth - (globalTooltip.offsetWidth / 2) - 10;
                     const minLeft = (globalTooltip.offsetWidth / 2) + 10;
-                    
+
                     if (left > maxLeft) left = maxLeft;
                     if (left < minLeft) left = minLeft;
-                    
+
                     globalTooltip.className = `global-tooltip ${positionClass}`;
                     globalTooltip.style.top = `${top}px`;
                     globalTooltip.style.left = `${left}px`;
-                    
+
                     clearTimeout(tooltipTimeout);
                     globalTooltip.classList.add('visible');
                 });
-                
+
                 el.addEventListener('mouseleave', () => {
                     tooltipTimeout = setTimeout(() => {
                         globalTooltip.classList.remove('visible');
@@ -5244,7 +5258,7 @@ Solo JSON puro, sin tags HTML.`;
                 });
             });
         };
-        
+
         setupTooltips();
 
         const observer = new MutationObserver((mutations) => {
@@ -5260,10 +5274,10 @@ Solo JSON puro, sin tags HTML.`;
             });
             if (shouldSetup) setupTooltips();
         });
-        
+
         observer.observe(document.body, { childList: true, subtree: true });
     }
-    
+
     initGlobalTooltips();
 
 });
