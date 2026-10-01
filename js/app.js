@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputOperatorName = document.getElementById('operator-name-input');
     const inputPassCrm = document.getElementById('pass-crm-input');
     const btnTogglePass = document.getElementById('btn-toggle-pass');
+    const selectFrancoSwapPartner = document.getElementById('franco-swap-partner-select');
+    const francoSwapDetailsCard = document.getElementById('franco-swap-details-card');
 
     // Confirm Modal
     const confirmModal = document.getElementById('confirm-modal');
@@ -154,6 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const GEMINI_API_KEY_STORAGE = 'bot_gemini_api_key';
     const GEMINI_MODEL_STORAGE = 'bot_gemini_model';
     const PASS_CRM_KEY = 'bot_pass_crm';
+    const FRANCO_SWAP_PARTNER_KEY = 'bot_franco_swap_partner';
+    const FRANCO_SWAP_DAY_REC_KEY = 'bot_franco_swap_day_received';
+    const FRANCO_SWAP_DAY_GIV_KEY = 'bot_franco_swap_day_given';
+
+    const DAY_NAMES_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const DAY_SHORT_NAMES_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
     // ============================================
     // Operator Break Schedule
@@ -315,6 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
+    let francoSwapPartner = localStorage.getItem(FRANCO_SWAP_PARTNER_KEY) || '';
+    let francoSwapDayReceived = localStorage.getItem(FRANCO_SWAP_DAY_REC_KEY) || '';
+    let francoSwapDayGiven = localStorage.getItem(FRANCO_SWAP_DAY_GIV_KEY) || '';
 
     // Break alarm state
     let breakInterval = null;
@@ -353,6 +364,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputPassCrm) inputPassCrm.value = passCrm;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
     if (selectGeminiModel) selectGeminiModel.value = geminiModel;
+
+    populateFrancoSwapPartnerSelect();
+    renderFrancoSwapDetails();
+
+    if (inputOperatorName) {
+        inputOperatorName.addEventListener('change', () => {
+            populateFrancoSwapPartnerSelect();
+            renderFrancoSwapDetails();
+        });
+    }
+
+    if (selectFrancoSwapPartner) {
+        selectFrancoSwapPartner.addEventListener('change', () => {
+            renderFrancoSwapDetails();
+        });
+    }
 
     // Password visibility toggle
     if (btnTogglePass && inputPassCrm) {
@@ -1905,6 +1932,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputPassCrm) inputPassCrm.value = passCrm;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
             if (selectGeminiModel) selectGeminiModel.value = geminiModel;
+            populateFrancoSwapPartnerSelect();
+            if (selectFrancoSwapPartner) selectFrancoSwapPartner.value = francoSwapPartner;
+            renderFrancoSwapDetails();
             settingsModal.classList.remove('hidden');
         });
     }
@@ -1945,7 +1975,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Save break alarm preference
             breakAlarmEnabled = breakAlarmToggleEl ? breakAlarmToggleEl.checked : true;
             localStorage.setItem(BREAK_ALARM_KEY, breakAlarmEnabled.toString());
-            updateNextBreakIndicator();
 
             // Save operator settings
             operatorName = inputOperatorName ? inputOperatorName.value.trim() : '';
@@ -1953,6 +1982,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
             localStorage.setItem(PASS_CRM_KEY, passCrm);
+
+            // Save franco swap
+            const newSwapPartner = selectFrancoSwapPartner ? selectFrancoSwapPartner.value : '';
+            francoSwapPartner = (newSwapPartner && newSwapPartner !== operatorName) ? newSwapPartner : '';
+            localStorage.setItem(FRANCO_SWAP_PARTNER_KEY, francoSwapPartner);
+
+            const pairSelect = document.getElementById('swap-day-pair-select');
+            if (pairSelect && francoSwapPartner) {
+                const [rec, giv] = pairSelect.value.split('-');
+                francoSwapDayReceived = rec;
+                francoSwapDayGiven = giv;
+            } else if (francoSwapPartner) {
+                const mySched = OPERATOR_SCHEDULE[operatorName];
+                const partSched = OPERATOR_SCHEDULE[francoSwapPartner];
+                if (mySched && partSched) {
+                    const pDiff = partSched.francos.filter(d => !mySched.francos.includes(d));
+                    const mDiff = mySched.francos.filter(d => !partSched.francos.includes(d));
+                    if (pDiff.length === 1 && mDiff.length === 1) {
+                        francoSwapDayReceived = String(pDiff[0]);
+                        francoSwapDayGiven = String(mDiff[0]);
+                    }
+                }
+            } else {
+                francoSwapDayReceived = '';
+                francoSwapDayGiven = '';
+            }
+            localStorage.setItem(FRANCO_SWAP_DAY_REC_KEY, francoSwapDayReceived);
+            localStorage.setItem(FRANCO_SWAP_DAY_GIV_KEY, francoSwapDayGiven);
+
+            updateNextBreakIndicator();
 
             // Save Gemini API Key & Model
             const newGeminiKey = inputGeminiApiKey ? inputGeminiApiKey.value.trim() : '';
@@ -1964,7 +2023,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(GEMINI_MODEL_STORAGE, geminiModel);
 
             settingsModal.classList.add('hidden');
-            showToast('Configuración guardada', 'success');
+            showToast(francoSwapPartner ? `Configuración guardada (Franco cambiado con ${francoSwapPartner})` : 'Configuración guardada', 'success');
             inputCliente.focus();
         });
     }
@@ -2442,17 +2501,299 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function getOperatorSchedule() {
+    function getOperatorSchedule(targetDate = new Date()) {
         if (!operatorName) return null;
-        return OPERATOR_SCHEDULE[operatorName] || null;
+        const baseSchedule = OPERATOR_SCHEDULE[operatorName];
+        if (!baseSchedule) return null;
+
+        if (!francoSwapPartner || !OPERATOR_SCHEDULE[francoSwapPartner] || francoSwapPartner === operatorName) {
+            return {
+                francos: [...baseSchedule.francos],
+                breaks: [...baseSchedule.breaks],
+                isSwapped: false
+            };
+        }
+
+        const partnerSchedule = OPERATOR_SCHEDULE[francoSwapPartner];
+        const partnerDiff = partnerSchedule.francos.filter(d => !baseSchedule.francos.includes(d));
+        const myDiff = baseSchedule.francos.filter(d => !partnerSchedule.francos.includes(d));
+
+        if (partnerDiff.length === 0) {
+            return {
+                francos: [...baseSchedule.francos],
+                breaks: [...baseSchedule.breaks],
+                isSwapped: false
+            };
+        }
+
+        let received = [];
+        let given = [];
+
+        if (partnerDiff.length === 1 && myDiff.length === 1) {
+            received = [partnerDiff[0]];
+            given = [myDiff[0]];
+        } else {
+            if (francoSwapDayReceived === 'all' || francoSwapDayGiven === 'all') {
+                received = [...partnerDiff];
+                given = [...myDiff];
+            } else if (francoSwapDayReceived !== '' && francoSwapDayGiven !== '' && !isNaN(Number(francoSwapDayReceived)) && !isNaN(Number(francoSwapDayGiven))) {
+                received = [Number(francoSwapDayReceived)];
+                given = [Number(francoSwapDayGiven)];
+            } else {
+                received = [partnerDiff[0]];
+                given = [myDiff[0]];
+            }
+        }
+
+        const effectiveFrancos = baseSchedule.francos.filter(d => !given.includes(d)).concat(received);
+        const dayOfWeek = targetDate.getDay();
+        const isSwappedWorkingDay = given.includes(dayOfWeek);
+        const isSwappedFrancoDay = received.includes(dayOfWeek);
+
+        // When working on a day that would normally be a franco, use the partner's breaks
+        const breaksForToday = isSwappedWorkingDay ? partnerSchedule.breaks : baseSchedule.breaks;
+
+        return {
+            francos: effectiveFrancos,
+            breaks: breaksForToday,
+            isSwapped: true,
+            partnerName: francoSwapPartner,
+            receivedDays: received,
+            givenDays: given,
+            isSwappedWorkingDay,
+            isSwappedFrancoDay
+        };
+    }
+
+    function populateFrancoSwapPartnerSelect() {
+        if (!selectFrancoSwapPartner) return;
+        const currentSelected = selectFrancoSwapPartner.value || francoSwapPartner;
+        selectFrancoSwapPartner.innerHTML = '<option value="">Sin cambio (mis francos habituales)</option>';
+
+        const currentOp = inputOperatorName ? inputOperatorName.value : operatorName;
+
+        Object.keys(OPERATOR_SCHEDULE).forEach(opName => {
+            if (opName === currentOp) return; // Don't list the current user
+            const opData = OPERATOR_SCHEDULE[opName];
+            const francosFormatted = opData.francos.map(d => DAY_SHORT_NAMES_ES[d]).join(', ');
+            const opt = document.createElement('option');
+            opt.value = opName;
+            opt.textContent = `${opName} (Francos: ${francosFormatted})`;
+            if (opName === currentSelected) {
+                opt.selected = true;
+            }
+            selectFrancoSwapPartner.appendChild(opt);
+        });
+    }
+
+    function renderFrancoSwapDetails() {
+        if (!francoSwapDetailsCard) return;
+
+        const currentOp = inputOperatorName ? inputOperatorName.value : operatorName;
+        const partnerName = selectFrancoSwapPartner ? selectFrancoSwapPartner.value : francoSwapPartner;
+
+        if (!currentOp) {
+            francoSwapDetailsCard.classList.remove('hidden');
+            francoSwapDetailsCard.classList.remove('active');
+            francoSwapDetailsCard.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.4rem; color:var(--text-muted);">
+                    <i data-lucide="info"></i>
+                    <span>Primero seleccioná tu <strong>Nombre de Operador</strong> arriba para configurar un cambio de franco.</span>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
+        if (!partnerName || !OPERATOR_SCHEDULE[partnerName] || partnerName === currentOp) {
+            francoSwapDetailsCard.classList.add('hidden');
+            francoSwapDetailsCard.classList.remove('active');
+            francoSwapDetailsCard.innerHTML = '';
+            return;
+        }
+
+        const mySchedule = OPERATOR_SCHEDULE[currentOp];
+        const partnerSchedule = OPERATOR_SCHEDULE[partnerName];
+
+        if (!mySchedule || !partnerSchedule) {
+            francoSwapDetailsCard.classList.add('hidden');
+            return;
+        }
+
+        const partnerDiff = partnerSchedule.francos.filter(d => !mySchedule.francos.includes(d));
+        const myDiff = mySchedule.francos.filter(d => !partnerSchedule.francos.includes(d));
+
+        francoSwapDetailsCard.classList.remove('hidden');
+        francoSwapDetailsCard.classList.add('active');
+
+        // Case 0: identical francos
+        if (partnerDiff.length === 0) {
+            francoSwapDetailsCard.innerHTML = `
+                <div class="franco-swap-header">
+                    <span>🔄 Intercambio de Franco</span>
+                    <span class="franco-swap-status-badge swap-on">Mismos francos</span>
+                </div>
+                <p style="color:var(--text-muted); margin:0;">
+                    Tanto vos como <strong>${partnerName}</strong> tienen los mismos días de franco habituales (${mySchedule.francos.map(d => DAY_NAMES_ES[d]).join(' y ')}). El calendario no cambia.
+                </p>
+                <div class="franco-swap-actions">
+                    <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-swap-ui">
+                        <i data-lucide="rotate-ccw"></i> Restablecer mis francos
+                    </button>
+                </div>
+            `;
+            const btnClear = francoSwapDetailsCard.querySelector('#btn-clear-swap-ui');
+            if (btnClear) {
+                btnClear.addEventListener('click', () => {
+                    selectFrancoSwapPartner.value = '';
+                    renderFrancoSwapDetails();
+                });
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
+        // Case 1: 1 day difference
+        if (partnerDiff.length === 1 && myDiff.length === 1) {
+            const dayRec = partnerDiff[0];
+            const dayGiv = myDiff[0];
+            const unchangedFranco = mySchedule.francos.find(d => d !== dayGiv);
+
+            francoSwapDetailsCard.innerHTML = `
+                <div class="franco-swap-header">
+                    <span>🔄 Cambio con ${partnerName}</span>
+                    <span class="franco-swap-status-badge swap-on"><i data-lucide="check-circle-2"></i> Cambio Detectado</span>
+                </div>
+                <div class="franco-swap-grid">
+                    <div class="franco-swap-item received">
+                        <span class="label">🏖️ Tu nuevo día de franco:</span>
+                        <span class="val">${DAY_NAMES_ES[dayRec]}</span>
+                    </div>
+                    <div class="franco-swap-item given">
+                        <span class="label">💼 Día que trabajás:</span>
+                        <span class="val">${DAY_NAMES_ES[dayGiv]}</span>
+                    </div>
+                </div>
+                <div class="franco-swap-breaks-preview">
+                    <i data-lucide="coffee"></i>
+                    <span>Breaks el <strong>${DAY_NAMES_ES[dayGiv]}</strong>: <strong>${partnerSchedule.breaks.join(' y ')}</strong></span>
+                </div>
+                ${unchangedFranco !== undefined ? `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.35rem;">📅 Tu otro franco habitual (${DAY_NAMES_ES[unchangedFranco]}) se mantiene sin cambios.</div>` : ''}
+                <div class="franco-swap-actions">
+                    <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-swap-ui">
+                        <i data-lucide="rotate-ccw"></i> Restablecer mis francos
+                    </button>
+                </div>
+            `;
+            const btnClear = francoSwapDetailsCard.querySelector('#btn-clear-swap-ui');
+            if (btnClear) {
+                btnClear.addEventListener('click', () => {
+                    selectFrancoSwapPartner.value = '';
+                    renderFrancoSwapDetails();
+                });
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
+        // Case 2: 2 days difference (multiple options)
+        const currentSavedPair = (francoSwapDayReceived && francoSwapDayGiven) ? `${francoSwapDayReceived}-${francoSwapDayGiven}` : `${partnerDiff[0]}-${myDiff[0]}`;
+
+        francoSwapDetailsCard.innerHTML = `
+            <div class="franco-swap-header">
+                <span>🔄 Cambio con ${partnerName}</span>
+                <span class="franco-swap-status-badge swap-on"><i data-lucide="check-circle-2"></i> Elegí el día</span>
+            </div>
+            <div class="franco-swap-options">
+                <label for="swap-day-pair-select">Seleccioná qué día(s) intercambiaste:</label>
+                <select id="swap-day-pair-select">
+                    <option value="${partnerDiff[0]}-${myDiff[0]}">Recibís franco: ${DAY_NAMES_ES[partnerDiff[0]]} ↔ Trabajás: ${DAY_NAMES_ES[myDiff[0]]}</option>
+                    <option value="${partnerDiff[1]}-${myDiff[0]}">Recibís franco: ${DAY_NAMES_ES[partnerDiff[1]]} ↔ Trabajás: ${DAY_NAMES_ES[myDiff[0]]}</option>
+                    <option value="${partnerDiff[0]}-${myDiff[1]}">Recibís franco: ${DAY_NAMES_ES[partnerDiff[0]]} ↔ Trabajás: ${DAY_NAMES_ES[myDiff[1]]}</option>
+                    <option value="${partnerDiff[1]}-${myDiff[1]}">Recibís franco: ${DAY_NAMES_ES[partnerDiff[1]]} ↔ Trabajás: ${DAY_NAMES_ES[myDiff[1]]}</option>
+                    <option value="all-all">Intercambio completo (ambos francos: ${partnerDiff.map(d => DAY_NAMES_ES[d]).join(' y ')} por ${myDiff.map(d => DAY_NAMES_ES[d]).join(' y ')})</option>
+                </select>
+            </div>
+            <div id="swap-dynamic-preview" style="margin-top: 0.5rem;"></div>
+            <div class="franco-swap-actions">
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-swap-ui">
+                    <i data-lucide="rotate-ccw"></i> Restablecer mis francos
+                </button>
+            </div>
+        `;
+
+        const pairSelect = francoSwapDetailsCard.querySelector('#swap-day-pair-select');
+        const dynamicPreview = francoSwapDetailsCard.querySelector('#swap-dynamic-preview');
+
+        if (pairSelect) {
+            // Restore previous choice if available
+            if ([...pairSelect.options].some(o => o.value === currentSavedPair)) {
+                pairSelect.value = currentSavedPair;
+            }
+
+            const updatePairPreview = () => {
+                if (!dynamicPreview) return;
+                const val = pairSelect.value;
+                if (val === 'all-all') {
+                    dynamicPreview.innerHTML = `
+                        <div class="franco-swap-grid">
+                            <div class="franco-swap-item received">
+                                <span class="label">🏖️ Nuevos francos:</span>
+                                <span class="val">${partnerDiff.map(d => DAY_NAMES_ES[d]).join(' y ')}</span>
+                            </div>
+                            <div class="franco-swap-item given">
+                                <span class="label">💼 Días que trabajás:</span>
+                                <span class="val">${myDiff.map(d => DAY_NAMES_ES[d]).join(' y ')}</span>
+                            </div>
+                        </div>
+                        <div class="franco-swap-breaks-preview">
+                            <i data-lucide="coffee"></i>
+                            <span>Breaks en días trabajados: <strong>${partnerSchedule.breaks.join(' y ')}</strong></span>
+                        </div>
+                    `;
+                } else {
+                    const [rec, giv] = val.split('-').map(Number);
+                    dynamicPreview.innerHTML = `
+                        <div class="franco-swap-grid">
+                            <div class="franco-swap-item received">
+                                <span class="label">🏖️ Tu nuevo día de franco:</span>
+                                <span class="val">${DAY_NAMES_ES[rec]}</span>
+                            </div>
+                            <div class="franco-swap-item given">
+                                <span class="label">💼 Día que trabajás:</span>
+                                <span class="val">${DAY_NAMES_ES[giv]}</span>
+                            </div>
+                        </div>
+                        <div class="franco-swap-breaks-preview">
+                            <i data-lucide="coffee"></i>
+                            <span>Breaks el <strong>${DAY_NAMES_ES[giv]}</strong>: <strong>${partnerSchedule.breaks.join(' y ')}</strong></span>
+                        </div>
+                    `;
+                }
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            };
+
+            pairSelect.addEventListener('change', updatePairPreview);
+            updatePairPreview();
+        }
+
+        const btnClear = francoSwapDetailsCard.querySelector('#btn-clear-swap-ui');
+        if (btnClear) {
+            btnClear.addEventListener('click', () => {
+                selectFrancoSwapPartner.value = '';
+                renderFrancoSwapDetails();
+            });
+        }
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     function checkBreakTime() {
         if (!breakAlarmEnabled) return;
-        const schedule = getOperatorSchedule();
+        const now = new Date();
+        const schedule = getOperatorSchedule(now);
         if (!schedule) return;
 
-        const now = new Date();
         const dayOfWeek = now.getDay(); // 0=Dom ... 6=Sab
 
         // Don't alert on franco days
@@ -2484,20 +2825,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // If a break is currently active, let the countdown interval manage the indicator
         if (activeBreakEnd) return;
 
-        const schedule = getOperatorSchedule();
+        const now = new Date();
+        const schedule = getOperatorSchedule(now);
         if (!schedule) {
             breakIndicator.classList.add('hidden');
             return;
         }
 
         breakIndicator.classList.remove('hidden');
-        const now = new Date();
         const dayOfWeek = now.getDay();
 
         // Franco day
         if (schedule.francos.includes(dayOfWeek)) {
             breakIndicator.className = 'break-indicator franco';
-            breakIndicator.innerHTML = '🏖️ Día de franco — sin breaks';
+            if (schedule.isSwapped && schedule.isSwappedFrancoDay) {
+                breakIndicator.innerHTML = `🏖️ Día de franco (cambiado con ${schedule.partnerName}) — sin breaks`;
+            } else {
+                breakIndicator.innerHTML = '🏖️ Día de franco — sin breaks';
+            }
             return;
         }
 
@@ -2516,19 +2861,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const swapTag = schedule.isSwapped && schedule.isSwappedWorkingDay
+            ? ` <span class="franco-swap-badge" title="Cubriendo franco de ${schedule.partnerName}">[Cambio: ${schedule.partnerName}]</span>`
+            : '';
+
         if (nextBreak) {
             // There is a future break today
             const [bh, bm] = nextBreak.split(':').map(Number);
             const diffMin = (bh * 60 + bm) - currentMinutes;
             const label = diffMin <= 30
-                ? `☕ Break ${nextBreakIndex} en ${diffMin} min (${nextBreak})`
-                : `☕ Próximo Break: ${nextBreak}`;
+                ? `☕ Break ${nextBreakIndex} en ${diffMin} min (${nextBreak})${swapTag}`
+                : `☕ Próximo Break: ${nextBreak}${swapTag}`;
             breakIndicator.className = 'break-indicator active';
             breakIndicator.innerHTML = label;
         } else {
             // All breaks passed
             breakIndicator.className = 'break-indicator done';
-            breakIndicator.innerHTML = '✅ Breaks completados por hoy';
+            breakIndicator.innerHTML = `✅ Breaks completados por hoy${swapTag}`;
         }
     }
 
@@ -2538,9 +2887,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Play beep
         playBreakBeep();
 
+        const schedule = getOperatorSchedule();
+        let nameText = `${operatorName} — Break ${breakNum}`;
+        if (schedule && schedule.isSwapped && schedule.isSwappedWorkingDay) {
+            nameText += ` (Cambio con ${schedule.partnerName})`;
+        }
+
         // Set content
         if (breakOperatorName) {
-            breakOperatorName.textContent = `${operatorName} — Break ${breakNum}`;
+            breakOperatorName.textContent = nameText;
         }
 
         if (breakCountdown) {

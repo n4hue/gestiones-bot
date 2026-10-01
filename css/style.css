@@ -2099,6 +2099,153 @@ tbody tr:hover {
 }
 
 /* ==========================================
+   Franco Swap Settings & Indicators
+   ========================================== */
+.franco-swap-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.85rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.75rem;
+    transition: var(--transition-smooth);
+    animation: fadeIn 0.25s ease-out;
+}
+
+.franco-swap-card.active {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.franco-swap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.franco-swap-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.franco-swap-status-badge.swap-on {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.franco-swap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.franco-swap-item {
+    background: var(--bg-input);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    border: 1px solid var(--border);
+}
+
+.franco-swap-item .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.franco-swap-item .val {
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.franco-swap-item.received .val {
+    color: #60A5FA;
+}
+
+.franco-swap-item.given .val {
+    color: var(--primary);
+}
+
+.franco-swap-options {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.franco-swap-options label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.franco-swap-options select {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+.franco-swap-options select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.franco-swap-breaks-preview {
+    margin-top: 0.45rem;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.franco-swap-breaks-preview strong {
+    color: var(--text-main);
+}
+
+.franco-swap-actions {
+    margin-top: 0.65rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.franco-swap-actions .btn {
+    font-size: 0.68rem;
+    padding: 0.25rem 0.55rem;
+}
+
+.franco-swap-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: rgba(139, 92, 246, 0.15);
+    color: #A78BFA;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    margin-left: 0.35rem;
+    vertical-align: middle;
+}
+
+/* ==========================================
    Break Alarm — Full-Screen Overlay
    ========================================== */
 .break-overlay {

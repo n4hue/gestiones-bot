@@ -760,6 +760,19 @@
             </div>
 
             <hr class="settings-divider">
+            <p class="settings-group-title">🔄 Cambio de Franco (Intercambio de Turno)</p>
+
+            <div class="settings-section">
+                <label for="franco-swap-partner-select">¿Cambiaste franco con otro operador?:</label>
+                <select id="franco-swap-partner-select">
+                    <option value="">Sin cambio (mis francos habituales)</option>
+                </select>
+                <small class="settings-hint">Seleccioná con quién cambiaste el franco para actualizar tus días de descanso y alarmas de break ese día.</small>
+            </div>
+
+            <div id="franco-swap-details-card" class="franco-swap-card hidden"></div>
+
+            <hr class="settings-divider">
             <p class="settings-group-title"><i data-lucide="database"></i> Copia de Seguridad y Datos</p>
             <div class="settings-backup-grid">
                 <button type="button" class="btn btn-secondary btn-sm" id="btn-export-backup">
