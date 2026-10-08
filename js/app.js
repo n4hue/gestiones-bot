@@ -216,11 +216,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     const GFORM_ENTRY_OPERATOR_NAME = 'entry.1032949883'; // Campo "Operador" del Google Form
     const GFORM_ENTRY_PASS_CRM = 'entry.1602826454';      // Campo "Pass CRM" del Google Form
+    const GFORM_ENTRY_ESTADO = 'entry.1658376896';         // Campo "Estado" ("Gestión" o "Estados Sin Gestión")
     const GFORM_ENTRY_CLIENTE = 'entry.497919059';         // Campo "N° de Cliente / Asunto Mail" del Google Form
+    const GFORM_ENTRY_TIPO_GESTION = 'entry.2099167134';   // Campo "Tipo de Gestión" ("RAs", "Callcontact", "Gestiones Especiales")
+
+    // Rama 1: RAs
     const GFORM_ENTRY_GESTION_RA = 'entry.2074675876';     // Campo "Gestión RAs" del Google Form
-    const GFORM_ENTRY_ESTADO = 'entry.1658376896';         // Campo "Estado" del Google Form
     const GFORM_ENTRY_CONTACTO_RA = 'entry.1018921590';    // Campo "Estado Contacto RA" del Google Form
     const GFORM_ENTRY_ESTADO_RA = 'entry.789248115';       // Campo "Estado Gestión RA" del Google Form
+
+    // Rama 2: Callcontact
+    const GFORM_ENTRY_CONTACTO_CALLCONTACT = 'entry.766613145'; // Campo "Gestión CallContact" del Google Form
+    const GFORM_ENTRY_ESTADO_CALLCONTACT = 'entry.1116303635';  // Campo "Estado Gestión CallContact" del Google Form
+
+    // Rama 3: Gestiones Especiales
     const GFORM_ENTRY_GESTIONES_ESP = 'entry.1800489466';  // Campo "Gestiones Especiales" del Google Form
     const GFORM_ENTRY_CONTACTO_ESP = 'entry.549594727';    // Campo "Contacto Especial" del Google Form
     const GFORM_ENTRY_ESTADO_ESP = 'entry.247821766';      // Campo "Estado Gestión Especial" del Google Form
@@ -268,14 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'Escalamiento Teams': 'Escalamiento Teams',
         'PANTALLA (DECO ANDROID) SOY CLIENTE SIN SOLUCION': 'PANTALLA (DECO ANDROID) SOY CLIENTE SIN SOLUCION',
 
-        // GESTIONES ESPECIALES (idénticos)
+        // GESTIONES ESPECIALES EN DROPDOWN DE RAs (idénticos en el Form)
         'Problemas Postes/Columnas': 'Problemas Postes/Columnas',
         'Reservado para carga de BOT': 'Reservado para carga de BOT',
         'Referidos': 'Referidos',
-        'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
-        'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
-        'Reiterados viena': 'Reiterados viena',
-        'Callcontact': 'Callcontact',
 
         // WIFI MESH (la app usa "ACCESO" y el form tiene "ACCESSO" con doble S)
         'NOC - WIFI MESH - CORTES INTERMITENTES': 'NOC - WIFI MESH - CORTES INTERMITENTES',
@@ -291,16 +296,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const GFORM_ESP_MAPPING = {
         'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
         'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
-        'Reiterados viena': 'Reiterados viena',
-        'Callcontact': 'Callcontact'
+        'Reiterados viena': 'Reiterados viena'
     };
 
     // List of tipo_ra values that qualify as "Gestiones Especiales" and need conditional fields
     const GESTIONES_ESPECIALES_VALUES = [
         'Analisis Tickets Cargados',
         'Analisis/Carga RA ID121',
-        'Reiterados viena',
-        'Callcontact'
+        'Reiterados viena'
     ];
 
     const CATEGORY_COLORS = {
@@ -310,7 +313,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'TELEVISIÓN': '#f59e0b',
         'WEB / APP': '#ec4899',
         'ESCALAMIENTO N3': '#ef4444',
-        'GESTIONES ESPECIALES': '#6366f1'
+        'GESTIONES ESPECIALES': '#6366f1',
+        'CALLCONTACT': '#06b6d4'
     };
 
     // ============================================
@@ -611,6 +615,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (index !== -1) {
                 gestiones[index].cliente = cliente;
                 gestiones[index].tipo_ra = tipoRa;
+                gestiones[index].contacto = selectContactoEsp ? selectContactoEsp.value : '';
+                gestiones[index].estado_gestion = selectEstadoEsp ? selectEstadoEsp.value : '';
                 gestiones[index].reclamo_datos = reclamoTexto;
                 gestiones[index].observaciones = observaciones;
                 gestiones[index].is_reiterado = chkReiterado ? chkReiterado.checked : false;
@@ -634,6 +640,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: Date.now().toString(),
                     cliente: cliente,
                     tipo_ra: tipoRa,
+                    contacto: selectContactoEsp ? selectContactoEsp.value : '',
+                    estado_gestion: selectEstadoEsp ? selectEstadoEsp.value : '',
                     reclamo_datos: reclamoTexto,
                     observaciones: observaciones,
                     is_reiterado: isReiterado,
@@ -671,6 +679,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSubmit.disabled = true;
                     inputCliente.disabled = true;
                     selectRa.disabled = true;
+                    if (selectContactoEsp) selectContactoEsp.disabled = true;
+                    if (selectEstadoEsp) selectEstadoEsp.disabled = true;
                     if (inputReclamoTexto) inputReclamoTexto.disabled = true;
                     if (inputObservaciones) inputObservaciones.disabled = true;
 
@@ -682,6 +692,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             btnSubmit.disabled = false;
                             inputCliente.disabled = false;
                             selectRa.disabled = false;
+                            if (selectContactoEsp) selectContactoEsp.disabled = false;
+                            if (selectEstadoEsp) selectEstadoEsp.disabled = false;
                             if (inputReclamoTexto) inputReclamoTexto.disabled = false;
                             if (inputObservaciones) inputObservaciones.disabled = false;
 
@@ -831,6 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     function getCategory(tipoRa) {
         const lower = tipoRa.toLowerCase();
+        if (lower.includes('callcontact')) return 'CALLCONTACT';
         if (lower.includes('banda ancha') || lower.includes('internet')) return 'INTERNET';
         if (lower.includes('telefonia')) return 'TELEFONIA';
         if (lower.includes('wifi mesh')) return 'WIFI MESH';
@@ -1552,6 +1565,13 @@ document.addEventListener('DOMContentLoaded', () => {
             editingId = id;
             inputCliente.value = gestion.cliente;
             selectRa.value = gestion.tipo_ra;
+            selectRa.dispatchEvent(new Event('change'));
+            if (gestion.contacto && selectContactoEsp) {
+                selectContactoEsp.value = gestion.contacto;
+            }
+            if (gestion.estado_gestion && selectEstadoEsp) {
+                selectEstadoEsp.value = gestion.estado_gestion;
+            }
             if (inputReclamoTexto) inputReclamoTexto.value = gestion.reclamo_datos || '';
             if (inputObservaciones) inputObservaciones.value = gestion.observaciones || '';
             if (checkForm) checkForm.checked = true;
@@ -2052,22 +2072,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (passCrm) {
             params.push(`${GFORM_ENTRY_PASS_CRM}=${encodeURIComponent(passCrm)}`);
         }
+        if (estadoValue) {
+            params.push(`${GFORM_ENTRY_ESTADO}=${encodeURIComponent(estadoValue)}`);
+        }
         if (clienteValue) {
             params.push(`${GFORM_ENTRY_CLIENTE}=${encodeURIComponent(clienteValue)}`);
         }
         if (tipoRaValue) {
-            // Buscar el valor mapeado del Google Form para la gestión seleccionada
-            const formValue = GFORM_RA_MAPPING[tipoRaValue];
-            if (formValue) {
-                params.push(`${GFORM_ENTRY_GESTION_RA}=${encodeURIComponent(formValue)}`);
-            }
-
             // Handle the additional fields (Contacto / Estado Gestión)
             const contactoValue = selectContactoEsp ? selectContactoEsp.value : '';
             const estadoExtraValue = selectEstadoEsp ? selectEstadoEsp.value : '';
 
-            // If it's a Gestión Especial, use ESP entry IDs
-            if (GESTIONES_ESPECIALES_VALUES.includes(tipoRaValue)) {
+            if (tipoRaValue === 'Callcontact') {
+                // Rama 2: Callcontact
+                params.push(`${GFORM_ENTRY_TIPO_GESTION}=${encodeURIComponent('Callcontact')}`);
+                if (contactoValue) {
+                    params.push(`${GFORM_ENTRY_CONTACTO_CALLCONTACT}=${encodeURIComponent(contactoValue)}`);
+                }
+                if (estadoExtraValue) {
+                    params.push(`${GFORM_ENTRY_ESTADO_CALLCONTACT}=${encodeURIComponent(estadoExtraValue)}`);
+                }
+            } else if (GESTIONES_ESPECIALES_VALUES.includes(tipoRaValue)) {
+                // Rama 3: Gestiones Especiales
+                params.push(`${GFORM_ENTRY_TIPO_GESTION}=${encodeURIComponent('Gestiones Especiales')}`);
                 const espFormValue = GFORM_ESP_MAPPING[tipoRaValue];
                 if (espFormValue) {
                     params.push(`${GFORM_ENTRY_GESTIONES_ESP}=${encodeURIComponent(espFormValue)}`);
@@ -2079,7 +2106,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     params.push(`${GFORM_ENTRY_ESTADO_ESP}=${encodeURIComponent(estadoExtraValue)}`);
                 }
             } else {
-                // It's a standard RA, use RA entry IDs
+                // Rama 1: RAs
+                params.push(`${GFORM_ENTRY_TIPO_GESTION}=${encodeURIComponent('RAs')}`);
+                const formValue = GFORM_RA_MAPPING[tipoRaValue];
+                if (formValue) {
+                    params.push(`${GFORM_ENTRY_GESTION_RA}=${encodeURIComponent(formValue)}`);
+                }
                 if (contactoValue) {
                     params.push(`${GFORM_ENTRY_CONTACTO_RA}=${encodeURIComponent(contactoValue)}`);
                 }
@@ -2087,9 +2119,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     params.push(`${GFORM_ENTRY_ESTADO_RA}=${encodeURIComponent(estadoExtraValue)}`);
                 }
             }
-        }
-        if (estadoValue) {
-            params.push(`${GFORM_ENTRY_ESTADO}=${encodeURIComponent(estadoValue)}`);
         }
 
         return url + separator + params.join('&');
@@ -2278,18 +2307,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Determine if it's an Especial or RA
+                // Determine type
+                const isCallcontact = (val === 'Callcontact');
                 const isEspecial = GESTIONES_ESPECIALES_VALUES.includes(val);
 
                 // Update Labels
-                if (labelContacto) labelContacto.textContent = isEspecial ? 'Contacto Especial' : 'Estado Contacto RA';
-                if (labelEstado) labelEstado.textContent = isEspecial ? 'Estado Gestión Especial' : 'Estado Gestión RA';
+                if (labelContacto) {
+                    if (isCallcontact) {
+                        labelContacto.textContent = 'Gestión CallContact';
+                    } else if (isEspecial) {
+                        labelContacto.textContent = 'Contacto Especial';
+                    } else {
+                        labelContacto.textContent = 'Estado Contacto RA';
+                    }
+                }
+                if (labelEstado) {
+                    if (isCallcontact) {
+                        labelEstado.textContent = 'Estado Gestión CallContact';
+                    } else if (isEspecial) {
+                        labelEstado.textContent = 'Estado Gestión Especial';
+                    } else {
+                        labelEstado.textContent = 'Estado Gestión RA';
+                    }
+                }
 
                 // Populate Contacto Select
                 if (selectContactoEsp) {
                     const prevValue = selectContactoEsp.value;
                     selectContactoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
-                    const contactoOpts = isEspecial
+                    const contactoOpts = (isCallcontact || isEspecial)
                         ? ['Contacto', 'Sin Contacto', 'No es necesario Contacto']
                         : ['Contacto', 'Sin Contacto', 'No es necesario el Contacto'];
                     contactoOpts.forEach(opt => {
@@ -2303,7 +2349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectEstadoEsp) {
                     const prevValue = selectEstadoEsp.value;
                     selectEstadoEsp.innerHTML = '<option value="" disabled selected>Seleccionar...</option>';
-                    const estadoOpts = isEspecial
+                    const estadoOpts = (isCallcontact || isEspecial)
                         ? ['Gestionado', 'Pendiente']
                         : ['Cerrado', 'Pendiente', 'Rechazado'];
                     estadoOpts.forEach(opt => {
@@ -3156,6 +3202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'WEB / APP': 0,
             'ESCALAMIENTO N3': 0,
             'GESTIONES ESPECIALES': 0,
+            'CALLCONTACT': 0,
             'WIFI MESH': 0
         };
 
@@ -3182,6 +3229,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cntN3) cntN3.textContent = counts['ESCALAMIENTO N3'] || 0;
         const cntEsp = document.getElementById('chip-cnt-especiales');
         if (cntEsp) cntEsp.textContent = counts['GESTIONES ESPECIALES'] || 0;
+        const cntCallcontact = document.getElementById('chip-cnt-callcontact');
+        if (cntCallcontact) cntCallcontact.textContent = counts['CALLCONTACT'] || 0;
         const cntMesh = document.getElementById('chip-cnt-mesh');
         if (cntMesh) cntMesh.textContent = counts['WIFI MESH'] || 0;
     }
