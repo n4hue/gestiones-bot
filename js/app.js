@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
         'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
         'Reiterados viena': 'Reiterados viena',
+        'Callcontact': 'Callcontact',
 
         // WIFI MESH (la app usa "ACCESO" y el form tiene "ACCESSO" con doble S)
         'NOC - WIFI MESH - CORTES INTERMITENTES': 'NOC - WIFI MESH - CORTES INTERMITENTES',
@@ -290,14 +291,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const GFORM_ESP_MAPPING = {
         'Analisis Tickets Cargados': 'Analisis Tickets Cargados',
         'Analisis/Carga RA ID121': 'Analisis/Carga RA ID121',
-        'Reiterados viena': 'Reiterados viena'
+        'Reiterados viena': 'Reiterados viena',
+        'Callcontact': 'Callcontact'
     };
 
     // List of tipo_ra values that qualify as "Gestiones Especiales" and need conditional fields
     const GESTIONES_ESPECIALES_VALUES = [
         'Analisis Tickets Cargados',
         'Analisis/Carga RA ID121',
-        'Reiterados viena'
+        'Reiterados viena',
+        'Callcontact'
     ];
 
     const CATEGORY_COLORS = {
