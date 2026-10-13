@@ -3304,6 +3304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const t = e.target;
             const isEditable = t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
             if (isEditable) return; // pegado normal dentro de un campo
+            if (document.querySelector('.modal:not(.hidden)')) return; // no rellenar el form detrás de un modal
             const text = e.clipboardData ? e.clipboardData.getData('text') : '';
             if (!text || !text.trim()) return;
             e.preventDefault();
