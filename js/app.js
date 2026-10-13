@@ -2314,11 +2314,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .normalize('NFD').replace(/[̀-ͯ]/g, '')
             .replace(/\s+/g, ' ').trim();
 
-        // Prefijo redundante con el nombre del grupo ("NOC - INTERNET - ...")
-        const shortLabel = (text) => text
-            .replace(/^NOC\s*-\s*(INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH)\s*-\s*/i, '')
-            .replace(/^(Web\/App|App Mobile)\s*-\s*/i, '');
-
         const options = [];
         selectRa.querySelectorAll('optgroup').forEach(group => {
             group.querySelectorAll('option').forEach(opt => {
@@ -2327,7 +2322,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 options.push({
                     value: opt.value,
                     label,
-                    short: shortLabel(label),
                     group: group.label,
                     haystack: normalize(`${group.label} ${label}`)
                 });
@@ -2401,7 +2395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.index = i;
                 li.dataset.value = opt.value;
                 li.title = opt.label;
-                li.textContent = opt.short;
+                li.textContent = opt.label; // nombre completo, igual que en el desplegable original
                 if (opt.value === selectRa.value) li.classList.add('is-selected');
                 li.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
                 if (i === activeIndex) li.classList.add('is-active');

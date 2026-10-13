@@ -2116,7 +2116,9 @@ tbody tr:hover {
     font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: var(--text-muted);
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.15rem;
 }
 
 .ra-combo-option {
