@@ -806,6 +806,54 @@ option {
     gap: 0.4rem;
 }
 
+/* Pie del historial paginado: "Mostrando X de Y" + Ver más */
+.history-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--border);
+}
+
+.history-pager-count {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.history-pager-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+}
+
+.history-pager .btn svg {
+    width: 14px;
+    height: 14px;
+    margin-right: 0.3rem;
+}
+
+.btn-link {
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0.25rem 0.1rem;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 /* Gestion Card */
 .gestion-card {
     background: var(--bg-input);
