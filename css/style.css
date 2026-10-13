@@ -1075,11 +1075,6 @@ tbody tr:hover {
     margin-top: 0.2rem;
 }
 
-.settings-hint-warning {
-    margin: -0.5rem 0 0.75rem;
-    color: var(--warning);
-}
-
 .settings-section {
     margin-bottom: 0.75rem;
     text-align: left;

@@ -19,7 +19,6 @@ export const OPERATOR_NAME_KEY = 'bot_operator_name';
 export const GEMINI_API_KEY_STORAGE = 'bot_gemini_api_key';
 export const GEMINI_MODEL_STORAGE = 'bot_gemini_model';
 export const PASS_CRM_KEY = 'bot_pass_crm';
-export const PREFILL_PASS_KEY = 'bot_prefill_pass_in_url';
 export const FRANCO_SWAP_PARTNER_KEY = 'bot_franco_swap_partner';
 export const FRANCO_SWAP_DAY_REC_KEY = 'bot_franco_swap_day_received';
 export const FRANCO_SWAP_DAY_GIV_KEY = 'bot_franco_swap_day_given';

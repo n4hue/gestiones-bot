@@ -32,7 +32,6 @@ import {
     OPERATOR_NAME_KEY,
     OPERATOR_SCHEDULE,
     PASS_CRM_KEY,
-    PREFILL_PASS_KEY,
     SHEETS_URL_KEY,
     SOUND_KEY,
     STATS_COLLAPSED_KEY,
@@ -191,10 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
-    // Por defecto la Pass CRM NO viaja en la URL del Form (quedaría en historial y logs):
-    // se copia al portapapeles al abrir el Form. Se puede volver al comportamiento viejo en Ajustes.
-    let prefillPassInUrl = localStorage.getItem(PREFILL_PASS_KEY) === 'true';
-    const prefillPassToggleEl = document.getElementById('prefill-pass-toggle');
     let francoSwapPartner = localStorage.getItem(FRANCO_SWAP_PARTNER_KEY) || '';
     let francoSwapDayReceived = localStorage.getItem(FRANCO_SWAP_DAY_REC_KEY) || '';
     let francoSwapDayGiven = localStorage.getItem(FRANCO_SWAP_DAY_GIV_KEY) || '';
@@ -241,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
-    if (prefillPassToggleEl) prefillPassToggleEl.checked = prefillPassInUrl;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
     if (selectGeminiModel) selectGeminiModel.value = geminiModel;
 
@@ -549,7 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente, tipoRa, 'Gestión');
-                copyPassForForm();
                 const formWindow = window.open(prefilledUrl, '_blank');
                 if (formWindow) {
                     const originalBtnHtml = btnSubmit.innerHTML;
@@ -1684,7 +1677,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const baseFormUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
             const formUrl = buildPrefilledFormUrl(baseFormUrl, null, null, 'Estados Sin Gestión');
-            copyPassForForm();
             formInicioWindow = window.open(formUrl, '_blank');
 
             if (formInicioWindow) {
@@ -1889,7 +1881,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soundToggleEl) soundToggleEl.checked = soundEnabled;
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
-            if (prefillPassToggleEl) prefillPassToggleEl.checked = prefillPassInUrl;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
             if (selectGeminiModel) selectGeminiModel.value = geminiModel;
             populateFrancoSwapPartnerSelect();
@@ -1943,9 +1934,6 @@ document.addEventListener('DOMContentLoaded', () => {
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
             localStorage.setItem(PASS_CRM_KEY, passCrm);
 
-            prefillPassInUrl = prefillPassToggleEl ? prefillPassToggleEl.checked : false;
-            localStorage.setItem(PREFILL_PASS_KEY, prefillPassInUrl.toString());
-
             // Save franco swap
             const newSwapPartner = selectFrancoSwapPartner ? selectFrancoSwapPartner.value : '';
             francoSwapPartner = (newSwapPartner && newSwapPartner !== operatorName) ? newSwapPartner : '';
@@ -1991,15 +1979,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Si la Pass CRM no va en la URL, se copia al portapapeles para pegarla en el Form.
-    // Debe llamarse dentro del gesto del usuario (click / Ctrl+Enter), antes de window.open.
-    function copyPassForForm() {
-        if (prefillPassInUrl || !passCrm || !navigator.clipboard) return;
-        navigator.clipboard.writeText(passCrm)
-            .then(() => showToast('Pass CRM copiada: pegala en el Form con Ctrl+V', 'info', { duration: 5000 }))
-            .catch(() => showToast('No se pudo copiar la Pass CRM al portapapeles', 'warning'));
-    }
-
     // ============================================
     // Pre-fill Google Form URL Builder
     // ============================================
@@ -2018,7 +1997,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (operatorName) {
             params.push(`${GFORM_ENTRY_OPERATOR_NAME}=${encodeURIComponent(operatorName)}`);
         }
-        if (passCrm && prefillPassInUrl) {
+        if (passCrm) {
             params.push(`${GFORM_ENTRY_PASS_CRM}=${encodeURIComponent(passCrm)}`);
         }
         if (estadoValue) {
