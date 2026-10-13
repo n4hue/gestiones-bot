@@ -1,9 +1,15 @@
-const CACHE_NAME = 'bot-gestiones-v2';
+const CACHE_NAME = 'bot-gestiones-v5';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
+  '/js/vendor/lucide-icons.js',
+  '/js/modules/config.js',
+  '/js/modules/categories.js',
+  '/js/modules/utils.js',
+  '/js/modules/ai-rules.js',
+  '/js/modules/combobox.js',
   '/assets/icon.svg',
   '/manifest.json'
 ];
