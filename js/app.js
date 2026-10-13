@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startSessionTimer();
 
     // Initialize RA search filter (Quick-Pick)
-    initRaSearchFilter();
+    const raCombo = initRaCombobox();
 
     // Initialize conditional fields toggle
     initConditionalFields();
@@ -436,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset form
             inputCliente.value = '';
             selectRa.value = '';
+            if (raCombo) raCombo.sync();
             if (inputReclamoTexto) inputReclamoTexto.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
@@ -552,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSubmit.disabled = true;
                     inputCliente.disabled = true;
                     selectRa.disabled = true;
+                    if (raCombo) raCombo.setDisabled(true);
                     if (selectContactoEsp) selectContactoEsp.disabled = true;
                     if (selectEstadoEsp) selectEstadoEsp.disabled = true;
                     if (inputReclamoTexto) inputReclamoTexto.disabled = true;
@@ -565,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             btnSubmit.disabled = false;
                             inputCliente.disabled = false;
                             selectRa.disabled = false;
+                            if (raCombo) raCombo.setDisabled(false);
                             if (selectContactoEsp) selectContactoEsp.disabled = false;
                             if (selectEstadoEsp) selectEstadoEsp.disabled = false;
                             if (inputReclamoTexto) inputReclamoTexto.disabled = false;
@@ -589,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editingId = null;
             inputCliente.value = '';
             selectRa.value = '';
+            if (raCombo) raCombo.sync();
             if (inputReclamoTexto) inputReclamoTexto.value = '';
             if (inputObservaciones) inputObservaciones.value = '';
             if (checkForm) checkForm.checked = false;
@@ -640,11 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Alt+G to focus RA search filter
         if (e.altKey && (e.key === 'g' || e.key === 'G')) {
             e.preventDefault();
-            const raSearch = document.querySelector('.ra-search-wrapper input');
-            if (raSearch) {
-                raSearch.focus();
-                raSearch.select();
-            }
+            if (raCombo) raCombo.focus();
         }
         // Alt+P for Smart Paste
         if (e.altKey && (e.key === 'p' || e.key === 'P')) {
@@ -1811,8 +1811,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectRa) {
             selectRa.value = '';
             selectRa.dispatchEvent(new Event('change'));
-            const raSearch = document.querySelector('.ra-search-wrapper input');
-            if (raSearch) raSearch.value = '';
         }
         if (inputReclamoTexto) inputReclamoTexto.value = '';
         if (inputObservaciones) inputObservaciones.value = '';
@@ -2301,151 +2299,280 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // Feature: RA Search Filter (Quick-Pick)
+    // Feature: Combobox "Tipo de Gestión / RA"
     // ============================================
-    function initRaSearchFilter() {
-        if (!selectRa) return;
+    // Un solo control para buscar y elegir: se escribe para filtrar (sin importar
+    // tildes ni orden de palabras), ↑/↓ para moverse, Enter para elegir.
+    // El <select id="tipo-ra"> queda oculto como fuente de verdad: el resto de la
+    // app sigue leyendo selectRa.value y escuchando su evento 'change'.
+    function initRaCombobox() {
+        if (!selectRa) return null;
 
-        // Store all original options
-        const allOptions = [];
-        selectRa.querySelectorAll('option, optgroup').forEach(el => {
-            if (el.tagName === 'OPTGROUP') {
-                const group = { label: el.label, options: [] };
-                el.querySelectorAll('option').forEach(opt => {
-                    group.options.push({ value: opt.value, text: opt.textContent, disabled: opt.disabled });
+        const normalize = (str) => str.toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/\s+/g, ' ').trim();
+
+        // Prefijo redundante con el nombre del grupo ("NOC - INTERNET - ...")
+        const shortLabel = (text) => text
+            .replace(/^NOC\s*-\s*(INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH)\s*-\s*/i, '')
+            .replace(/^(Web\/App|App Mobile)\s*-\s*/i, '');
+
+        const options = [];
+        selectRa.querySelectorAll('optgroup').forEach(group => {
+            group.querySelectorAll('option').forEach(opt => {
+                if (opt.disabled || !opt.value) return;
+                const label = opt.textContent.replace(/\s+/g, ' ').trim();
+                options.push({
+                    value: opt.value,
+                    label,
+                    short: shortLabel(label),
+                    group: group.label,
+                    haystack: normalize(`${group.label} ${label}`)
                 });
-                allOptions.push(group);
-            } else if (!el.closest('optgroup') && el.value === '') {
-                // Default placeholder
-                allOptions.push({ placeholder: true, text: el.textContent, disabled: el.disabled });
-            }
+            });
         });
 
-        // Create search input above the select
+        // El select deja de ser visible e interactivo; la validación pasa al input.
+        selectRa.required = false;
+        selectRa.tabIndex = -1;
+        selectRa.classList.add('ra-native-select');
+        selectRa.setAttribute('aria-hidden', 'true');
+
         const wrapper = document.createElement('div');
-        wrapper.className = 'ra-search-wrapper';
-        const searchIcon = document.createElement('span');
-        searchIcon.className = 'search-icon';
-        searchIcon.innerHTML = '<i data-lucide="search"></i>';
-        const searchInput = document.createElement('input');
-        searchInput.type = 'text';
-        searchInput.placeholder = 'Buscar tipo de gestión... (Alt+G)';
-        searchInput.autocomplete = 'off';
-        wrapper.appendChild(searchIcon);
-        wrapper.appendChild(searchInput);
-
+        wrapper.className = 'ra-search-wrapper ra-combobox';
+        wrapper.innerHTML = `
+            <span class="search-icon"><i data-lucide="search"></i></span>
+            <input type="text" id="ra-combo-input" autocomplete="off" spellcheck="false"
+                placeholder="Escribí para buscar: ej. sin tono, netflix, mesh… (Alt+G)"
+                role="combobox" aria-autocomplete="list" aria-expanded="false"
+                aria-controls="ra-combo-list" aria-labelledby="tipo-ra-label">
+            <button type="button" class="ra-combo-clear hidden" title="Quitar tipo de gestión" aria-label="Quitar tipo de gestión"><i data-lucide="x"></i></button>
+            <ul class="ra-combo-list hidden" id="ra-combo-list" role="listbox"></ul>
+        `;
         selectRa.parentNode.insertBefore(wrapper, selectRa);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: wrapper });
 
-        function clearRaSelection() {
-            if (!selectRa.value) return;
+        const input = wrapper.querySelector('input');
+        const list = wrapper.querySelector('.ra-combo-list');
+        const btnClear = wrapper.querySelector('.ra-combo-clear');
+        let filtered = options;
+        let activeIndex = -1;
+
+        function selectedOption() {
+            return options.find(o => o.value === selectRa.value) || null;
+        }
+
+        // Refleja en el input el valor actual del select (también cuando lo cambia
+        // otra parte de la app: Smart Paste, editar, limpiar).
+        function sync() {
+            const sel = selectedOption();
+            input.value = sel ? sel.label : '';
+            input.title = sel ? sel.label : '';
+            btnClear.classList.toggle('hidden', !sel);
+            wrapper.classList.toggle('has-value', !!sel);
+            input.setCustomValidity(sel ? '' : 'Elegí un tipo de gestión de la lista');
+        }
+
+        function render() {
+            list.innerHTML = '';
+            if (filtered.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'ra-combo-empty';
+                li.textContent = 'Sin coincidencias. Probá con otra palabra.';
+                list.appendChild(li);
+                return;
+            }
+            let lastGroup = null;
+            filtered.forEach((opt, i) => {
+                if (opt.group !== lastGroup) {
+                    lastGroup = opt.group;
+                    const g = document.createElement('li');
+                    g.className = 'ra-combo-group';
+                    g.setAttribute('role', 'presentation');
+                    g.textContent = opt.group;
+                    list.appendChild(g);
+                }
+                const li = document.createElement('li');
+                li.className = 'ra-combo-option';
+                li.id = `ra-opt-${i}`;
+                li.setAttribute('role', 'option');
+                li.dataset.index = i;
+                li.dataset.value = opt.value;
+                li.title = opt.label;
+                li.textContent = opt.short;
+                if (opt.value === selectRa.value) li.classList.add('is-selected');
+                li.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
+                if (i === activeIndex) li.classList.add('is-active');
+                list.appendChild(li);
+            });
+        }
+
+        function setActive(index) {
+            activeIndex = index;
+            list.querySelectorAll('.ra-combo-option').forEach(li => {
+                const on = Number(li.dataset.index) === index;
+                li.classList.toggle('is-active', on);
+                li.setAttribute('aria-selected', on ? 'true' : 'false');
+                if (on) li.scrollIntoView({ block: 'nearest' });
+            });
+            if (index >= 0) input.setAttribute('aria-activedescendant', `ra-opt-${index}`);
+            else input.removeAttribute('aria-activedescendant');
+        }
+
+        function filter(term) {
+            const words = normalize(term).split(' ').filter(Boolean);
+            filtered = words.length
+                ? options.filter(o => words.every(w => o.haystack.includes(w)))
+                : options;
+        }
+
+        function open() {
+            if (input.disabled) return;
+            const sel = selectedOption();
+            // Si el texto es el del valor elegido, mostrar todo; si no, filtrar por lo escrito
+            filter(sel && input.value === sel.label ? '' : input.value);
+            const selIndex = sel ? filtered.indexOf(sel) : -1;
+            activeIndex = selIndex >= 0 ? selIndex : (filtered.length ? 0 : -1);
+            render();
+            list.classList.remove('hidden');
+            input.setAttribute('aria-expanded', 'true');
+            wrapper.classList.add('is-open');
+            setActive(activeIndex);
+        }
+
+        function close() {
+            list.classList.add('hidden');
+            input.setAttribute('aria-expanded', 'false');
+            wrapper.classList.remove('is-open');
+            input.removeAttribute('aria-activedescendant');
+        }
+
+        const isOpen = () => !list.classList.contains('hidden');
+
+        function choose(opt) {
+            close();
+            if (opt.value !== selectRa.value) {
+                selectRa.value = opt.value;
+                selectRa.dispatchEvent(new Event('change'));
+            } else {
+                sync();
+            }
+            // Siguiente campo lógico
+            requestAnimationFrame(() => {
+                if (camposEspeciales && !camposEspeciales.classList.contains('hidden') && selectContactoEsp) {
+                    selectContactoEsp.focus();
+                } else if (inputObservaciones) {
+                    inputObservaciones.focus();
+                }
+            });
+        }
+
+        function clearSelection() {
+            close();
+            if (!selectRa.value) { sync(); return; }
             selectRa.value = '';
-            if (searchInput) searchInput.value = '';
-            rebuildSelect(allOptions, null);
             selectRa.dispatchEvent(new Event('change'));
             showToast('Tipo de gestión borrado', 'info');
         }
 
-        searchInput.addEventListener('keydown', (e) => {
-            // Borrar gestión seleccionada con Backspace si el buscador está vacío
-            if (e.key === 'Backspace' && searchInput.value === '') {
-                if (selectRa.value) {
+        input.addEventListener('focus', () => input.select());
+        input.addEventListener('click', () => { if (!isOpen()) open(); });
+
+        input.addEventListener('input', () => {
+            filter(input.value);
+            activeIndex = filtered.length ? 0 : -1;
+            render();
+            list.classList.remove('hidden');
+            input.setAttribute('aria-expanded', 'true');
+            wrapper.classList.add('is-open');
+            setActive(activeIndex);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowDown':
                     e.preventDefault();
-                    clearRaSelection();
-                }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectRa.focus();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const visibleOpts = selectRa.querySelectorAll('option:not([disabled])');
-                if (visibleOpts.length > 0) {
-                    visibleOpts[0].selected = true;
-                    selectRa.dispatchEvent(new Event('change'));
-                    if (inputReclamoTexto) inputReclamoTexto.focus();
-                    else if (inputObservaciones) inputObservaciones.focus();
-                }
-            } else if (e.key === 'Escape') {
-                if (searchInput.value) {
-                    searchInput.value = '';
-                    rebuildSelect(allOptions, null);
-                } else {
-                    clearRaSelection();
-                }
-                searchInput.blur();
+                    if (!isOpen()) { open(); return; }
+                    if (filtered.length) setActive((activeIndex + 1) % filtered.length);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (!isOpen()) { open(); return; }
+                    if (filtered.length) setActive((activeIndex - 1 + filtered.length) % filtered.length);
+                    break;
+                case 'Enter':
+                    // Ctrl+Enter = registrar (atajo global): no interceptar
+                    if (e.ctrlKey || e.metaKey) return;
+                    if (isOpen() && activeIndex >= 0 && filtered[activeIndex]) {
+                        e.preventDefault();
+                        choose(filtered[activeIndex]);
+                    } else if (!isOpen()) {
+                        e.preventDefault();
+                        open();
+                    }
+                    break;
+                case 'Escape':
+                    if (isOpen()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        close();
+                        sync();
+                    } else if (selectRa.value) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        clearSelection();
+                    }
+                    break;
+                case 'Backspace':
+                    // Con el texto vacío (o todo seleccionado), Backspace quita la gestión elegida
+                    if (selectRa.value && (input.value === '' ||
+                        (input.selectionStart === 0 && input.selectionEnd === input.value.length))) {
+                        e.preventDefault();
+                        clearSelection();
+                        open();
+                    }
+                    break;
+                case 'Tab':
+                    close();
+                    sync();
+                    break;
             }
         });
 
-        // Borrar gestión seleccionada con Backspace o Supr directamente sobre el select
-        selectRa.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' || e.key === 'Delete') {
-                e.preventDefault();
-                clearRaSelection();
-                if (searchInput) searchInput.focus();
-            }
+        // mousedown (no click) para que el input no pierda el foco antes de elegir
+        list.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const li = e.target.closest('.ra-combo-option');
+            if (li) choose(filtered[Number(li.dataset.index)]);
+        });
+        list.addEventListener('mousemove', (e) => {
+            const li = e.target.closest('.ra-combo-option');
+            if (li && Number(li.dataset.index) !== activeIndex) setActive(Number(li.dataset.index));
         });
 
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim().toLowerCase();
-            if (!term) {
-                // Restore all options
-                rebuildSelect(allOptions, null);
-                return;
-            }
-            rebuildSelect(allOptions, term);
+        input.addEventListener('blur', () => {
+            close();
+            sync();
         });
 
-        // Clear search on select change
-        selectRa.addEventListener('change', () => {
-            if (searchInput.value) {
-                searchInput.value = '';
-                rebuildSelect(allOptions, null);
-            }
+        btnClear.addEventListener('mousedown', (e) => e.preventDefault());
+        btnClear.addEventListener('click', () => {
+            clearSelection();
+            input.focus();
         });
 
-        function rebuildSelect(groups, term) {
-            const currentValue = selectRa.value;
-            selectRa.innerHTML = '';
+        selectRa.addEventListener('change', sync);
+        sync();
 
-            groups.forEach(item => {
-                if (item.placeholder) {
-                    const opt = document.createElement('option');
-                    opt.value = '';
-                    opt.textContent = item.text;
-                    opt.disabled = true;
-                    if (!currentValue) opt.selected = true;
-                    selectRa.appendChild(opt);
-                    return;
-                }
-
-                const matchingOpts = term
-                    ? item.options.filter(o => !o.disabled && o.text.toLowerCase().includes(term))
-                    : item.options;
-
-                if (matchingOpts.length === 0) return;
-
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = item.label;
-                matchingOpts.forEach(o => {
-                    const opt = document.createElement('option');
-                    opt.value = o.value;
-                    opt.textContent = o.text;
-                    if (o.disabled) opt.disabled = true;
-                    if (o.value === currentValue) opt.selected = true;
-                    optgroup.appendChild(opt);
-                });
-                selectRa.appendChild(optgroup);
-            });
-
-            // Auto-select if only one match
-            if (term) {
-                const visibleOpts = selectRa.querySelectorAll('option:not([disabled])');
-                if (visibleOpts.length === 1) {
-                    visibleOpts[0].selected = true;
-                    selectRa.dispatchEvent(new Event('change'));
-                }
+        return {
+            sync,
+            focus() { input.focus(); open(); },
+            setDisabled(disabled) {
+                input.disabled = disabled;
+                btnClear.disabled = disabled;
+                if (disabled) close();
             }
-        }
+        };
     }
 
     // ============================================
@@ -3290,9 +3417,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectRa.value = matchedRa;
                     selectRa.dispatchEvent(new Event('change'));
                     detected++;
-
-                    const raSearch = document.querySelector('.ra-search-wrapper input');
-                    if (raSearch) raSearch.value = '';
                 }
             }
 
