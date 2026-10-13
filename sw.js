@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bot-gestiones-v4';
+const CACHE_NAME = 'bot-gestiones-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -9,6 +9,7 @@ const urlsToCache = [
   '/js/modules/categories.js',
   '/js/modules/utils.js',
   '/js/modules/ai-rules.js',
+  '/js/modules/combobox.js',
   '/assets/icon.svg',
   '/manifest.json'
 ];

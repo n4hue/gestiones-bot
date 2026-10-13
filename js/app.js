@@ -43,6 +43,7 @@ import {
 import { CATEGORY_COLORS, getCategory } from './modules/categories.js';
 import { calculateMta, escapeHtml, formatMac } from './modules/utils.js';
 import { RA_AI_RULES, analyzeClaimWithAI, isPasswordEvaded } from './modules/ai-rules.js';
+import { createCombobox, enhanceSelects } from './modules/combobox.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // ============================================
@@ -335,6 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize RA search filter (Quick-Pick)
     const raCombo = initRaCombobox();
+    // El resto de los desplegables (formulario y Ajustes, incluidos los que se
+    // generan después) usan el mismo componente visual.
+    enhanceSelects(document.body);
 
     // Initialize conditional fields toggle
     initConditionalFields();
@@ -2303,272 +2307,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Feature: Combobox "Tipo de Gestión / RA"
     // ============================================
-    // Un solo control para buscar y elegir: se escribe para filtrar (sin importar
-    // tildes ni orden de palabras), ↑/↓ para moverse, Enter para elegir.
-    // El <select id="tipo-ra"> queda oculto como fuente de verdad: el resto de la
-    // app sigue leyendo selectRa.value y escuchando su evento 'change'.
+    // Un solo control para buscar y elegir (ver js/modules/combobox.js). El
+    // <select id="tipo-ra"> queda oculto como fuente de verdad.
     function initRaCombobox() {
         if (!selectRa) return null;
-
-        const normalize = (str) => str.toLowerCase()
-            .normalize('NFD').replace(/[̀-ͯ]/g, '')
-            .replace(/\s+/g, ' ').trim();
-
-        const options = [];
-        selectRa.querySelectorAll('optgroup').forEach(group => {
-            group.querySelectorAll('option').forEach(opt => {
-                if (opt.disabled || !opt.value) return;
-                const label = opt.textContent.replace(/\s+/g, ' ').trim();
-                options.push({
-                    value: opt.value,
-                    label,
-                    group: group.label,
-                    haystack: normalize(`${group.label} ${label}`)
-                });
-            });
-        });
-
-        // El select deja de ser visible e interactivo; la validación pasa al input.
-        selectRa.required = false;
-        selectRa.tabIndex = -1;
-        selectRa.classList.add('ra-native-select');
-        selectRa.setAttribute('aria-hidden', 'true');
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'ra-search-wrapper ra-combobox';
-        wrapper.innerHTML = `
-            <span class="search-icon"><i data-lucide="search"></i></span>
-            <input type="text" id="ra-combo-input" autocomplete="off" spellcheck="false"
-                placeholder="Buscar: sin tono, netflix, mesh… (Alt+G)"
-                role="combobox" aria-autocomplete="list" aria-expanded="false"
-                aria-controls="ra-combo-list" aria-labelledby="tipo-ra-label">
-            <button type="button" class="ra-combo-clear hidden" title="Quitar tipo de gestión" aria-label="Quitar tipo de gestión"><i data-lucide="x"></i></button>
-            <ul class="ra-combo-list hidden" id="ra-combo-list" role="listbox"></ul>
-        `;
-        selectRa.parentNode.insertBefore(wrapper, selectRa);
-        if (typeof lucide !== 'undefined') lucide.createIcons({ root: wrapper });
-
-        const input = wrapper.querySelector('input');
-        const list = wrapper.querySelector('.ra-combo-list');
-        const btnClear = wrapper.querySelector('.ra-combo-clear');
-        let filtered = options;
-        let activeIndex = -1;
-
-        function selectedOption() {
-            return options.find(o => o.value === selectRa.value) || null;
-        }
-
-        // Refleja en el input el valor actual del select (también cuando lo cambia
-        // otra parte de la app: Smart Paste, editar, limpiar).
-        function sync() {
-            const sel = selectedOption();
-            input.value = sel ? sel.label : '';
-            input.title = sel ? sel.label : '';
-            btnClear.classList.toggle('hidden', !sel);
-            wrapper.classList.toggle('has-value', !!sel);
-            input.setCustomValidity(sel ? '' : 'Elegí un tipo de gestión de la lista');
-        }
-
-        function render() {
-            list.innerHTML = '';
-            if (filtered.length === 0) {
-                const li = document.createElement('li');
-                li.className = 'ra-combo-empty';
-                li.textContent = 'Sin coincidencias. Probá con otra palabra.';
-                list.appendChild(li);
-                return;
-            }
-            let lastGroup = null;
-            filtered.forEach((opt, i) => {
-                if (opt.group !== lastGroup) {
-                    lastGroup = opt.group;
-                    const g = document.createElement('li');
-                    g.className = 'ra-combo-group';
-                    g.setAttribute('role', 'presentation');
-                    g.textContent = opt.group;
-                    list.appendChild(g);
-                }
-                const li = document.createElement('li');
-                li.className = 'ra-combo-option';
-                li.id = `ra-opt-${i}`;
-                li.setAttribute('role', 'option');
-                li.dataset.index = i;
-                li.dataset.value = opt.value;
-                li.title = opt.label;
-                li.textContent = opt.label; // nombre completo, igual que en el desplegable original
-                if (opt.value === selectRa.value) li.classList.add('is-selected');
-                li.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
-                if (i === activeIndex) li.classList.add('is-active');
-                list.appendChild(li);
-            });
-        }
-
-        function setActive(index) {
-            activeIndex = index;
-            list.querySelectorAll('.ra-combo-option').forEach(li => {
-                const on = Number(li.dataset.index) === index;
-                li.classList.toggle('is-active', on);
-                li.setAttribute('aria-selected', on ? 'true' : 'false');
-                if (on) li.scrollIntoView({ block: 'nearest' });
-            });
-            if (index >= 0) input.setAttribute('aria-activedescendant', `ra-opt-${index}`);
-            else input.removeAttribute('aria-activedescendant');
-        }
-
-        function filter(term) {
-            const words = normalize(term).split(' ').filter(Boolean);
-            filtered = words.length
-                ? options.filter(o => words.every(w => o.haystack.includes(w)))
-                : options;
-        }
-
-        function open() {
-            if (input.disabled) return;
-            const sel = selectedOption();
-            // Si el texto es el del valor elegido, mostrar todo; si no, filtrar por lo escrito
-            filter(sel && input.value === sel.label ? '' : input.value);
-            const selIndex = sel ? filtered.indexOf(sel) : -1;
-            activeIndex = selIndex >= 0 ? selIndex : (filtered.length ? 0 : -1);
-            render();
-            list.classList.remove('hidden');
-            input.setAttribute('aria-expanded', 'true');
-            wrapper.classList.add('is-open');
-            setActive(activeIndex);
-        }
-
-        function close() {
-            list.classList.add('hidden');
-            input.setAttribute('aria-expanded', 'false');
-            wrapper.classList.remove('is-open');
-            input.removeAttribute('aria-activedescendant');
-        }
-
-        const isOpen = () => !list.classList.contains('hidden');
-
-        function choose(opt) {
-            close();
-            if (opt.value !== selectRa.value) {
-                selectRa.value = opt.value;
-                selectRa.dispatchEvent(new Event('change'));
-            } else {
-                sync();
-            }
-            // Siguiente campo lógico
-            requestAnimationFrame(() => {
+        return createCombobox(selectRa, {
+            searchable: true,
+            clearable: true,
+            inputId: 'ra-combo-input',
+            placeholder: 'Buscar: sin tono, netflix, mesh… (Alt+G)',
+            requiredMessage: 'Elegí un tipo de gestión de la lista',
+            onClear: () => showToast('Tipo de gestión borrado', 'info'),
+            // Siguiente campo lógico después de elegir
+            onChoose: () => requestAnimationFrame(() => {
                 if (camposEspeciales && !camposEspeciales.classList.contains('hidden') && selectContactoEsp) {
-                    selectContactoEsp.focus();
+                    const contactoInput = document.getElementById('contacto-especial-combo');
+                    (contactoInput || selectContactoEsp).focus();
                 } else if (inputObservaciones) {
                     inputObservaciones.focus();
                 }
-            });
-        }
-
-        function clearSelection() {
-            close();
-            if (!selectRa.value) { sync(); return; }
-            selectRa.value = '';
-            selectRa.dispatchEvent(new Event('change'));
-            showToast('Tipo de gestión borrado', 'info');
-        }
-
-        input.addEventListener('focus', () => input.select());
-        input.addEventListener('click', () => { if (!isOpen()) open(); });
-
-        input.addEventListener('input', () => {
-            filter(input.value);
-            activeIndex = filtered.length ? 0 : -1;
-            render();
-            list.classList.remove('hidden');
-            input.setAttribute('aria-expanded', 'true');
-            wrapper.classList.add('is-open');
-            setActive(activeIndex);
+            })
         });
-
-        input.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    if (!isOpen()) { open(); return; }
-                    if (filtered.length) setActive((activeIndex + 1) % filtered.length);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    if (!isOpen()) { open(); return; }
-                    if (filtered.length) setActive((activeIndex - 1 + filtered.length) % filtered.length);
-                    break;
-                case 'Enter':
-                    // Ctrl+Enter = registrar (atajo global): no interceptar
-                    if (e.ctrlKey || e.metaKey) return;
-                    if (isOpen() && activeIndex >= 0 && filtered[activeIndex]) {
-                        e.preventDefault();
-                        choose(filtered[activeIndex]);
-                    } else if (!isOpen()) {
-                        e.preventDefault();
-                        open();
-                    }
-                    break;
-                case 'Escape':
-                    if (isOpen()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        close();
-                        sync();
-                    } else if (selectRa.value) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        clearSelection();
-                    }
-                    break;
-                case 'Backspace':
-                    // Con el texto vacío (o todo seleccionado), Backspace quita la gestión elegida
-                    if (selectRa.value && (input.value === '' ||
-                        (input.selectionStart === 0 && input.selectionEnd === input.value.length))) {
-                        e.preventDefault();
-                        clearSelection();
-                        open();
-                    }
-                    break;
-                case 'Tab':
-                    close();
-                    sync();
-                    break;
-            }
-        });
-
-        // mousedown (no click) para que el input no pierda el foco antes de elegir
-        list.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            const li = e.target.closest('.ra-combo-option');
-            if (li) choose(filtered[Number(li.dataset.index)]);
-        });
-        list.addEventListener('mousemove', (e) => {
-            const li = e.target.closest('.ra-combo-option');
-            if (li && Number(li.dataset.index) !== activeIndex) setActive(Number(li.dataset.index));
-        });
-
-        input.addEventListener('blur', () => {
-            close();
-            sync();
-        });
-
-        btnClear.addEventListener('mousedown', (e) => e.preventDefault());
-        btnClear.addEventListener('click', () => {
-            clearSelection();
-            input.focus();
-        });
-
-        selectRa.addEventListener('change', sync);
-        sync();
-
-        return {
-            sync,
-            focus() { input.focus(); open(); },
-            setDisabled(disabled) {
-                input.disabled = disabled;
-                btnClear.disabled = disabled;
-                if (disabled) close();
-            }
-        };
     }
 
     // ============================================

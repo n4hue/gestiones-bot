@@ -30,7 +30,7 @@ for (const file of sources) {
     for (const m of readFileSync(file, 'utf8').matchAll(/data-lucide="([a-z0-9-]+)"/g)) used.add(m[1]);
 }
 // Íconos que se asignan de forma dinámica (no aparecen literales como data-lucide="...").
-for (const extra of ['check-circle-2', 'x-circle', 'info', 'alert-triangle']) used.add(extra);
+for (const extra of ['check-circle-2', 'x-circle', 'info', 'alert-triangle', 'search', 'chevron-down', 'x']) used.add(extra);
 
 const toPascal = name => name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
 const data = {};
