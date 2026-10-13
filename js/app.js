@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const GEMINI_API_KEY_STORAGE = 'bot_gemini_api_key';
     const GEMINI_MODEL_STORAGE = 'bot_gemini_model';
     const PASS_CRM_KEY = 'bot_pass_crm';
+    const PREFILL_PASS_KEY = 'bot_prefill_pass_in_url';
     const FRANCO_SWAP_PARTNER_KEY = 'bot_franco_swap_partner';
     const FRANCO_SWAP_DAY_REC_KEY = 'bot_franco_swap_day_received';
     const FRANCO_SWAP_DAY_GIV_KEY = 'bot_franco_swap_day_given';
@@ -330,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
     let passCrm = localStorage.getItem(PASS_CRM_KEY) || '';
+    // Por defecto la Pass CRM NO viaja en la URL del Form (quedaría en historial y logs):
+    // se copia al portapapeles al abrir el Form. Se puede volver al comportamiento viejo en Ajustes.
+    let prefillPassInUrl = localStorage.getItem(PREFILL_PASS_KEY) === 'true';
+    const prefillPassToggleEl = document.getElementById('prefill-pass-toggle');
     let francoSwapPartner = localStorage.getItem(FRANCO_SWAP_PARTNER_KEY) || '';
     let francoSwapDayReceived = localStorage.getItem(FRANCO_SWAP_DAY_REC_KEY) || '';
     let francoSwapDayGiven = localStorage.getItem(FRANCO_SWAP_DAY_GIV_KEY) || '';
@@ -369,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
+    if (prefillPassToggleEl) prefillPassToggleEl.checked = prefillPassInUrl;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
     if (selectGeminiModel) selectGeminiModel.value = geminiModel;
 
@@ -441,13 +447,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (geminiModelStatus) {
                     const isFlash = best.toLowerCase().includes('flash');
                     const speedNote = isFlash ? ' (Modo Rápido ⚡)' : '';
-                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${best}</strong>${speedNote}`;
+                    geminiModelStatus.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Conexión y generación exitosa.</span> ${models.length} modelos detectados. Activo: <strong>${escapeHtml(best)}</strong>${speedNote}`;
                 }
                 showToast(`Modelo más rápido asignado: ${best}`, 'success');
             } catch (err) {
                 console.error('Error al probar Gemini:', err);
                 if (geminiModelStatus) {
-                    geminiModelStatus.innerHTML = `<span style="color: #EF4444; font-weight: 600;">✗ Error:</span> ${err.message}`;
+                    geminiModelStatus.innerHTML = `<span style="color: #EF4444; font-weight: 600;">✗ Error:</span> ${escapeHtml(err.message)}`;
                 }
                 showToast(`Error al conectar con Gemini: ${err.message}`, 'error');
             } finally {
@@ -672,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const prefilledUrl = buildPrefilledFormUrl(googleFormUrl, cliente, tipoRa, 'Gestión');
+                copyPassForForm();
                 const formWindow = window.open(prefilledUrl, '_blank');
                 if (formWindow) {
                     const originalBtnHtml = btnSubmit.innerHTML;
@@ -845,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const lower = tipoRa.toLowerCase();
         if (lower.includes('callcontact')) return 'CALLCONTACT';
         if (lower.includes('banda ancha') || lower.includes('internet')) return 'INTERNET';
-        if (lower.includes('telefonia')) return 'TELEFONIA';
+        if (lower.includes('telefonia') || lower.includes('telef resid')) return 'TELEFONIA';
         if (lower.includes('wifi mesh')) return 'WIFI MESH';
         if (lower.includes('televisión') || lower.includes('television') || lower.includes('aplicaciones - deco')) return 'TELEVISIÓN';
         if (lower.includes('web/app') || lower.includes('app mobile')) return 'WEB / APP';
@@ -906,11 +913,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (g.equipos) {
                 const eq = g.equipos;
                 const parts = [];
-                if (eq.cm) parts.push(`CM: ${eq.cm}`);
-                if (eq.mta) parts.push(`MTA: ${eq.mta}`);
-                if (eq.ont) parts.push(`ONT: ${eq.ont}`);
+                if (eq.cm) parts.push(`CM: ${escapeHtml(eq.cm)}`);
+                if (eq.mta) parts.push(`MTA: ${escapeHtml(eq.mta)}`);
+                if (eq.ont) parts.push(`ONT: ${escapeHtml(eq.ont)}`);
                 if (eq.decos && eq.decos.length) parts.push(`Decos: ${eq.decos.length}`);
-                if (eq.linea) parts.push(`Línea: ${eq.linea}`);
+                if (eq.linea) parts.push(`Línea: ${escapeHtml(eq.linea)}`);
                 if (parts.length > 0) {
                     equiposHtml = `<div class="gestion-equipos">🛠️ ${parts.join(' · ')}</div>`;
                 }
@@ -935,7 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let shortRa = g.tipo_ra;
             shortRa = shortRa.replace(/^NOC - (INTERNET|BANDA ANCHA|TELEFONIA|TELEF RESID|TELEVISIÓN|TELEVISION|WIFI MESH|APLICACIONES) - /, '');
             shortRa = shortRa.replace(/^(Web\/App|App Mobile) - /, '');
-            if (shortRa.length > 25) shortRa = shortRa.substring(0, 23) + '…';
+            const reiteradoTitle = `Reclamo Reiterado${g.ra_id ? ' (RA: ' + g.ra_id + ')' : ''}`;
 
             const card = document.createElement('div');
             card.className = 'gestion-card';
@@ -943,15 +950,15 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.cat = category;
             card.innerHTML = `
                 <div class="gestion-card-row">
-                    <span class="gestion-hora">${g.hora}</span>
-                    <span class="gestion-cliente">${g.cliente}</span>
-                    <span class="gestion-tipo" title="${g.tipo_ra}">
-                        ${shortRa}
-                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="Reclamo Reiterado ${g.ra_id ? '(RA: ' + g.ra_id + ')' : ''}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
+                    <span class="gestion-hora">${escapeHtml(g.hora)}</span>
+                    <button type="button" class="gestion-cliente" data-action="copy-cliente" title="Copiar N° de cliente">${escapeHtml(g.cliente)}</button>
+                    <span class="gestion-tipo" title="${escapeHtml(g.tipo_ra)}">
+                        ${escapeHtml(shortRa)}
+                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="${escapeHtml(reiteradoTitle)}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
                     </span>
                     <div class="gestion-actions">
-                        <button class="btn-icon" title="Editar" onclick="editGestion('${g.id}')"><i data-lucide="pencil"></i></button>
-                        <button class="btn-icon" title="Eliminar" onclick="deleteGestion('${g.id}')"><i data-lucide="trash-2"></i></button>
+                        <button type="button" class="btn-icon" data-action="edit" title="Editar" aria-label="Editar gestión"><i data-lucide="pencil"></i></button>
+                        <button type="button" class="btn-icon" data-action="delete" title="Eliminar" aria-label="Eliminar gestión"><i data-lucide="trash-2"></i></button>
                     </div>
                 </div>
                 ${detailsHtml}
@@ -963,6 +970,34 @@ document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
         }
         updateCategoryChipCounts();
+    }
+
+    // Acciones de las tarjetas del historial (delegación: un solo listener)
+    historyBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const card = btn.closest('.gestion-card');
+        if (!card) return;
+        const id = card.dataset.id;
+        switch (btn.dataset.action) {
+            case 'edit': editGestion(id); break;
+            case 'delete': deleteGestion(id); break;
+            case 'copy-cliente': {
+                const g = gestiones.find(x => x.id === id);
+                if (g) copyText(g.cliente, `N° de cliente copiado: ${g.cliente}`);
+                break;
+            }
+        }
+    });
+
+    function copyText(text, successMsg = 'Copiado al portapapeles') {
+        if (!navigator.clipboard) {
+            showToast('El navegador no permite copiar automáticamente', 'error');
+            return Promise.resolve(false);
+        }
+        return navigator.clipboard.writeText(text)
+            .then(() => { showToast(successMsg, 'success'); return true; })
+            .catch(() => { showToast('No se pudo copiar al portapapeles', 'error'); return false; });
     }
 
     // ============================================
@@ -1474,24 +1509,58 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Feature 6: Toast Notifications
     // ============================================
-    function showToast(message, type = 'info') {
-        if (!toastContainer) return;
+    // options.action = { label, onClick } agrega un botón (ej. "Deshacer").
+    // options.duration = ms visibles (default 3000). options.onExpire se llama si el
+    // toast se cierra solo, sin que se haya usado la acción.
+    function showToast(message, type = 'info', options = {}) {
+        if (!toastContainer) return null;
 
-        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+        const icons = { success: 'check-circle-2', error: 'x-circle', info: 'info', warning: 'alert-triangle' };
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.innerHTML = `
-            <span class="toast-icon">${icons[type] || icons.info}</span>
-            <span>${message}</span>
-        `;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
-        toastContainer.appendChild(toast);
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'toast-icon';
+        iconWrap.innerHTML = `<i data-lucide="${icons[type] || icons.info}"></i>`;
 
-        // Auto remove
-        setTimeout(() => {
+        // El texto siempre va como textContent: nunca se interpreta como HTML.
+        // Se quita el emoji inicial que traían los mensajes viejos (el ícono ya lo da el tipo).
+        const text = document.createElement('span');
+        text.className = 'toast-text';
+        text.textContent = String(message).replace(/^\p{Extended_Pictographic}️?\s*/u, '');
+
+        toast.append(iconWrap, text);
+
+        let actionUsed = false;
+        const dismiss = () => {
+            if (toast.classList.contains('removing')) return;
             toast.classList.add('removing');
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        };
+
+        if (options.action) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'toast-action';
+            btn.textContent = options.action.label;
+            btn.addEventListener('click', () => {
+                actionUsed = true;
+                options.action.onClick();
+                dismiss();
+            });
+            toast.appendChild(btn);
+        }
+
+        toastContainer.appendChild(toast);
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: iconWrap });
+
+        setTimeout(() => {
+            if (!actionUsed && options.onExpire) options.onExpire();
+            dismiss();
+        }, options.duration || 3000);
+
+        return toast;
     }
 
     function showConfirm(message) {
@@ -1559,7 +1628,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Actions
     // ============================================
-    window.editGestion = function (id) {
+    function editGestion(id) {
         const gestion = gestiones.find(g => g.id === id);
         if (gestion) {
             editingId = id;
@@ -1606,9 +1675,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             inputCliente.focus();
         }
-    };
+    }
 
-    window.deleteGestion = async function (id) {
+    async function deleteGestion(id) {
         const confirmed = await showConfirm('¿Seguro que deseas eliminar esta gestión?');
         if (confirmed) {
             const gestionToDelete = gestiones.find(g => g.id === id);
@@ -1648,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startSessionTimer();
             showToast('Gestión eliminada', 'info');
         }
-    };
+    }
 
     // ============================================
     // Nueva Jornada Checklist Modal
@@ -1749,6 +1818,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const baseFormUrl = googleFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSfBvf69_0snKpz2m6LGpkrIc0PDgS25aCDTA_og2Xj6hRYdHw/viewform';
             const formUrl = buildPrefilledFormUrl(baseFormUrl, null, null, 'Estados Sin Gestión');
+            copyPassForForm();
             formInicioWindow = window.open(formUrl, '_blank');
 
             if (formInicioWindow) {
@@ -1840,19 +1910,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const exportData = [...gestiones].reverse();
 
-        exportData.forEach(g => {
-            const tipoRaEscaped = `"${g.tipo_ra.replace(/"/g, '""')}"`;
-            const reclamoEscaped = g.reclamo_datos ? `"${g.reclamo_datos.replace(/"/g, '""')}"` : '""';
-            const obsEscaped = g.observaciones ? `"${g.observaciones.replace(/"/g, '""')}"` : '""';
-            const eq = g.equipos || {};
-            const cm = eq.cm || '';
-            const mta = eq.mta || '';
-            const ont = eq.ont || '';
-            const decos = eq.decos && eq.decos.length ? `"${eq.decos.join(' / ')}"` : '""';
-            const linea = eq.linea || '';
+        // Cada celda va entre comillas. Si arranca con = + - @ se antepone ' para que
+        // Excel no la interprete como fórmula (inyección CSV).
+        const csvCell = (value) => {
+            let s = value == null ? '' : String(value);
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+            return `"${s.replace(/"/g, '""')}"`;
+        };
 
-            const row = [g.id, g.fecha, g.hora, g.cliente, tipoRaEscaped, reclamoEscaped, obsEscaped, cm, mta, ont, decos, linea];
-            csvRows.push(row.join(','));
+        exportData.forEach(g => {
+            const eq = g.equipos || {};
+            const decos = eq.decos && eq.decos.length ? eq.decos.join(' / ') : '';
+            const row = [g.id, g.fecha, g.hora, g.cliente, g.tipo_ra, g.reclamo_datos, g.observaciones,
+                eq.cm, eq.mta, eq.ont, decos, eq.linea];
+            csvRows.push(row.map(csvCell).join(','));
         });
 
         const csvString = csvRows.join('\n');
@@ -1953,6 +2024,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soundToggleEl) soundToggleEl.checked = soundEnabled;
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
+            if (prefillPassToggleEl) prefillPassToggleEl.checked = prefillPassInUrl;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
             if (selectGeminiModel) selectGeminiModel.value = geminiModel;
             populateFrancoSwapPartnerSelect();
@@ -2006,6 +2078,9 @@ document.addEventListener('DOMContentLoaded', () => {
             passCrm = inputPassCrm ? inputPassCrm.value.trim() : '';
             localStorage.setItem(PASS_CRM_KEY, passCrm);
 
+            prefillPassInUrl = prefillPassToggleEl ? prefillPassToggleEl.checked : false;
+            localStorage.setItem(PREFILL_PASS_KEY, prefillPassInUrl.toString());
+
             // Save franco swap
             const newSwapPartner = selectFrancoSwapPartner ? selectFrancoSwapPartner.value : '';
             francoSwapPartner = (newSwapPartner && newSwapPartner !== operatorName) ? newSwapPartner : '';
@@ -2051,6 +2126,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Si la Pass CRM no va en la URL, se copia al portapapeles para pegarla en el Form.
+    // Debe llamarse dentro del gesto del usuario (click / Ctrl+Enter), antes de window.open.
+    function copyPassForForm() {
+        if (prefillPassInUrl || !passCrm || !navigator.clipboard) return;
+        navigator.clipboard.writeText(passCrm)
+            .then(() => showToast('Pass CRM copiada: pegala en el Form con Ctrl+V', 'info', { duration: 5000 }))
+            .catch(() => showToast('No se pudo copiar la Pass CRM al portapapeles', 'warning'));
+    }
+
     // ============================================
     // Pre-fill Google Form URL Builder
     // ============================================
@@ -2069,7 +2153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (operatorName) {
             params.push(`${GFORM_ENTRY_OPERATOR_NAME}=${encodeURIComponent(operatorName)}`);
         }
-        if (passCrm) {
+        if (passCrm && prefillPassInUrl) {
             params.push(`${GFORM_ENTRY_PASS_CRM}=${encodeURIComponent(passCrm)}`);
         }
         if (estadoValue) {

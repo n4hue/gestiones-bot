@@ -52,7 +52,7 @@ Si deseas que cada gestión registrada en la aplicación web se sincronice autom
 ### Paso 2: Agregar el Script de Google Apps
 1. En el menú superior de tu Google Sheet, ve a **Extensiones** ➡️ **Apps Script**.
 2. Borra cualquier código que aparezca por defecto en el editor.
-3. Abre el archivo [google-apps-script.js](file:///d:/portfolio/webapp%20gestiones%20BOT/google-apps-script.js) de este repositorio, copia todo su contenido y pégalo en el editor de Apps Script.
+3. Abre el archivo [google-apps-script.js](google-apps-script.js) de este repositorio, copia todo su contenido y pégalo en el editor de Apps Script.
 4. Presiona `Ctrl + S` para guardar el proyecto. Puedes cambiar el título del proyecto arriba a la izquierda si lo deseas (ej. *Backend Gestiones BOT*).
 
 ### Paso 3: Publicar como Aplicación Web

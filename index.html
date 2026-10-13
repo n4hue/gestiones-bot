@@ -9,12 +9,12 @@
         content="Aplicación web para seguimiento de gestiones diarias como Analista BackOffice Técnico.">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0B0F19" id="meta-theme-color">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.png">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="js/vendor/lucide-icons.js"></script>
     <!-- Vercel Web Analytics -->
     <script>
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -604,7 +604,7 @@
                     <select id="filter-category" class="filter-category-select">
                         <option value="">Todas</option>
                         <option value="INTERNET">Internet</option>
-                        <option value="TELEF RESID">Telef. Resid.</option>
+                        <option value="TELEFONIA">Telefonía</option>
                         <option value="TELEVISIÓN">Televisión</option>
                         <option value="WEB / APP">Web / App</option>
                         <option value="ESCALAMIENTO N3">Escalamiento N3</option>
@@ -762,8 +762,16 @@
                     <button type="button" class="btn-toggle-pass" id="btn-toggle-pass"
                         title="Mostrar/Ocultar contraseña"><i data-lucide="eye"></i></button>
                 </div>
-                <small class="settings-hint">Se usará para pre-llenar el campo de Pass CRM en el Google Form</small>
+                <small class="settings-hint">Al abrir el Google Form se copia al portapapeles para que la pegues con
+                    Ctrl+V.</small>
             </div>
+
+            <div class="settings-section checkbox-group">
+                <input type="checkbox" id="prefill-pass-toggle">
+                <label for="prefill-pass-toggle">Pre-llenar la Pass CRM en la URL del Form (menos seguro)</label>
+            </div>
+            <small class="settings-hint settings-hint-warning">Si lo activás, la contraseña queda guardada en el
+                historial del navegador como parte de la URL.</small>
 
             <hr class="settings-divider">
             <p class="settings-group-title">🔄 Cambio de Franco</p>
