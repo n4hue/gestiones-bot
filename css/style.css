@@ -2146,6 +2146,8 @@ tbody tr:hover {
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-lg);
     scrollbar-width: thin;
+    overscroll-behavior: contain; /* al llegar al final no scrollea la página */
+    -webkit-overflow-scrolling: touch;
     text-align: left;
     animation: comboListIn 0.12s ease-out;
 }

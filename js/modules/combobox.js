@@ -183,14 +183,17 @@ export function createCombobox(select, opts = {}) {
     }
 
     // Posiciona la lista debajo del input (o arriba si no hay lugar).
-    function position() {
+    function position(e) {
+        // El scroll dentro de la propia lista no debe reposicionarla
+        if (e && e.target === list) return;
         const r = input.getBoundingClientRect();
         const gap = 4;
         const below = window.innerHeight - r.bottom - gap - 8;
         const above = r.top - gap - 8;
         list.style.left = `${r.left}px`;
         list.style.width = `${r.width}px`;
-        list.style.maxHeight = '';
+        // scrollHeight es el alto del contenido aunque haya max-height: no hace falta
+        // quitarlo (hacerlo devolvía la lista al principio en cada scroll)
         const natural = Math.min(list.scrollHeight, 340);
         const openUp = below < Math.min(natural, 220) && above > below;
         const avail = Math.max(openUp ? above : below, 120);
