@@ -183,6 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
     let editingId = null;
     let activeCategoryFilter = ''; // '' = todas las categorías (chips del historial)
+    // Historial paginado: cuántas tarjetas se muestran. null = una "página" (lo que entra en pantalla)
+    let historyVisibleCount = null;
+    let historyPageSize = null;     // tamaño de la tanda (lo que entró en la primera página)
+    const HISTORY_PAGE_MIN = 4;      // tarjetas mínimas por tanda
+    const HISTORY_PAGE_MAX = 25;     // tarjetas máximas por tanda
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
@@ -358,6 +363,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Break Monitor
     initBreakMonitor();
+
+    // Al terminar de cargar (fuentes e indicadores del header incluidos) la posición del
+    // historial puede haber cambiado: recalcular una vez cuántas tarjetas entran.
+    const refitHistory = () => { if (historyVisibleCount === null) renderHistory(); };
+    window.addEventListener('load', refitHistory, { once: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refitHistory);
 
     // ============================================
     // Feature 3: Day Persistence
@@ -700,9 +711,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // UI Updates
     // ============================================
     function updateUI() {
-        renderHistory();
+        // El historial va último: la cantidad de tarjetas de la primera página depende
+        // de dónde queda ubicado, y el progreso y las estadísticas cambian esa posición.
         updateProgress();
         renderStats();
+        renderHistory();
     }
 
     // ============================================
@@ -732,7 +745,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (searchInput) {
-        searchInput.addEventListener('input', () => renderHistory());
+        searchInput.addEventListener('input', () => {
+            historyVisibleCount = null; // nueva búsqueda: volver a la primera página
+            renderHistory();
+        });
     }
 
     // ============================================
@@ -754,7 +770,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        filtered.forEach(g => {
+        // Primera página: se agregan tarjetas mientras entren en el alto disponible
+        // (mínimo 4, máximo 25). Esa cantidad es el tamaño de la tanda para "Ver más".
+        // Con la paginación expandida se muestran historyVisibleCount tarjetas.
+        const firstPage = historyVisibleCount === null;
+        const availHeight = firstPage ? getHistoryAvailableHeight() : Infinity;
+        const limit = firstPage
+            ? Math.min(HISTORY_PAGE_MAX, filtered.length)
+            : Math.min(historyVisibleCount, filtered.length);
+        const cardGap = parseFloat(getComputedStyle(historyBody).rowGap) || 0;
+        let shown = 0;
+        let usedHeight = 0;
+
+        for (const g of filtered.slice(0, limit)) {
             const category = getCategory(g.tipo_ra);
 
             // Build equipment details HTML
@@ -811,17 +839,96 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${detailsHtml}
             `;
             historyBody.appendChild(card);
-        });
+            // offsetHeight (no getBoundingClientRect) para no medir la animación de entrada
+            usedHeight += card.offsetHeight + (shown ? cardGap : 0);
+            if (firstPage && shown >= HISTORY_PAGE_MIN && usedHeight > availHeight) {
+                card.remove(); // no entra: queda para "Ver más"
+                break;
+            }
+            shown++;
+        }
+
+        if (firstPage) historyPageSize = shown;
+        renderHistoryPager(shown, filtered.length, historyPageSize || HISTORY_PAGE_MIN);
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons({ root: historyBody });
         }
     }
 
+    // Alto disponible para las tarjetas de la primera página:
+    // - Si el historial empieza dentro de la pantalla (layout de escritorio), el espacio que
+    //   queda debajo, para que "Ver más" se vea sin scrollear.
+    // - Si empieza más abajo o queda poco lugar (móvil, una columna), ~60% del alto.
+    function getHistoryAvailableHeight() {
+        const PAGER_HEIGHT = 56;
+        const top = historyBody.getBoundingClientRect().top + window.scrollY;
+        const below = window.innerHeight - top - PAGER_HEIGHT - 16;
+        return below >= 180 ? below : window.innerHeight * 0.6;
+    }
+
+    // Pie del historial: "Mostrando X de Y" + Ver más / Ver todas / Mostrar menos
+    function renderHistoryPager(shown, total, pageSize) {
+        if (total <= pageSize && shown >= total) return; // todo entra en una página
+        const remaining = total - shown;
+        const pager = document.createElement('div');
+        pager.className = 'history-pager';
+        pager.innerHTML = `
+            <span class="history-pager-count">Mostrando ${shown} de ${total}</span>
+            <div class="history-pager-actions">
+                ${remaining > 0 ? `
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="history-more">
+                        <i data-lucide="chevron-down"></i> Ver más (${Math.min(pageSize, remaining)})
+                    </button>
+                    ${remaining > pageSize ? `<button type="button" class="btn-link" data-action="history-all">Ver todas</button>` : ''}
+                ` : ''}
+                ${shown > pageSize ? `<button type="button" class="btn-link" data-action="history-less">Mostrar menos</button>` : ''}
+            </div>
+        `;
+        historyBody.appendChild(pager);
+    }
+
+    function handleHistoryPager(action) {
+        const pageSize = historyPageSize || HISTORY_PAGE_MIN;
+        const current = historyVisibleCount ?? pageSize;
+        const total = getFilteredGestiones().length;
+        if (action === 'history-more') {
+            historyVisibleCount = Math.min(current + pageSize, total);
+            renderHistory();
+            // Foco en la primera tarjeta nueva (navegación con teclado)
+            const firstNew = historyBody.querySelectorAll('.gestion-card')[current];
+            if (firstNew) firstNew.querySelector('.gestion-cliente').focus({ preventScroll: true });
+        } else if (action === 'history-all') {
+            historyVisibleCount = total;
+            renderHistory();
+        } else if (action === 'history-less') {
+            historyVisibleCount = null;
+            renderHistory();
+            document.querySelector('.history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Si cambia el alto de la ventana y el historial está en su primera página,
+    // recalcular cuántas tarjetas entran.
+    let historyResizeTimer = null;
+    let lastHistoryAvail = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(historyResizeTimer);
+        historyResizeTimer = setTimeout(() => {
+            const avail = Math.round(getHistoryAvailableHeight());
+            if (historyVisibleCount === null && avail !== lastHistoryAvail) renderHistory();
+            lastHistoryAvail = avail;
+        }, 200);
+    });
+
     // Acciones de las tarjetas del historial (delegación: un solo listener)
     historyBody.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
+        if (btn.dataset.action.startsWith('history-')) {
+            handleHistoryPager(btn.dataset.action);
+            return;
+        }
         const card = btn.closest('.gestion-card');
         if (!card) return;
         const id = card.dataset.id;
@@ -2961,6 +3068,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chip.classList.add('active');
                 chip.setAttribute('aria-pressed', 'true');
                 activeCategoryFilter = chip.dataset.cat;
+                historyVisibleCount = null; // nuevo filtro: volver a la primera página
                 renderHistory();
             });
         });
