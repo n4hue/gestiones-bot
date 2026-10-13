@@ -33,6 +33,11 @@ en español, descriptivos y sin alcance entre paréntesis:
 
 Ejemplo: `fix: el filtro de Telefonía no mostraba resultados`
 
+**Autoría:** los commits van a nombre del usuario (`n4hue
+<nahuelgamer584@gmail.com>`), nunca del agente. No agregar líneas
+`Co-Authored-By:`, `Claude-Session:` ni ninguna otra firma o atribución del
+agente en el mensaje del commit.
+
 ## 3. Arquitectura y estilo del código
 
 - **Sin frameworks ni build:** Vanilla JS (módulos ES), Vanilla CSS y HTML. No
