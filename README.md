@@ -34,6 +34,7 @@ Permite registrar interacciones rápidamente, calcular automáticamente parámet
 *   `Alt + C` : Ir al campo N° Cliente.
 *   `Alt + G` : Buscar tipo de Gestión / RA.
 *   `Alt + P` : Pegado Inteligente (Smart Paste desde portapapeles).
+*   `Ctrl + V` : Smart Paste directo cuando el foco no está en un campo de texto (o sobre la zona de Smart Paste).
 *   `Alt + T` : Abrir / Cerrar Herramientas de Equipos (MACs).
 *   `Alt + M` : Alternar Modo Compacto (pantalla dividida).
 *   `Ctrl + K` : Buscar en el historial del día.

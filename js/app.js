@@ -3284,26 +3284,71 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // Feature: Smart Paste (Pegado Inteligente)
     // ============================================
+    // La zona de Smart Paste acepta Ctrl+V directo (no necesita permiso de
+    // portapapeles). Además, Ctrl+V con el foco fuera de cualquier campo de texto
+    // también dispara el Smart Paste.
     function initSmartPaste() {
         if (btnSmartPaste) {
-            btnSmartPaste.addEventListener('click', handleSmartPaste);
+            btnSmartPaste.addEventListener('click', () => handleSmartPaste());
+            btnSmartPaste.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSmartPaste();
+                }
+            });
         }
+
+        document.addEventListener('paste', (e) => {
+            const t = e.target;
+            const isEditable = t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
+            if (isEditable) return; // pegado normal dentro de un campo
+            const text = e.clipboardData ? e.clipboardData.getData('text') : '';
+            if (!text || !text.trim()) return;
+            e.preventDefault();
+            handleSmartPaste(text);
+        });
     }
 
-    async function handleSmartPaste() {
+    function setPasteZoneState(state, message) {
+        if (!btnSmartPaste) return;
+        btnSmartPaste.classList.remove('is-awaiting', 'is-success');
+        if (state) btnSmartPaste.classList.add(`is-${state}`);
+        const msgEl = btnSmartPaste.querySelector('.paste-zone-text');
+        if (msgEl && message) msgEl.textContent = message;
+    }
+
+    const PASTE_ZONE_DEFAULT_TEXT = 'Pegá acá el reclamo completo de Viena';
+    let pasteZoneResetTimer = null;
+    function resetPasteZoneLater(ms) {
+        clearTimeout(pasteZoneResetTimer);
+        pasteZoneResetTimer = setTimeout(() => setPasteZoneState(null, PASTE_ZONE_DEFAULT_TEXT), ms);
+    }
+
+    // textOverride: texto ya obtenido de un evento 'paste'. Si no viene, se lee
+    // el portapapeles (requiere permiso del navegador).
+    async function handleSmartPaste(textOverride) {
         try {
-            let text = '';
-            if (navigator.clipboard && navigator.clipboard.readText) {
+            let text = typeof textOverride === 'string' ? textOverride : '';
+            if (typeof textOverride !== 'string') {
                 try {
+                    if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('sin API');
                     text = await navigator.clipboard.readText();
                 } catch {
-                    text = prompt('Pegá aquí el texto copiado del CRM o correo:');
+                    // Sin permiso de lectura: se le pide al usuario que pegue con Ctrl+V sobre la zona
+                    if (btnSmartPaste) {
+                        btnSmartPaste.focus();
+                        setPasteZoneState('awaiting', 'Presioná Ctrl+V para pegar el reclamo');
+                        resetPasteZoneLater(8000);
+                    }
+                    showToast('El navegador no dejó leer el portapapeles: presioná Ctrl+V', 'info', { duration: 5000 });
+                    return 0;
                 }
-            } else {
-                text = prompt('Pegá aquí el texto copiado del CRM o correo:');
             }
 
-            if (!text || !text.trim()) return;
+            if (!text || !text.trim()) {
+                showToast('El portapapeles está vacío', 'info');
+                return 0;
+            }
 
             let detected = 0;
 
@@ -3666,6 +3711,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detected > 0) {
                 const recMsg = recurrenciaTotal ? ` (Recurrencia: ${recurrenciaTotal})` : '';
                 showToast(`✨ Pegado Inteligente: ${detected} campo(s) detectado(s)${recMsg}`, 'success');
+                setPasteZoneState('success', `${detected} campo(s) completado(s). Revisalos antes de registrar.`);
+                resetPasteZoneLater(4000);
             } else {
                 if (inputCliente && !inputCliente.value) {
                     inputCliente.value = text.trim().substring(0, 40);
@@ -3675,10 +3722,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputObservaciones.value = (inputObservaciones.value ? inputObservaciones.value + ' | ' : '') + text.trim();
                 }
                 showToast('Texto pegado en el formulario', 'info');
+                setPasteZoneState(null, PASTE_ZONE_DEFAULT_TEXT);
             }
+            return detected;
         } catch (err) {
             console.error('Smart paste error:', err);
-            showToast('No se pudo acceder al portapapeles', 'error');
+            showToast('No se pudo procesar el texto pegado', 'error');
+            return 0;
         }
     }
 

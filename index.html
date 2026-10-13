@@ -93,17 +93,20 @@
 
             <!-- Form Section -->
             <section class="form-section card">
-                <div class="section-header-flex">
-                    <h2>Registrar Nueva Gestión</h2>
-                    <div class="smart-paste-wrapper">
-                        <button type="button" class="btn btn-secondary btn-sm btn-smart-paste" id="btn-smart-paste"
-                            title="Pegar texto del portapapeles y autocompletar campos (Alt+P)">
-                            <i data-lucide="sparkles"></i> Smart Paste
-                        </button>
-                        <i data-lucide="info" class="info-icon"
-                            title="Copia y pegá el contenido completo del reclamo en Viena, y al presionar Smart Paste (Pegado Inteligente) se rellenarán todos los campos, ¡incluso la recurrencia!"></i>
-                    </div>
+                <h2>Registrar Nueva Gestión</h2>
+
+                <!-- Smart Paste: entrada principal. Click = leer portapapeles; con foco, Ctrl+V pega directo -->
+                <div class="paste-zone" id="btn-smart-paste" role="button" tabindex="0"
+                    aria-describedby="paste-zone-hint"
+                    title="Copiá el reclamo completo en Viena y pegalo acá: se completan cliente, tipo de gestión, MACs, línea, SN y recurrencia.">
+                    <span class="paste-zone-icon"><i data-lucide="sparkles"></i></span>
+                    <span class="paste-zone-body">
+                        <span class="paste-zone-title">Smart Paste</span>
+                        <span class="paste-zone-text">Pegá acá el reclamo completo de Viena</span>
+                    </span>
+                    <span class="paste-zone-keys" id="paste-zone-hint"><kbd>Ctrl+V</kbd><span class="paste-zone-or">o</span><kbd>Alt+P</kbd></span>
                 </div>
+
                 <form id="registro-form">
                     <div class="form-group">
                         <label for="cliente-id">N° de Cliente / Asunto Mail <span
@@ -802,6 +805,10 @@
                 <div class="shortcut-item">
                     <kbd>Alt + P</kbd>
                     <span>Pegado Inteligente (Smart Paste)</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl + V</kbd>
+                    <span>Smart Paste directo (fuera de un campo de texto)</span>
                 </div>
                 <div class="shortcut-item">
                     <kbd>Alt + T</kbd>
