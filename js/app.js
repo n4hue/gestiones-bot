@@ -743,6 +743,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     function renderHistory() {
         historyBody.innerHTML = '';
+        // Antes del posible return temprano: los contadores deben reflejar el estado
+        // aunque no haya tarjetas que mostrar.
+        updateCategoryChipCounts();
 
         const filtered = getFilteredGestiones();
 
@@ -814,9 +817,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            lucide.createIcons({ root: historyBody });
         }
-        updateCategoryChipCounts();
     }
 
     // Acciones de las tarjetas del historial (delegación: un solo listener)
@@ -2343,7 +2345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = `
             <span class="search-icon"><i data-lucide="search"></i></span>
             <input type="text" id="ra-combo-input" autocomplete="off" spellcheck="false"
-                placeholder="Escribí para buscar: ej. sin tono, netflix, mesh… (Alt+G)"
+                placeholder="Buscar: sin tono, netflix, mesh… (Alt+G)"
                 role="combobox" aria-autocomplete="list" aria-expanded="false"
                 aria-controls="ra-combo-list" aria-labelledby="tipo-ra-label">
             <button type="button" class="ra-combo-clear hidden" title="Quitar tipo de gestión" aria-label="Quitar tipo de gestión"><i data-lucide="x"></i></button>

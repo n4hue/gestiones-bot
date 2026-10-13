@@ -2777,6 +2777,12 @@ html.compact-mode .paste-zone-text {
     display: none;
 }
 
+/* El reset de inputs del modo compacto no debe pisar el espacio del ícono */
+html.compact-mode .ra-combobox input {
+    padding-left: 2.1rem;
+    padding-right: 2.2rem;
+}
+
 .shortcut-hint-small {
     font-size: var(--fs-xs);
     font-family: 'JetBrains Mono', monospace;
@@ -4377,5 +4383,69 @@ html.compact-mode .ai-summary-text {
     /* Adjust header-top for hamburger */
     .header-top h1 {
         font-size: 1.15rem;
+    }
+}
+/* ==========================================
+   Layout ancho (escritorio ≥ 1100px)
+   ==========================================
+   Formulario a la izquierda; estadísticas e historial a la derecha.
+   Con la ventana a media pantalla (junto al CRM) se mantiene la columna única,
+   y el Modo Compacto conserva su propio ancho. */
+@media (min-width: 1100px) {
+    html:not(.compact-mode) .app-container {
+        max-width: 1240px;
+        padding: 0.5rem 1rem 1rem;
+    }
+
+    html:not(.compact-mode) .app-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 200px;
+        column-gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    html:not(.compact-mode) .header-top {
+        grid-column: 1 / -1;
+    }
+
+    html:not(.compact-mode) .header-actions {
+        flex-direction: column;
+        justify-content: stretch;
+        margin-top: 0;
+    }
+
+    html:not(.compact-mode) .header-actions .btn {
+        flex: 1;
+        justify-content: flex-start;
+        padding: 0.5rem 0.85rem;
+        font-size: var(--fs-sm);
+    }
+
+    html:not(.compact-mode) .app-content {
+        display: grid;
+        grid-template-columns: minmax(420px, 5fr) minmax(0, 6fr);
+        grid-template-rows: auto 1fr;
+        gap: 0.75rem;
+        align-items: start;
+    }
+
+    html:not(.compact-mode) .form-section {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
+
+    html:not(.compact-mode) .stats-section {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    html:not(.compact-mode) .history-section {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    /* Con más ancho, el tipo de RA de las tarjetas entra completo */
+    html:not(.compact-mode) .gestion-tipo {
+        flex-basis: 260px;
     }
 }
