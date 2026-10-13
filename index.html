@@ -82,10 +82,9 @@
 
             <div class="header-actions">
                 <button type="button" id="btn-clear-form" class="btn btn-secondary"
-                    title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i> Limpiar
-                    Campos</button>
-                <button id="btn-export" class="btn btn-secondary"><i data-lucide="download"></i> Exportar</button>
-                <button id="btn-reset" class="btn btn-danger"><i data-lucide="rotate-ccw"></i> Nueva Jornada</button>
+                    title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i> Limpiar</button>
+                <button id="btn-export" class="btn btn-secondary" title="Descargar el historial del día en CSV"><i data-lucide="download"></i> Exportar</button>
+                <button id="btn-reset" class="btn btn-danger-outline" title="Archivar el día y empezar una jornada nueva"><i data-lucide="rotate-ccw"></i> Nueva Jornada</button>
             </div>
         </header>
 
@@ -354,7 +353,7 @@
                     </div>
 
                     <details class="tools-accordion" id="reclamo-accordion">
-                        <summary>📄 Datos del Reclamo y Auditoría IA (Opcional)</summary>
+                        <summary><i data-lucide="file-text"></i> Datos del Reclamo y Auditoría IA (Opcional)</summary>
                         <div class="tools-content">
                             <!-- Datos del Reclamo / CRM -->
                             <div class="form-group reclamo-group">
@@ -490,7 +489,7 @@
                     </details>
 
                     <details class="tools-accordion" id="tools-accordion">
-                        <summary>🛠️ Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span>
+                        <summary><i data-lucide="wrench"></i> Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span>
                         </summary>
                         <div class="tools-content">
                             <!-- MTA Calculator -->
@@ -575,20 +574,20 @@
                 <div id="stats-content" class="stats-content">
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <span class="stat-value" id="stat-per-hour">0</span>
+                            <span class="stat-value" id="stat-per-hour">—</span>
                             <span class="stat-label">Gest./Hora</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-value" id="stat-streak">0 🔥</span>
+                            <span class="stat-value" id="stat-streak">0</span>
                             <span class="stat-label">Racha días</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-value small-text" id="stat-top-category">-</span>
+                            <span class="stat-value small-text" id="stat-top-category">—</span>
                             <span class="stat-label">Más frecuente</span>
                         </div>
                     </div>
                     <div id="category-chart" class="category-chart">
-                        <p class="empty-state" style="padding: 0.3rem 0; font-size: 0.7rem;">Sin datos aún</p>
+                        <p class="empty-state stats-empty">Registrá tu primera gestión del día para ver tu ritmo y la distribución por categoría.</p>
                     </div>
                 </div>
             </section>
@@ -599,23 +598,12 @@
                 <div class="history-filters">
                     <div class="history-search-wrapper">
                         <i data-lucide="search" class="history-search-icon"></i>
-                        <input type="text" id="search-input" placeholder="Buscar por cliente o tipo... (Ctrl+K)">
+                        <input type="text" id="search-input" placeholder="Buscar por cliente, tipo u observación… (Ctrl+K)" aria-label="Buscar en el historial">
                     </div>
-                    <select id="filter-category" class="filter-category-select">
-                        <option value="">Todas</option>
-                        <option value="INTERNET">Internet</option>
-                        <option value="TELEFONIA">Telefonía</option>
-                        <option value="TELEVISIÓN">Televisión</option>
-                        <option value="WEB / APP">Web / App</option>
-                        <option value="ESCALAMIENTO N3">Escalamiento N3</option>
-                        <option value="GESTIONES ESPECIALES">Gest. Especiales</option>
-                        <option value="CALLCONTACT">Callcontact</option>
-                        <option value="WIFI MESH">WiFi Mesh</option>
-                    </select>
                 </div>
 
                 <!-- Chips de Categoría Rápidos -->
-                <div class="history-chips-bar" id="history-chips">
+                <div class="history-chips-bar" id="history-chips" role="toolbar" aria-label="Filtrar por categoría">
                     <button type="button" class="history-chip active" data-cat="">Todas <span class="chip-count"
                             id="chip-cnt-all">0</span></button>
                     <button type="button" class="history-chip" data-cat="INTERNET">Internet <span class="chip-count"
@@ -655,7 +643,7 @@
     <!-- ===== SETTINGS MODAL ===== -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>⚙️ Configuración</h3>
+            <h3><i data-lucide="settings"></i> Configuración</h3>
 
             <div class="settings-section">
                 <label for="form-url-input">URL del Google Form:</label>
@@ -672,16 +660,16 @@
 
             <div class="settings-section checkbox-group">
                 <input type="checkbox" id="sound-toggle" checked>
-                <label for="sound-toggle">🔊 Activar sonido al registrar</label>
+                <label for="sound-toggle">Activar sonido al registrar</label>
             </div>
 
             <div class="settings-section checkbox-group">
                 <input type="checkbox" id="break-alarm-toggle" checked>
-                <label for="break-alarm-toggle">⏰ Activar alarma de breaks</label>
+                <label for="break-alarm-toggle">Activar alarma de breaks</label>
             </div>
 
             <hr class="settings-divider">
-            <p class="settings-group-title">🧠 Inteligencia Artificial (Auditoría Profunda)</p>
+            <p class="settings-group-title"><i data-lucide="brain-circuit"></i> Inteligencia Artificial (Auditoría Profunda)</p>
 
             <div class="settings-disclaimer">
                 <i data-lucide="info"></i>
@@ -727,7 +715,7 @@
             </div>
 
             <hr class="settings-divider">
-            <p class="settings-group-title">👤 Datos del Operador (Pre-fill)</p>
+            <p class="settings-group-title"><i data-lucide="user"></i> Datos del Operador (Pre-fill)</p>
 
             <div class="settings-section">
                 <label for="operator-name-input">Nombre del Operador:</label>
@@ -774,7 +762,7 @@
                 historial del navegador como parte de la URL.</small>
 
             <hr class="settings-divider">
-            <p class="settings-group-title">🔄 Cambio de Franco</p>
+            <p class="settings-group-title"><i data-lucide="repeat"></i> Cambio de Franco</p>
 
             <div class="settings-section">
                 <label for="franco-swap-partner-select">¿Cambiaste franco con otro operador?:</label>
@@ -854,18 +842,6 @@
                     <kbd>Esc</kbd>
                     <span>Cerrar modales o cancelar edición</span>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== CONFIRM MODAL ===== -->
-    <div id="confirm-modal" class="modal hidden">
-        <div class="modal-content confirm-modal-content">
-            <h3><i data-lucide="alert-triangle"></i> Confirmar</h3>
-            <p id="confirm-message"></p>
-            <div class="modal-actions">
-                <button id="confirm-yes" class="btn btn-danger">Sí, confirmar</button>
-                <button id="confirm-no" class="btn btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>

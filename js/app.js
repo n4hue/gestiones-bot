@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionTimerEl = document.getElementById('session-timer');
     const syncStatusEl = document.getElementById('sync-status');
     const searchInput = document.getElementById('search-input');
-    const filterCategory = document.getElementById('filter-category');
     const btnTheme = document.getElementById('btn-theme');
     const toastContainer = document.getElementById('toast-container');
 
@@ -51,12 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTogglePass = document.getElementById('btn-toggle-pass');
     const selectFrancoSwapPartner = document.getElementById('franco-swap-partner-select');
     const francoSwapDetailsCard = document.getElementById('franco-swap-details-card');
-
-    // Confirm Modal
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmMessage = document.getElementById('confirm-message');
-    const confirmYes = document.getElementById('confirm-yes');
-    const confirmNo = document.getElementById('confirm-no');
 
     // Tools Elements
     const toolsAccordion = document.getElementById('tools-accordion');
@@ -324,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let gestiones = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     let sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
     let editingId = null;
+    let activeCategoryFilter = ''; // '' = todas las categorías (chips del historial)
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
@@ -830,9 +824,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (jornadaModal && !jornadaModal.classList.contains('hidden')) {
                 if (btnCancelarJornada) btnCancelarJornada.click();
             }
-            if (confirmModal && !confirmModal.classList.contains('hidden')) {
-                confirmModal.classList.add('hidden');
-            }
         }
     });
 
@@ -864,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let filtered = [...gestiones];
 
         const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        const catFilter = filterCategory ? filterCategory.value : '';
+        const catFilter = activeCategoryFilter;
 
         if (searchTerm) {
             filtered = filtered.filter(g =>
@@ -884,9 +875,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchInput) {
         searchInput.addEventListener('input', () => renderHistory());
-    }
-    if (filterCategory) {
-        filterCategory.addEventListener('change', () => renderHistory());
     }
 
     // ============================================
@@ -952,10 +940,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="gestion-card-row">
                     <span class="gestion-hora">${escapeHtml(g.hora)}</span>
                     <button type="button" class="gestion-cliente" data-action="copy-cliente" title="Copiar N° de cliente">${escapeHtml(g.cliente)}</button>
-                    <span class="gestion-tipo" title="${escapeHtml(g.tipo_ra)}">
-                        ${escapeHtml(shortRa)}
-                        ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="${escapeHtml(reiteradoTitle)}"><i data-lucide="repeat"></i> Reiterado</span>` : ''}
-                    </span>
+                    ${g.is_reiterado ? `<span class="badge-reiterado-mini" title="${escapeHtml(reiteradoTitle)}"><i data-lucide="repeat"></i><span class="badge-text">Reiterado</span></span>` : ''}
+                    <span class="gestion-tipo" title="${escapeHtml(g.tipo_ra)}">${escapeHtml(shortRa)}</span>
                     <div class="gestion-actions">
                         <button type="button" class="btn-icon" data-action="edit" title="Editar" aria-label="Editar gestión"><i data-lucide="pencil"></i></button>
                         <button type="button" class="btn-icon" data-action="delete" title="Eliminar" aria-label="Eliminar gestión"><i data-lucide="trash-2"></i></button>
@@ -1041,14 +1027,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hoursElapsed = Math.max((now - firstTime) / (1000 * 60 * 60), 1);
                 statPerHour.textContent = (gestiones.length / hoursElapsed).toFixed(1);
             } else {
-                statPerHour.textContent = '0';
+                statPerHour.textContent = '—';
             }
         }
 
         // Streak
         if (statStreak) {
             const streak = calculateStreak();
-            statStreak.textContent = streak + ' 🔥';
+            statStreak.innerHTML = `${streak} <i data-lucide="flame" class="stat-flame"></i>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: statStreak });
         }
 
         // Category distribution
@@ -1065,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statTopCategory.textContent = entries[0][0];
                 statTopCategory.classList.add('small-text');
             } else {
-                statTopCategory.textContent = '-';
+                statTopCategory.textContent = '—';
                 statTopCategory.classList.remove('small-text');
             }
         }
@@ -1075,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const entries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
 
             if (entries.length === 0) {
-                categoryChart.innerHTML = '<p class="empty-state" style="padding: 0.5rem 0; font-size: 0.8rem;">Sin datos aún</p>';
+                categoryChart.innerHTML = '<p class="empty-state stats-empty">Registrá tu primera gestión del día para ver tu ritmo y la distribución por categoría.</p>';
                 return;
             }
 
@@ -1563,30 +1550,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return toast;
     }
 
-    function showConfirm(message) {
-        return new Promise((resolve) => {
-            if (!confirmModal || !confirmMessage || !confirmYes || !confirmNo) {
-                resolve(confirm(message)); // Fallback
-                return;
-            }
-
-            confirmMessage.textContent = message;
-            confirmModal.classList.remove('hidden');
-
-            function cleanup() {
-                confirmModal.classList.add('hidden');
-                confirmYes.removeEventListener('click', onYes);
-                confirmNo.removeEventListener('click', onNo);
-            }
-
-            function onYes() { cleanup(); resolve(true); }
-            function onNo() { cleanup(); resolve(false); }
-
-            confirmYes.addEventListener('click', onYes);
-            confirmNo.addEventListener('click', onNo);
-        });
-    }
-
     // ============================================
     // Feature 7: Theme Toggle
     // ============================================
@@ -1677,46 +1640,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function deleteGestion(id) {
-        const confirmed = await showConfirm('¿Seguro que deseas eliminar esta gestión?');
-        if (confirmed) {
-            const gestionToDelete = gestiones.find(g => g.id === id);
-            if (gestionToDelete && sheetsUrl) {
-                const deletePayload = {
-                    action: 'delete',
-                    id: id,
-                    fecha: gestionToDelete.fecha
-                };
-                if (!navigator.onLine) {
-                    addToSyncQueue(deletePayload);
-                } else {
-                    updateSyncStatus('sending');
-                    fetch(sheetsUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(deletePayload)
-                    })
-                        .then(() => updateSyncStatus('success'))
-                        .catch(err => {
-                            console.error('Delete sync error, adding to offline queue:', err);
-                            addToSyncQueue(deletePayload);
-                        });
-                }
-            }
+    // Eliminar con "Deshacer": la gestión se quita al instante y se puede restaurar
+    // durante UNDO_DELETE_MS. Recién al vencer ese plazo se sincroniza el borrado con Sheets.
+    const UNDO_DELETE_MS = 6000;
+    const pendingDeletes = new Map(); // id -> payload de borrado para Sheets
 
-            // Animate card removal before updating data
-            const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
-            if (cardEl) {
-                cardEl.classList.add('removing');
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            gestiones = gestiones.filter(g => g.id !== id);
-            saveData();
-            updateUI();
-            startSessionTimer();
-            showToast('Gestión eliminada', 'info');
+    function sendDeleteToSheets(deletePayload) {
+        if (!sheetsUrl) return;
+        if (!navigator.onLine) {
+            addToSyncQueue(deletePayload);
+            return;
         }
+        updateSyncStatus('sending');
+        fetch(sheetsUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(deletePayload)
+        })
+            .then(() => updateSyncStatus('success'))
+            .catch(err => {
+                console.error('Delete sync error, adding to offline queue:', err);
+                addToSyncQueue(deletePayload);
+            });
+    }
+
+    // Si se cierra la pestaña con borrados pendientes, quedan en la cola offline
+    // (se envían en la próxima carga).
+    window.addEventListener('pagehide', () => {
+        if (!sheetsUrl) return;
+        pendingDeletes.forEach(payload => addToSyncQueue(payload));
+        pendingDeletes.clear();
+    });
+
+    async function deleteGestion(id) {
+        const index = gestiones.findIndex(g => g.id === id);
+        if (index === -1) return;
+        const gestionToDelete = gestiones[index];
+
+        if (editingId === id && btnCancelEdit) btnCancelEdit.click();
+
+        // Animate card removal before updating data
+        const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
+        if (cardEl) {
+            cardEl.classList.add('removing');
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        gestiones = gestiones.filter(g => g.id !== id);
+        saveData();
+        updateUI();
+        startSessionTimer();
+
+        pendingDeletes.set(id, { action: 'delete', id: id, fecha: gestionToDelete.fecha });
+
+        showToast(`Gestión ${gestionToDelete.cliente} eliminada`, 'info', {
+            duration: UNDO_DELETE_MS,
+            action: {
+                label: 'Deshacer',
+                onClick: () => {
+                    pendingDeletes.delete(id);
+                    const restoreAt = Math.min(index, gestiones.length);
+                    gestiones.splice(restoreAt, 0, gestionToDelete);
+                    saveData();
+                    updateUI();
+                    startSessionTimer();
+                    showToast('Gestión restaurada', 'success');
+                }
+            },
+            onExpire: () => {
+                const payload = pendingDeletes.get(id);
+                if (!payload) return;
+                pendingDeletes.delete(id);
+                sendDeleteToSheets(payload);
+            }
+        });
     }
 
     // ============================================
@@ -1746,7 +1743,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnOpenFormInicio) {
             btnOpenFormInicio.disabled = false;
             btnOpenFormInicio.classList.remove('waiting');
-            btnOpenFormInicio.textContent = '📝 Abrir Form';
+            btnOpenFormInicio.innerHTML = '<i data-lucide="external-link"></i> Abrir Form';
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: btnOpenFormInicio });
         }
         if (chkFormHint) chkFormHint.textContent = 'Abrí el form, completalo y cerrá la pestaña';
 
@@ -1786,8 +1784,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const allDone = completed === 3;
             btnIniciarJornada.disabled = !allDone;
             btnIniciarJornada.innerHTML = allDone
-                ? '✅ Iniciar Nueva Jornada'
-                : '🔒 Iniciar Nueva Jornada';
+                ? '<i data-lucide="rocket"></i> Iniciar Nueva Jornada'
+                : '<i data-lucide="lock"></i> Iniciar Nueva Jornada';
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: btnIniciarJornada });
         }
 
         // Update visual state of each item
@@ -1825,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update UI to "waiting" state
                 btnOpenFormInicio.disabled = true;
                 btnOpenFormInicio.classList.add('waiting');
-                btnOpenFormInicio.textContent = '⏳ Esperando...';
+                btnOpenFormInicio.textContent = 'Esperando…';
                 if (chkFormHint) chkFormHint.textContent = 'Completá el form y cerrá la pestaña para continuar...';
 
                 // Poll for the window closing
@@ -1842,7 +1841,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Update button visuals
                         btnOpenFormInicio.classList.remove('waiting');
-                        btnOpenFormInicio.textContent = '✅ Form completado';
+                        btnOpenFormInicio.innerHTML = '<i data-lucide="check"></i> Form completado';
+                        if (typeof lucide !== 'undefined') lucide.createIcons({ root: btnOpenFormInicio });
                         if (chkFormHint) chkFormHint.textContent = 'Form de inicio cargado correctamente';
 
                         updateJornadaProgress();
@@ -3252,29 +3252,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Feature: Category Filter Chips
     // ============================================
     function initCategoryFilterChips() {
-        if (historyChips) {
-            historyChips.querySelectorAll('.history-chip').forEach(chip => {
-                chip.addEventListener('click', () => {
-                    historyChips.querySelectorAll('.history-chip').forEach(c => c.classList.remove('active'));
-                    chip.classList.add('active');
-                    if (filterCategory) {
-                        filterCategory.value = chip.dataset.cat;
-                    }
-                    renderHistory();
+        if (!historyChips) return;
+        historyChips.querySelectorAll('.history-chip').forEach(chip => {
+            chip.setAttribute('aria-pressed', chip.classList.contains('active') ? 'true' : 'false');
+            chip.addEventListener('click', () => {
+                historyChips.querySelectorAll('.history-chip').forEach(c => {
+                    c.classList.remove('active');
+                    c.setAttribute('aria-pressed', 'false');
                 });
-            });
-        }
-
-        if (filterCategory) {
-            filterCategory.addEventListener('change', () => {
-                if (historyChips) {
-                    historyChips.querySelectorAll('.history-chip').forEach(c => {
-                        c.classList.toggle('active', c.dataset.cat === filterCategory.value);
-                    });
-                }
+                chip.classList.add('active');
+                chip.setAttribute('aria-pressed', 'true');
+                activeCategoryFilter = chip.dataset.cat;
                 renderHistory();
             });
-        }
+        });
     }
 
     function updateCategoryChipCounts() {
@@ -3294,8 +3285,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const cat = getCategory(g.tipo_ra);
             if (cat in counts) {
                 counts[cat]++;
-            } else if (cat === 'TELEF RESID') {
-                counts['TELEFONIA'] = (counts['TELEFONIA'] || 0) + 1;
             }
         });
 
@@ -3317,6 +3306,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cntCallcontact) cntCallcontact.textContent = counts['CALLCONTACT'] || 0;
         const cntMesh = document.getElementById('chip-cnt-mesh');
         if (cntMesh) cntMesh.textContent = counts['WIFI MESH'] || 0;
+
+        // Ocultar categorías sin gestiones (salvo "Todas" y la que esté activa)
+        if (historyChips) {
+            historyChips.querySelectorAll('.history-chip').forEach(chip => {
+                const cat = chip.dataset.cat;
+                const empty = cat !== '' && !counts[cat];
+                chip.classList.toggle('hidden', empty && cat !== activeCategoryFilter);
+            });
+        }
     }
 
     // ============================================
