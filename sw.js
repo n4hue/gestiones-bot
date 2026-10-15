@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bot-gestiones-v5';
+const CACHE_NAME = 'bot-gestiones-v6';
 const urlsToCache = [
   '/',
   '/index.html',

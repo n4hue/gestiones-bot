@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (eq.decos && eq.decos.length) parts.push(`Decos: ${eq.decos.length}`);
                 if (eq.linea) parts.push(`Línea: ${escapeHtml(eq.linea)}`);
                 if (parts.length > 0) {
-                    equiposHtml = `<div class="gestion-equipos">🛠️ ${parts.join(' · ')}</div>`;
+                    equiposHtml = `<div class="gestion-equipos"><i data-lucide="wrench"></i> ${parts.join(' · ')}</div>`;
                 }
             }
 
@@ -972,6 +972,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const barWidth = percentage > 100 ? 100 : percentage;
         progressBar.style.width = `${barWidth}%`;
 
+        // "faltan X": el número que se sigue durante el turno
+        const remainingEl = document.getElementById('progress-remaining');
+        if (remainingEl) {
+            const remaining = DAILY_GOAL - count;
+            remainingEl.textContent = remaining > 0 ? `faltan ${remaining}` : 'objetivo cumplido';
+            remainingEl.classList.toggle('is-done', remaining <= 0);
+        }
+
         if (count >= DAILY_GOAL) {
             progressBar.classList.add('success');
         } else {
@@ -1029,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const entries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
 
             if (entries.length === 0) {
-                categoryChart.innerHTML = '<p class="empty-state stats-empty">Registrá tu primera gestión del día para ver tu ritmo y la distribución por categoría.</p>';
+                categoryChart.innerHTML = '<p class="empty-state stats-empty">Registrá tu primera gestión del día para ver la distribución por categoría.</p>';
                 return;
             }
 
@@ -1104,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sessionTimerEl) return;
 
         if (gestiones.length === 0) {
-            sessionTimerEl.textContent = '⏱ Sin iniciar';
+            sessionTimerEl.textContent = 'Sin iniciar';
             updatePaceIndicator(0, 0);
             return;
         }
@@ -1128,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hh = String(Math.floor(diff / 3600)).padStart(2, '0');
             const mm = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
             const ss = String(diff % 60).padStart(2, '0');
-            sessionTimerEl.textContent = `⏱ ${hh}:${mm}:${ss}`;
+            sessionTimerEl.textContent = `${hh}:${mm}:${ss}`;
 
             // Update pace indicator every tick
             const elapsedHours = (now - sessionStart) / 3600000;
@@ -1156,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count === 0) {
             paceIndicator.classList.remove('hidden');
             paceIndicator.className = 'pace-indicator pace-ok';
-            paceIndicator.innerHTML = `<span class="pace-dot"></span>Esperando 1ra gestión...`;
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>Esperando la primera gestión…`;
             return;
         }
 
@@ -1175,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             msg = `Vas justo para las 30 gestiones, pero se puede mejorar.`;
         } else {
             paceClass = 'pace-low';
-            msg = `Hay que agarrar un poco mas la pala.`;
+            msg = `Hay que agarrar un poco más la pala.`;
         }
 
         paceIndicator.className = `pace-indicator ${paceClass}`;
@@ -2001,6 +2009,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openConfigModal = function () {
         if (btnOpenSettings) btnOpenSettings.click();
     };
+
+    // La ✕ del encabezado de Configuración hace lo mismo que "Cancelar"
+    const btnCloseSettingsX = document.getElementById('btn-close-settings-x');
+    if (btnCloseSettingsX && btnCerrarModal) {
+        btnCloseSettingsX.addEventListener('click', () => btnCerrarModal.click());
+    }
 
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {

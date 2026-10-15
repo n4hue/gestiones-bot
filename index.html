@@ -27,7 +27,7 @@
         <!-- ===== HEADER ===== -->
         <header class="app-header">
             <div class="header-top">
-                <h1>Gestiones BOT</h1>
+                <h1><span class="brand-mark" aria-hidden="true"></span>Gestiones BOT</h1>
                 <button id="btn-hamburger" class="btn btn-icon hamburger-toggle" title="Menú" aria-label="Abrir menú"
                     aria-expanded="false">
                     <i data-lucide="menu"></i>
@@ -45,14 +45,29 @@
 
             <div class="progress-panel">
                 <div class="progress-info">
-                    <span class="counter"><span id="daily-count">0</span> / 30</span>
-                    <span class="goal-text">Objetivo Diario</span>
+                    <span class="counter" aria-label="Gestiones registradas hoy"><span id="daily-count">0</span><span class="counter-goal">/30</span></span>
+                    <span class="progress-remaining" id="progress-remaining">faltan 30</span>
+                    <span class="session-timer-wrap" title="Tiempo desde la última gestión"><i data-lucide="clock"></i><span id="session-timer" class="session-timer">Sin iniciar</span></span>
                 </div>
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
+                <!-- Estadísticas del día en una franja compacta -->
+                <div class="progress-stats" id="stats-strip">
+                    <span class="pstat" title="Gestiones por hora desde la primera del día">
+                        <span class="pstat-label">Ritmo</span>
+                        <span class="pstat-value" id="stat-per-hour">—</span><span class="pstat-unit">/h</span>
+                    </span>
+                    <span class="pstat" title="Días seguidos llegando al objetivo">
+                        <span class="pstat-label">Racha</span>
+                        <span class="pstat-value" id="stat-streak">0</span>
+                    </span>
+                    <span class="pstat pstat-top" title="Categoría con más gestiones hoy">
+                        <span class="pstat-label">Más frecuente</span>
+                        <span class="pstat-value" id="stat-top-category">—</span>
+                    </span>
+                </div>
                 <div class="progress-meta">
-                    <span id="session-timer" class="session-timer">⏱ Sin iniciar</span>
                     <span id="sync-status" class="sync-status hidden">
                         <span class="sync-dot"></span>
                         <span class="sync-text"></span>
@@ -93,7 +108,7 @@
 
             <!-- Form Section -->
             <section class="form-section card">
-                <h2>Registrar Nueva Gestión</h2>
+                <h2>Registrar gestión</h2>
 
                 <!-- Smart Paste: entrada principal. Click = leer portapapeles; con foco, Ctrl+V pega directo -->
                 <div class="paste-zone" id="btn-smart-paste" role="button" tabindex="0"
@@ -284,7 +299,7 @@
                                             data-target="plantilla-text-sin-contacto" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                        <button type="button" class="btn btn-secondary btn-xs btn-insert-plantilla"
                                             data-target="plantilla-text-sin-contacto" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
@@ -311,7 +326,7 @@
                                             data-target="plantilla-text-bien-gestionado" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                        <button type="button" class="btn btn-secondary btn-xs btn-insert-plantilla"
                                             data-target="plantilla-text-bien-gestionado" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
@@ -338,7 +353,7 @@
                                             data-target="plantilla-text-mal-gestionado" title="Copiar plantilla">
                                             <i data-lucide="copy"></i> Copiar
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs btn-insert-plantilla"
+                                        <button type="button" class="btn btn-secondary btn-xs btn-insert-plantilla"
                                             data-target="plantilla-text-mal-gestionado" title="Pegar en Observaciones">
                                             <i data-lucide="corner-down-left"></i> Pegar en Obs.
                                         </button>
@@ -350,18 +365,18 @@
 
                     <!-- Observaciones (Notas Personales) -->
                     <div class="form-group obs-group">
-                        <label for="observaciones">Observaciones / Notas Personales (Opcional)</label>
+                        <label for="observaciones">Observaciones <span class="field-optional">opcional</span></label>
                         <textarea id="observaciones" name="observaciones" rows="2"
                             placeholder="Notas personales del operador sobre la gestión..."></textarea>
                     </div>
 
                     <details class="tools-accordion" id="reclamo-accordion">
-                        <summary><i data-lucide="file-text"></i> Datos del Reclamo y Auditoría IA (Opcional)</summary>
+                        <summary><i data-lucide="file-text"></i> Datos del reclamo y auditoría IA</summary>
                         <div class="tools-content">
                             <!-- Datos del Reclamo / CRM -->
                             <div class="form-group reclamo-group">
                                 <div class="reclamo-header-flex">
-                                    <label for="reclamo-texto">Datos del Reclamo CRM / VIENA (Opcional)</label>
+                                    <label for="reclamo-texto">Reclamo de CRM / Viena</label>
                                     <div class="reclamo-header-actions">
                                         <button type="button" class="btn-ai-audit" id="btn-ai-audit"
                                             title="Auditar información del reclamo con IA RPA (Robotic Process Automation). Esta auditoría va a determinar, según el cumplimiento de parámetros cargados (plantillas, coherencia técnica, etc.), qué tan conforme y si corresponde la gestión.">
@@ -462,7 +477,7 @@
                                                     id="btn-ai-copy-summary" title="Copiar resumen estructurado">
                                                     <i data-lucide="copy"></i> Copiar Resumen
                                                 </button>
-                                                <button type="button" class="btn btn-primary btn-xs"
+                                                <button type="button" class="btn btn-secondary btn-xs"
                                                     id="btn-ai-apply-summary"
                                                     title="Reemplazar datos del reclamo con este resumen oficial">
                                                     <i data-lucide="arrow-up-right"></i> Aplicar en Reclamo
@@ -492,7 +507,7 @@
                     </details>
 
                     <details class="tools-accordion" id="tools-accordion">
-                        <summary><i data-lucide="wrench"></i> Herramientas de Equipos (Opcional) <span class="shortcut-hint-small">Alt+T</span>
+                        <summary><i data-lucide="wrench"></i> Herramientas de equipos <span class="shortcut-hint-small">Alt+T</span>
                         </summary>
                         <div class="tools-content">
                             <!-- MTA Calculator -->
@@ -567,37 +582,9 @@
                 </form>
             </section>
 
-            <!-- Stats Section -->
-            <section class="stats-section card" id="stats-section">
-                <div class="stats-header">
-                    <h2>Estadísticas</h2>
-                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar/Ocultar estadísticas"><i
-                            data-lucide="pie-chart"></i></button>
-                </div>
-                <div id="stats-content" class="stats-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <span class="stat-value" id="stat-per-hour">—</span>
-                            <span class="stat-label">Gest./Hora</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-value" id="stat-streak">0</span>
-                            <span class="stat-label">Racha días</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-value small-text" id="stat-top-category">—</span>
-                            <span class="stat-label">Más frecuente</span>
-                        </div>
-                    </div>
-                    <div id="category-chart" class="category-chart">
-                        <p class="empty-state stats-empty">Registrá tu primera gestión del día para ver tu ritmo y la distribución por categoría.</p>
-                    </div>
-                </div>
-            </section>
-
             <!-- History Section — Timeline Cards -->
             <section class="history-section card">
-                <h2>Historial de Hoy</h2>
+                <h2>Historial de hoy</h2>
                 <div class="history-filters">
                     <div class="history-search-wrapper">
                         <i data-lucide="search" class="history-search-icon"></i>
@@ -632,11 +619,25 @@
                     <!-- Cards injected by JavaScript -->
                 </div>
             </section>
+
+            <!-- Distribución por categoría (plegable, debajo del historial) -->
+            <section class="stats-section card" id="stats-section">
+                <div class="stats-header">
+                    <h2>Por categoría</h2>
+                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar u ocultar la distribución por categoría"
+                        aria-label="Mostrar u ocultar la distribución por categoría"><i data-lucide="pie-chart"></i></button>
+                </div>
+                <div id="stats-content" class="stats-content">
+                    <div id="category-chart" class="category-chart">
+                        <p class="empty-state stats-empty">Registrá tu primera gestión del día para ver la distribución por categoría.</p>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- ===== FOOTER ===== -->
         <footer class="app-footer">
-            <p>&copy; 2026 Gestiones BOT. Developed by <strong>n4hue</strong>.</p>
+            <p>&copy; 2026 Gestiones BOT · Desarrollado por <strong>n4hue</strong></p>
         </footer>
     </div>
 
@@ -644,9 +645,13 @@
     <div id="toast-container"></div>
 
     <!-- ===== SETTINGS MODAL ===== -->
-    <div id="settings-modal" class="modal hidden">
+    <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <div class="modal-content">
-            <h3><i data-lucide="settings"></i> Configuración</h3>
+            <div class="modal-header">
+                <h3 id="settings-title"><i data-lucide="settings"></i> Configuración</h3>
+                <button type="button" class="btn btn-icon modal-close" id="btn-close-settings-x" title="Cerrar (Esc)"
+                    aria-label="Cerrar configuración"><i data-lucide="x"></i></button>
+            </div>
 
             <div class="settings-section">
                 <label for="form-url-input">URL del Google Form:</label>
@@ -676,8 +681,8 @@
 
             <div class="settings-disclaimer">
                 <i data-lucide="info"></i>
-                <p><strong>Aviso Importante:</strong> Las respuestas y auditorías generadas por la IA son <strong>a modo
-                        orientativo</strong>. No debes realizar exactamente lo que la IA indica sin antes verificar la
+                <p><strong>Aviso importante:</strong> las respuestas y auditorías generadas por la IA son <strong>a modo
+                        orientativo</strong>. No hagas exactamente lo que indica la IA sin verificar antes la
                     coherencia técnica.</p>
             </div>
 
@@ -775,11 +780,11 @@
     </div>
 
     <!-- ===== SHORTCUTS MODAL ===== -->
-    <div id="shortcuts-modal" class="modal hidden">
+    <div id="shortcuts-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
         <div class="modal-content shortcuts-modal-content">
             <div class="shortcuts-header">
-                <h3><i data-lucide="keyboard"></i> Atajos de Teclado</h3>
-                <button type="button" class="btn btn-icon btn-close-shortcuts" id="btn-close-shortcuts">✕</button>
+                <h3 id="shortcuts-title"><i data-lucide="keyboard"></i> Atajos de teclado</h3>
+                <button type="button" class="btn btn-icon btn-close-shortcuts" id="btn-close-shortcuts" title="Cerrar (Esc)" aria-label="Cerrar atajos"><i data-lucide="x"></i></button>
             </div>
             <div class="shortcuts-grid">
                 <div class="shortcut-item">
@@ -831,11 +836,11 @@
     </div>
 
     <!-- ===== NUEVA JORNADA CHECKLIST MODAL ===== -->
-    <div id="jornada-modal" class="modal hidden">
+    <div id="jornada-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="jornada-title">
         <div class="modal-content jornada-modal-content">
             <div class="jornada-header">
                 <span class="jornada-icon"><i data-lucide="rocket"></i></span>
-                <h3>Checklist de Inicio de Jornada</h3>
+                <h3 id="jornada-title">Checklist de inicio de jornada</h3>
                 <p class="jornada-subtitle">Completá todos los pasos antes de iniciar</p>
             </div>
 
