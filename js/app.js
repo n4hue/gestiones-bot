@@ -30,6 +30,7 @@ import {
     GFORM_RA_MAPPING,
     GFORM_URL_KEY,
     GOOGLE_FORM_URL,
+    MOTION_ALWAYS_KEY,
     OPERATOR_NAME_KEY,
     OPERATOR_SCHEDULE,
     PASS_CRM_KEY,
@@ -86,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const breakAlarmToggleEl = document.getElementById('break-alarm-toggle');
     const celebrationSoundToggleEl = document.getElementById('celebration-sound-toggle');
     const personalityToggleEl = document.getElementById('personality-toggle');
+    const motionAlwaysToggleEl = document.getElementById('motion-always-toggle');
     const inputGeminiApiKey = document.getElementById('gemini-api-key-input');
     const selectGeminiModel = document.getElementById('gemini-model-select');
     const btnTestGemini = document.getElementById('btn-test-gemini');
@@ -197,6 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
     let celebrationSoundEnabled = localStorage.getItem(CELEBRATION_SOUND_KEY) !== 'false';
     let personalityEnabled = localStorage.getItem(PERSONALITY_KEY) !== 'false';
+    // Animaciones: por defecto siguen a Windows ("reducir movimiento"); el switch las fuerza siempre
+    let motionAlways = localStorage.getItem(MOTION_ALWAYS_KEY) === 'true';
+    document.documentElement.toggleAttribute('data-motion-always', motionAlways);
+    // Gestión recién registrada o editada: se resalta en el próximo render del historial
+    let highlightCardId = null;
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
@@ -247,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
     if (celebrationSoundToggleEl) celebrationSoundToggleEl.checked = celebrationSoundEnabled;
     if (personalityToggleEl) personalityToggleEl.checked = personalityEnabled;
+    if (motionAlwaysToggleEl) motionAlwaysToggleEl.checked = motionAlways;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
@@ -515,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gestiones[index].equipos = equipos;
                 }
             }
+            highlightCardId = editingId;
             editingId = null;
             btnSubmit.innerHTML = 'Registrar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
             btnCancelEdit.classList.add('hidden');
@@ -543,6 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gestion.equipos = equipos;
                 }
                 gestiones.unshift(gestion);
+                highlightCardId = gestion.id;
 
                 // Feature 8: Sound
                 playSuccessSound();
@@ -830,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const reiteradoTitle = `Reclamo Reiterado${g.ra_id ? ' (RA: ' + g.ra_id + ')' : ''}`;
 
             const card = document.createElement('div');
-            card.className = 'gestion-card';
+            card.className = 'gestion-card' + (g.id === highlightCardId ? ' is-new' : '');
             card.dataset.id = g.id;
             card.dataset.cat = category;
             card.innerHTML = `
@@ -858,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (firstPage) historyPageSize = shown;
         renderHistoryPager(shown, filtered.length, historyPageSize || HISTORY_PAGE_MIN);
+        highlightCardId = null; // el resaltado se muestra una sola vez
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons({ root: historyBody });
@@ -1248,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function prefersReducedMotion() {
+        if (motionAlways) return false;
         return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
@@ -1517,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dismiss = () => {
             if (toast.classList.contains('removing')) return;
             toast.classList.add('removing');
-            setTimeout(() => toast.remove(), 200);
+            setTimeout(() => toast.remove(), 220);
         };
 
         if (options.action) {
@@ -1678,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
         if (cardEl) {
             cardEl.classList.add('removing');
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 220));
         }
         gestiones = gestiones.filter(g => g.id !== id);
         saveData();
@@ -2016,6 +2028,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
             if (celebrationSoundToggleEl) celebrationSoundToggleEl.checked = celebrationSoundEnabled;
             if (personalityToggleEl) personalityToggleEl.checked = personalityEnabled;
+            if (motionAlwaysToggleEl) motionAlwaysToggleEl.checked = motionAlways;
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
@@ -2075,6 +2088,9 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(CELEBRATION_SOUND_KEY, celebrationSoundEnabled.toString());
             personalityEnabled = personalityToggleEl ? personalityToggleEl.checked : true;
             localStorage.setItem(PERSONALITY_KEY, personalityEnabled.toString());
+            motionAlways = motionAlwaysToggleEl ? motionAlwaysToggleEl.checked : false;
+            localStorage.setItem(MOTION_ALWAYS_KEY, motionAlways.toString());
+            document.documentElement.toggleAttribute('data-motion-always', motionAlways);
 
             // Save operator settings
             operatorName = inputOperatorName ? inputOperatorName.value.trim() : '';

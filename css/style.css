@@ -65,12 +65,12 @@
     --fs-lg: 1rem;      /* 16px — inputs, títulos chicos */
     --transition: all 0.2s ease;
 
-    /* Movimiento: medido, 150–250 ms, sin rebote */
+    /* Movimiento: presente pero rápido, sin rebote */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
     --dur-fast: 150ms;
-    --dur: 200ms;
-    --dur-slow: 250ms;
+    --dur: 220ms;
+    --dur-slow: 300ms;
     --transition-smooth: all var(--dur) var(--ease-out);
 
     /* Category colors */
@@ -392,6 +392,7 @@ h2 {
 #daily-count {
     color: var(--primary-text);
     display: inline-block;
+    transform-origin: left bottom;
     transition: transform var(--dur) var(--ease-out);
 }
 
@@ -404,8 +405,8 @@ h2 {
         transform: scale(1);
     }
 
-    40% {
-        transform: scale(1.12);
+    35% {
+        transform: scale(1.28);
     }
 
     100% {
@@ -430,7 +431,7 @@ h2 {
     width: 0%;
     background: var(--primary);
     border-radius: 999px;
-    transition: width 400ms var(--ease-out), background-color var(--dur) ease;
+    transition: width 600ms var(--ease-out), background-color var(--dur) ease;
     position: relative;
 }
 
@@ -823,7 +824,7 @@ option {
 .chart-bar-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 400ms var(--ease-out);
+    transition: width 600ms var(--ease-out);
     min-width: 2px;
 }
 
@@ -922,6 +923,10 @@ option {
 .gestion-card:hover {
     background: var(--bg-input-hover);
     border-color: var(--border-hover);
+}
+
+.gestion-card.is-new {
+    animation: cardNewIn var(--dur-slow) var(--ease-out), cardHighlight 1.8s ease-out;
 }
 
 .gestion-card.removing {
@@ -1092,6 +1097,30 @@ option {
     border-radius: 50%;
     background: var(--cat-color, var(--text-muted));
     flex-shrink: 0;
+}
+
+@keyframes cardNewIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes cardHighlight {
+    from {
+        background-color: color-mix(in srgb, var(--primary) 16%, var(--bg-input));
+        border-color: var(--primary);
+    }
+
+    to {
+        background-color: var(--bg-input);
+        border-color: var(--border);
+    }
 }
 
 @keyframes cardSlideIn {
@@ -1394,7 +1423,7 @@ tbody tr:hover {
     width: 92%;
     box-shadow: var(--shadow-lg);
     text-align: center;
-    animation: scaleIn var(--dur) var(--ease-out);
+    animation: scaleIn var(--dur-slow) var(--ease-out);
     transition: background-color var(--dur) ease;
     max-height: 90vh;
     overflow-y: auto;
@@ -1633,7 +1662,7 @@ tbody tr:hover {
     width: 0%;
     background: var(--primary);
     border-radius: 999px;
-    transition: width 400ms var(--ease-out);
+    transition: width 600ms var(--ease-out);
 }
 
 .jornada-progress-text {
@@ -1864,24 +1893,24 @@ tbody tr:hover {
 @keyframes scaleIn {
     from {
         opacity: 0;
-        transform: scale(0.97);
+        transform: translateY(8px) scale(0.94);
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: translateY(0) scale(1);
     }
 }
 
 @keyframes toastIn {
     from {
         opacity: 0;
-        transform: translateX(16px);
+        transform: translateX(32px) scale(0.96);
     }
 
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
     }
 }
 
@@ -1893,7 +1922,7 @@ tbody tr:hover {
 
     to {
         opacity: 0;
-        transform: translateX(16px);
+        transform: translateX(32px);
     }
 }
 
@@ -2288,7 +2317,7 @@ tbody tr:hover {
 
 /* Goal-reached glow on progress panel */
 .progress-panel.goal-reached {
-    animation: goalFlash 1.2s ease-in-out 2;
+    animation: goalFlash 1.2s ease-in-out 3;
     border: 1px solid rgba(16, 185, 129, 0.5);
 }
 
@@ -3580,7 +3609,7 @@ html.compact-mode .plantilla-code {
 .ai-progress-bar-fill {
     height: 100%;
     border-radius: 6px;
-    transition: width 400ms var(--ease-out), background var(--dur) ease;
+    transition: width 600ms var(--ease-out), background var(--dur) ease;
 }
 
 .ai-progress-bar-fill.fill-success {
@@ -4576,9 +4605,9 @@ html.compact-mode .ai-summary-text {
    Reducir movimiento: respeta la preferencia del sistema
    ========================================== */
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    :root:not([data-motion-always]) *,
+    :root:not([data-motion-always]) *::before,
+    :root:not([data-motion-always]) *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;

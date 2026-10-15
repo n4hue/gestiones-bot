@@ -324,25 +324,34 @@ el texto centrado.
 
 ## Motion
 
-Movimiento medido: acompaña un cambio de estado y nunca hace esperar.
+Movimiento presente pero rápido: acompaña un cambio de estado, se nota y
+nunca hace esperar.
 
-- **Tokens:** `--dur-fast` 150 ms, `--dur` 200 ms, `--dur-slow` 250 ms;
+- **Tokens:** `--dur-fast` 150 ms, `--dur` 220 ms, `--dur-slow` 300 ms;
   `--ease-out` (`cubic-bezier(0.16, 1, 0.3, 1)`) para lo que entra y
-  `--ease-in` para lo que sale. Las barras de progreso usan 400 ms porque
+  `--ease-in` para lo que sale. Las barras de progreso usan 600 ms porque
   recorren una distancia larga.
-- **Qué se mueve:** el contador salta al registrar (escala 1,12), las
-  tarjetas nuevas del historial entran desde arriba (6 px), los toasts entran
-  desde la derecha (16 px), los modales aparecen con escala 0,97 y los
-  desplegables se abren con 120 ms.
+- **Qué se mueve:**
+  - el contador salta al registrar (escala 1,28);
+  - la gestión recién registrada o editada entra desde arriba (16 px) y
+    queda resaltada en naranja tenue durante 1,8 s; el resto del historial
+    entra con 6 px;
+  - los toasts entran desde la derecha (32 px);
+  - los modales suben 8 px con escala 0,94;
+  - los desplegables se abren en 120 ms;
+  - al llegar a la meta, el panel de progreso destella en verde tres veces.
 - **Sin rebote:** ninguna curva pasa del 100 % ni hay keyframes que vuelvan
   hacia atrás.
 - **Bucles:** solo para estados que esperan algo (sincronizando, Smart Paste
   esperando el pegado, incoherencia técnica, alarma de break). Un estado ya
   resuelto (meta cumplida) no late.
-- **Reducir movimiento:** con `prefers-reduced-motion: reduce` las
-  animaciones y transiciones se anulan (las demoras se respetan para que el
-  banner de meta siga durando lo mismo), el scroll deja de ser suave y no hay
-  confeti.
+- **Reducir movimiento:** con `prefers-reduced-motion: reduce` (en Windows,
+  "Efectos de animación" apagado) las animaciones y transiciones se anulan
+  (las demoras se respetan para que el banner de meta siga durando lo mismo),
+  el scroll deja de ser suave y no hay confeti.
+- **Animaciones siempre activadas:** un switch en Configuración (apagado por
+  defecto) pone `data-motion-always` en `<html>` e ignora la preferencia del
+  sistema, para PCs donde los efectos vienen apagados por rendimiento.
 
 ### Personalidad
 Los mensajes de ritmo, el banner con emojis, el confeti y el sonido del día
@@ -366,7 +375,8 @@ activados por defecto:
   1366 × 768 y 1920 × 1080, en tema oscuro y claro.
 - **Do** mantener contraste WCAG AA y texto de 12 px como mínimo; no bajar la
   opacidad de un texto para "atenuarlo" (usar Tinta Suave).
-- **Do** respetar `prefers-reduced-motion` en toda animación.
+- **Do** respetar `prefers-reduced-motion` en toda animación, salvo que el
+  operador active "Animaciones siempre activadas".
 
 ### Don't:
 - **Don't** usar texto con degradado, vidrio (`backdrop-filter`) ni halos de
@@ -379,4 +389,4 @@ activados por defecto:
 - **Don't** cambiar campos, atajos, orden ni flujos: la memoria muscular de
   los operadores es intocable.
 - **Don't** usar animaciones con rebote; el movimiento acompaña cambios de
-  estado en 150–250 ms.
+  estado en 150–300 ms.
