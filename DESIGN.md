@@ -322,6 +322,38 @@ Encabezado con título (ícono naranja, texto Tinta) y botón ✕ a la derecha;
 fondo Noche Flotante, `--shadow-lg`. Los diálogos de confirmación mantienen
 el texto centrado.
 
+## Motion
+
+Movimiento medido: acompaña un cambio de estado y nunca hace esperar.
+
+- **Tokens:** `--dur-fast` 150 ms, `--dur` 200 ms, `--dur-slow` 250 ms;
+  `--ease-out` (`cubic-bezier(0.16, 1, 0.3, 1)`) para lo que entra y
+  `--ease-in` para lo que sale. Las barras de progreso usan 400 ms porque
+  recorren una distancia larga.
+- **Qué se mueve:** el contador salta al registrar (escala 1,12), las
+  tarjetas nuevas del historial entran desde arriba (6 px), los toasts entran
+  desde la derecha (16 px), los modales aparecen con escala 0,97 y los
+  desplegables se abren con 120 ms.
+- **Sin rebote:** ninguna curva pasa del 100 % ni hay keyframes que vuelvan
+  hacia atrás.
+- **Bucles:** solo para estados que esperan algo (sincronizando, Smart Paste
+  esperando el pegado, incoherencia técnica, alarma de break). Un estado ya
+  resuelto (meta cumplida) no late.
+- **Reducir movimiento:** con `prefers-reduced-motion: reduce` las
+  animaciones y transiciones se anulan (las demoras se respetan para que el
+  banner de meta siga durando lo mismo), el scroll deja de ser suave y no hay
+  confeti.
+
+### Personalidad
+Los mensajes de ritmo, el banner con emojis, el confeti y el sonido del día
+son parte de la identidad del equipo. En Configuración hay dos switches,
+activados por defecto:
+- **Sonido de celebración al llegar a la meta**, independiente del sonido al
+  registrar.
+- **Mensajes con personalidad y confeti:** apagado, el ritmo se describe en
+  tono neutro ("Ritmo justo para llegar a 30.") y la meta muestra un banner
+  sin emojis ni confeti.
+
 ## Do's and Don'ts
 
 ### Do:
