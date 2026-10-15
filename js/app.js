@@ -1,6 +1,7 @@
 import {
     ARCHIVE_PREFIX,
     BREAK_ALARM_KEY,
+    CELEBRATION_SOUND_KEY,
     COMPACT_KEY,
     DAILY_GOAL,
     DATE_KEY,
@@ -32,6 +33,7 @@ import {
     OPERATOR_NAME_KEY,
     OPERATOR_SCHEDULE,
     PASS_CRM_KEY,
+    PERSONALITY_KEY,
     SHEETS_URL_KEY,
     SOUND_KEY,
     STATS_COLLAPSED_KEY,
@@ -82,6 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputSheetsUrl = document.getElementById('sheets-url-input');
     const soundToggleEl = document.getElementById('sound-toggle');
     const breakAlarmToggleEl = document.getElementById('break-alarm-toggle');
+    const celebrationSoundToggleEl = document.getElementById('celebration-sound-toggle');
+    const personalityToggleEl = document.getElementById('personality-toggle');
     const inputGeminiApiKey = document.getElementById('gemini-api-key-input');
     const selectGeminiModel = document.getElementById('gemini-model-select');
     const btnTestGemini = document.getElementById('btn-test-gemini');
@@ -191,6 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let timerInterval = null;
     let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
     let breakAlarmEnabled = localStorage.getItem(BREAK_ALARM_KEY) !== 'false';
+    let celebrationSoundEnabled = localStorage.getItem(CELEBRATION_SOUND_KEY) !== 'false';
+    let personalityEnabled = localStorage.getItem(PERSONALITY_KEY) !== 'false';
     let operatorName = localStorage.getItem(OPERATOR_NAME_KEY) || '';
     let geminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
     let geminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE) || 'auto';
@@ -239,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputSheetsUrl) inputSheetsUrl.value = sheetsUrl;
     if (soundToggleEl) soundToggleEl.checked = soundEnabled;
     if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
+    if (celebrationSoundToggleEl) celebrationSoundToggleEl.checked = celebrationSoundEnabled;
+    if (personalityToggleEl) personalityToggleEl.checked = personalityEnabled;
     if (inputOperatorName) inputOperatorName.value = operatorName;
     if (inputPassCrm) inputPassCrm.value = passCrm;
     if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
@@ -461,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset conditional fields (Gestiones Especiales)
             if (camposEspeciales) {
                 camposEspeciales.classList.remove('visible');
-                setTimeout(() => camposEspeciales.classList.add('hidden'), 350);
+                setTimeout(() => camposEspeciales.classList.add('hidden'), 250);
                 if (selectContactoEsp) selectContactoEsp.value = '';
                 if (selectEstadoEsp) selectEstadoEsp.value = '';
             }
@@ -469,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset SN field
             if (campoSn) {
                 campoSn.classList.remove('visible');
-                setTimeout(() => campoSn.classList.add('hidden'), 350);
+                setTimeout(() => campoSn.classList.add('hidden'), 250);
                 if (inputSn) inputSn.value = '';
             }
 
@@ -904,7 +912,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (action === 'history-less') {
             historyVisibleCount = null;
             renderHistory();
-            document.querySelector('.history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelector('.history-section').scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
         }
     }
 
@@ -1157,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count >= DAILY_GOAL) {
             paceIndicator.classList.remove('hidden');
             paceIndicator.className = 'pace-indicator pace-goal';
-            paceIndicator.innerHTML = `<span class="pace-dot"></span>Felicidades, llegaste al objetivo diario de gestiones 😎`;
+            paceIndicator.innerHTML = `<span class="pace-dot"></span>${personalityEnabled ? 'Felicidades, llegaste al objetivo diario de gestiones 😎' : 'Objetivo diario cumplido.'}`;
             return;
         }
 
@@ -1177,13 +1185,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let paceClass, msg;
         if (rate >= 5) {
             paceClass = 'pace-good';
-            msg = `Vas bien 🔥`;
+            msg = personalityEnabled ? `Vas bien 🔥` : `Ritmo por encima del necesario para llegar a ${DAILY_GOAL}.`;
         } else if (rate >= 4) {
             paceClass = 'pace-ok';
-            msg = `Vas justo para las 30 gestiones, pero se puede mejorar.`;
+            msg = personalityEnabled ? `Vas justo para las 30 gestiones, pero se puede mejorar.` : `Ritmo justo para llegar a ${DAILY_GOAL}.`;
         } else {
             paceClass = 'pace-low';
-            msg = `Hay que agarrar un poco más la pala.`;
+            msg = personalityEnabled ? `Hay que agarrar un poco más la pala.` : `Ritmo por debajo del necesario para llegar a ${DAILY_GOAL}.`;
         }
 
         paceIndicator.className = `pace-indicator ${paceClass}`;
@@ -1215,7 +1223,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (celebrationTriggered) return;
         celebrationTriggered = true;
 
-        // 1. Play day-of-week celebration sound 🎶
+        // 1. Play day-of-week celebration sound 🎶 (si está activado en Configuración)
+        if (celebrationSoundEnabled) playCelebrationSound();
+
+        // 2. Add glow to progress panel
+        const progressCard = document.querySelector('.progress-panel');
+        if (progressCard) {
+            progressCard.classList.add('goal-reached');
+            setTimeout(() => progressCard.classList.remove('goal-reached'), 6500);
+        }
+
+        // 3. Show celebration banner
+        const banner = document.createElement('div');
+        banner.className = 'celebration-banner';
+        banner.setAttribute('role', 'status');
+        banner.innerHTML = personalityEnabled
+            ? '<span>🎉 ¡Objetivo diario cumplido! Ahora a mimirr 😴</span>'
+            : '<span>Objetivo diario cumplido</span>';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 5500);
+
+        // 4. Launch confetti (no con mensajes neutros ni con "reducir movimiento")
+        if (personalityEnabled && !prefersReducedMotion()) launchConfetti();
+    }
+
+    function prefersReducedMotion() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function playCelebrationSound() {
         const dayOfWeek = new Date().getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
         const soundFile = CELEBRATION_SOUNDS[dayOfWeek] || 'assets/level-up-sound.mp3';
         const startTime = CELEBRATION_START_TIMES[dayOfWeek] || (soundFile.includes('en-la-radio-hay-tambien-un-toro-pollito-pio-letra') ? 26 : 0);
@@ -1239,23 +1275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             playSuccessSound();
         }
-
-        // 2. Add glow to progress panel
-        const progressCard = document.querySelector('.progress-panel');
-        if (progressCard) {
-            progressCard.classList.add('goal-reached');
-            setTimeout(() => progressCard.classList.remove('goal-reached'), 6500);
-        }
-
-        // 3. Show celebration banner
-        const banner = document.createElement('div');
-        banner.className = 'celebration-banner';
-        banner.innerHTML = '<span>🎉 ¡Objetivo diario cumplido! Ahora a mimirr 😴</span>';
-        document.body.appendChild(banner);
-        setTimeout(() => banner.remove(), 5500);
-
-        // 4. Launch confetti
-        launchConfetti();
     }
 
     function launchConfetti() {
@@ -1498,7 +1517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dismiss = () => {
             if (toast.classList.contains('removing')) return;
             toast.classList.add('removing');
-            setTimeout(() => toast.remove(), 300);
+            setTimeout(() => toast.remove(), 200);
         };
 
         if (options.action) {
@@ -1610,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSubmit.innerHTML = 'Actualizar Gestión <span class="shortcut-hint">Ctrl+Enter</span>';
             btnCancelEdit.classList.remove('hidden');
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
             inputCliente.focus();
         }
     }
@@ -1659,7 +1678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardEl = historyBody.querySelector(`.gestion-card[data-id="${id}"]`);
         if (cardEl) {
             cardEl.classList.add('removing');
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
         gestiones = gestiones.filter(g => g.id !== id);
         saveData();
@@ -1940,14 +1959,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset SN field
         if (campoSn) {
             campoSn.classList.remove('visible');
-            setTimeout(() => campoSn.classList.add('hidden'), 350);
+            setTimeout(() => campoSn.classList.add('hidden'), 250);
             if (inputSn) inputSn.value = '';
         }
 
         // Reset Gestiones Especiales conditional fields
         if (camposEspeciales) {
             camposEspeciales.classList.remove('visible');
-            setTimeout(() => camposEspeciales.classList.add('hidden'), 350);
+            setTimeout(() => camposEspeciales.classList.add('hidden'), 250);
             if (selectContactoEsp) selectContactoEsp.value = '';
             if (selectEstadoEsp) selectEstadoEsp.value = '';
         }
@@ -1994,6 +2013,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputFormUrl) inputFormUrl.value = googleFormUrl;
             if (inputSheetsUrl) inputSheetsUrl.value = sheetsUrl;
             if (soundToggleEl) soundToggleEl.checked = soundEnabled;
+            if (breakAlarmToggleEl) breakAlarmToggleEl.checked = breakAlarmEnabled;
+            if (celebrationSoundToggleEl) celebrationSoundToggleEl.checked = celebrationSoundEnabled;
+            if (personalityToggleEl) personalityToggleEl.checked = personalityEnabled;
             if (inputOperatorName) inputOperatorName.value = operatorName;
             if (inputPassCrm) inputPassCrm.value = passCrm;
             if (inputGeminiApiKey) inputGeminiApiKey.value = geminiApiKey;
@@ -2047,6 +2069,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Save break alarm preference
             breakAlarmEnabled = breakAlarmToggleEl ? breakAlarmToggleEl.checked : true;
             localStorage.setItem(BREAK_ALARM_KEY, breakAlarmEnabled.toString());
+
+            // Save celebration sound and personality preferences
+            celebrationSoundEnabled = celebrationSoundToggleEl ? celebrationSoundToggleEl.checked : true;
+            localStorage.setItem(CELEBRATION_SOUND_KEY, celebrationSoundEnabled.toString());
+            personalityEnabled = personalityToggleEl ? personalityToggleEl.checked : true;
+            localStorage.setItem(PERSONALITY_KEY, personalityEnabled.toString());
 
             // Save operator settings
             operatorName = inputOperatorName ? inputOperatorName.value.trim() : '';
@@ -2318,7 +2346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!campoSn.classList.contains('visible')) {
                             campoSn.classList.add('hidden');
                         }
-                    }, 350);
+                    }, 250);
                     if (inputSn) inputSn.value = '';
                 }
             }
@@ -2396,7 +2424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!camposEspeciales.classList.contains('visible')) {
                         camposEspeciales.classList.add('hidden');
                     }
-                }, 350);
+                }, 250);
                 // Reset conditional fields
                 if (selectContactoEsp) selectContactoEsp.value = '';
                 if (selectEstadoEsp) selectEstadoEsp.value = '';
