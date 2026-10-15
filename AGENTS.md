@@ -20,7 +20,17 @@ que cambiar una regla, se cambia acá.
 | Acción | Cuándo |
 |---|---|
 | `git add` + `git commit` | **Siempre**, automáticamente, al terminar y verificar cada pedido. |
-| `git push` | **Solo si el usuario lo pide expresamente** ("pusheá", "subí la rama"). |
+| `git push` + abrir PR | **Automáticamente**, sin esperar a que el usuario lo pida, siguiendo las buenas prácticas de abajo. |
+
+Buenas prácticas de ramas y PRs:
+
+- Una rama por cambio o fase, creada desde `main` actualizado; nunca trabajar
+  directo sobre `main` ni reutilizar la rama de un PR ya mergeado.
+- Un PR por cambio o fase, hacia `main`, con descripción de qué cambia y qué
+  probar en el preview de Vercel. Si un PR depende de otro todavía abierto,
+  aclararlo en la descripción y el orden de merge.
+- Pushear solo después de verificar (regla 4). Nunca reescribir historial ya
+  pusheado ni hacer `push --force` sin que el usuario lo pida.
 
 Formato de commits: [Conventional Commits](https://www.conventionalcommits.org/),
 en español, descriptivos y sin alcance entre paréntesis:
@@ -58,6 +68,8 @@ agente en el mensaje del commit.
 | `js/modules/utils.js` | Utilidades puras (`escapeHtml`, MACs). |
 | `css/style.css` | Estilos y tokens de diseño (`--fs-*`, colores, temas). |
 | `sw.js` | Service worker (caché offline). |
+| `PRODUCT.md` | Quién usa la app, para qué y con qué restricciones (contexto de producto para agentes de diseño). |
+| `DESIGN.md` | Sistema visual: tokens, componentes y reglas de diseño. Actualizarlo cuando cambie el visual. |
 
 ### Checklists al modificar
 
