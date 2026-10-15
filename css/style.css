@@ -64,7 +64,14 @@
     --fs-md: 0.875rem;  /* 14px — texto base de UI */
     --fs-lg: 1rem;      /* 16px — inputs, títulos chicos */
     --transition: all 0.2s ease;
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Movimiento: presente pero rápido, sin rebote */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+    --dur-fast: 150ms;
+    --dur: 220ms;
+    --dur-slow: 300ms;
+    --transition-smooth: all var(--dur) var(--ease-out);
 
     /* Category colors */
     --cat-internet: #3B82F6;
@@ -175,7 +182,7 @@ body {
     display: flex;
     justify-content: center;
     padding: 0.5rem;
-    transition: background-color 0.4s ease, color 0.4s ease;
+    transition: background-color var(--dur-slow) ease, color var(--dur-slow) ease;
 
 }
 
@@ -385,11 +392,12 @@ h2 {
 #daily-count {
     color: var(--primary-text);
     display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: left bottom;
+    transition: transform var(--dur) var(--ease-out);
 }
 
 #daily-count.pulse-pop {
-    animation: counterPulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: counterPulse var(--dur-slow) var(--ease-out);
 }
 
 @keyframes counterPulse {
@@ -397,12 +405,8 @@ h2 {
         transform: scale(1);
     }
 
-    30% {
-        transform: scale(1.35);
-    }
-
-    60% {
-        transform: scale(0.95);
+    35% {
+        transform: scale(1.28);
     }
 
     100% {
@@ -427,7 +431,7 @@ h2 {
     width: 0%;
     background: var(--primary);
     border-radius: 999px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+    transition: width 600ms var(--ease-out), background-color var(--dur) ease;
     position: relative;
 }
 
@@ -441,7 +445,7 @@ h2 {
     border-radius: 50%;
     background: #FF6B35;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity var(--dur);
 }
 
 .progress-bar[style*="width"]:not([style*="width: 0"]):not([style*="width:0"])::after {
@@ -488,7 +492,7 @@ h2 {
     height: 6px;
     border-radius: 50%;
     background: var(--text-muted);
-    transition: background 0.3s ease;
+    transition: background var(--dur) ease;
 }
 
 .sync-status.sending .sync-dot {
@@ -613,6 +617,14 @@ option {
     margin-bottom: 0.5rem;
 }
 
+.checkbox-group:has(.settings-hint) {
+    align-items: flex-start;
+}
+
+.checkbox-group:has(.settings-hint) input[type="checkbox"] {
+    margin-top: 0.1rem;
+}
+
 .checkbox-group label {
     margin-bottom: 0;
     cursor: pointer;
@@ -623,6 +635,7 @@ option {
 }
 
 .checkbox-group input[type="checkbox"] {
+    flex-shrink: 0;
     width: 1rem;
     height: 1rem;
     cursor: pointer;
@@ -776,7 +789,7 @@ option {
 
 .stats-content {
     overflow: hidden;
-    transition: max-height 0.4s ease, opacity 0.3s ease;
+    transition: max-height var(--dur-slow) var(--ease-out), opacity var(--dur) ease;
 }
 
 .stats-content.collapsed {
@@ -820,7 +833,7 @@ option {
 .chart-bar-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 600ms var(--ease-out);
     min-width: 2px;
 }
 
@@ -911,7 +924,7 @@ option {
     border-radius: var(--radius-sm);
     padding: 0.5rem 0.6rem 0.5rem 0.7rem;
     transition: background-color 0.15s ease, border-color 0.15s ease;
-    animation: cardSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+    animation: cardSlideIn var(--dur) var(--ease-out) both;
     position: relative;
     overflow: hidden;
 }
@@ -921,8 +934,12 @@ option {
     border-color: var(--border-hover);
 }
 
+.gestion-card.is-new {
+    animation: cardNewIn var(--dur-slow) var(--ease-out), cardHighlight 1.8s ease-out;
+}
+
 .gestion-card.removing {
-    animation: cardSlideOut 0.3s ease forwards;
+    animation: cardSlideOut var(--dur) var(--ease-in) forwards;
 }
 
 /* Card main row */
@@ -1091,10 +1108,34 @@ option {
     flex-shrink: 0;
 }
 
+@keyframes cardNewIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes cardHighlight {
+    from {
+        background-color: color-mix(in srgb, var(--primary) 16%, var(--bg-input));
+        border-color: var(--primary);
+    }
+
+    to {
+        background-color: var(--bg-input);
+        border-color: var(--border);
+    }
+}
+
 @keyframes cardSlideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-6px);
     }
 
     to {
@@ -1106,7 +1147,7 @@ option {
 @keyframes cardSlideOut {
     to {
         opacity: 0;
-        transform: translateX(-100%);
+        transform: translateX(-24px);
         max-height: 0;
         padding: 0;
         margin: 0;
@@ -1148,7 +1189,7 @@ tr:last-child td {
 
 tbody tr {
     transition: background-color 0.15s;
-    animation: cardSlideIn 0.3s ease-out;
+    animation: cardSlideIn var(--dur) var(--ease-out);
 }
 
 tbody tr:hover {
@@ -1299,12 +1340,12 @@ tbody tr:hover {
     font-size: var(--fs-sm);
     color: var(--text-main);
     pointer-events: auto;
-    animation: toastIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+    animation: toastIn var(--dur-slow) var(--ease-out) forwards;
     max-width: 320px;
 }
 
 .toast.removing {
-    animation: toastOut 0.3s ease forwards;
+    animation: toastOut var(--dur) var(--ease-in) forwards;
 }
 
 .toast-icon {
@@ -1379,7 +1420,7 @@ tbody tr:hover {
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--dur) ease-out;
 }
 
 .modal-content {
@@ -1391,8 +1432,8 @@ tbody tr:hover {
     width: 92%;
     box-shadow: var(--shadow-lg);
     text-align: center;
-    animation: scaleIn 0.25s cubic-bezier(0.21, 1.02, 0.73, 1);
-    transition: background-color 0.3s ease;
+    animation: scaleIn var(--dur-slow) var(--ease-out);
+    transition: background-color var(--dur) ease;
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -1451,22 +1492,18 @@ tbody tr:hover {
     font-size: 2rem;
     display: block;
     margin-bottom: 0.3rem;
-    animation: rocketBounce 1s ease-in-out;
+    animation: iconIn var(--dur-slow) var(--ease-out);
 }
 
-@keyframes rocketBounce {
-    0% {
-        transform: scale(0.5) translateY(20px);
+@keyframes iconIn {
+    from {
+        transform: scale(0.85);
         opacity: 0;
     }
 
-    60% {
-        transform: scale(1.15) translateY(-5px);
+    to {
+        transform: scale(1);
         opacity: 1;
-    }
-
-    100% {
-        transform: scale(1) translateY(0);
     }
 }
 
@@ -1634,7 +1671,7 @@ tbody tr:hover {
     width: 0%;
     background: var(--primary);
     border-radius: 999px;
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 600ms var(--ease-out);
 }
 
 .jornada-progress-text {
@@ -1721,7 +1758,7 @@ tbody tr:hover {
     margin-left: auto;
     font-size: var(--fs-xs);
     color: var(--text-muted);
-    transition: transform 0.3s ease;
+    transition: transform var(--dur) var(--ease-out);
 }
 
 .tools-accordion[open] summary::after {
@@ -1738,7 +1775,29 @@ tbody tr:hover {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    animation: fadeIn 0.2s ease;
+    animation: accordionIn var(--dur-slow) var(--ease-out);
+}
+
+@keyframes accordionIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Altura animada al abrir y cerrar; donde no hay soporte, abre sin animar */
+:root {
+    interpolate-size: allow-keywords;
+}
+
+details::details-content {
+    block-size: 0;
+    overflow: clip;
+    overflow-clip-margin: 4px; /* no recortar anillos de foco */
+    transition: block-size var(--dur-slow) var(--ease-out),
+        content-visibility var(--dur-slow) allow-discrete;
+}
+
+details[open]::details-content {
+    block-size: auto;
 }
 
 .tool-group {
@@ -1803,16 +1862,16 @@ tbody tr:hover {
     background: var(--success) !important;
     border-color: var(--success) !important;
     color: var(--on-primary) !important;
-    animation: copyBounce 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: copyPop var(--dur) var(--ease-out);
 }
 
-@keyframes copyBounce {
+@keyframes copyPop {
     0% {
         transform: scale(1);
     }
 
     40% {
-        transform: scale(1.2);
+        transform: scale(1.08);
     }
 
     100% {
@@ -1865,19 +1924,19 @@ tbody tr:hover {
 @keyframes scaleIn {
     from {
         opacity: 0;
-        transform: scale(0.95);
+        transform: translateY(8px) scale(0.94);
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: translateY(0) scale(1);
     }
 }
 
 @keyframes toastIn {
     from {
         opacity: 0;
-        transform: translateX(100%) scale(0.9);
+        transform: translateX(32px) scale(0.96);
     }
 
     to {
@@ -1889,12 +1948,12 @@ tbody tr:hover {
 @keyframes toastOut {
     from {
         opacity: 1;
-        transform: translateX(0) scale(1);
+        transform: translateX(0);
     }
 
     to {
         opacity: 0;
-        transform: translateX(100%) scale(0.9);
+        transform: translateX(32px);
     }
 }
 
@@ -1910,19 +1969,6 @@ tbody tr:hover {
     }
 }
 
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.35;
-        transform: scale(0.85);
-    }
-}
 
 @keyframes slideDown {
     from {
@@ -1999,9 +2045,9 @@ tbody tr:hover {
     overflow: hidden;
     max-height: 0;
     opacity: 0;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.25s ease,
-        margin 0.3s ease;
+    transition: max-height var(--dur-slow) var(--ease-out),
+        opacity var(--dur) ease,
+        margin var(--dur) ease;
     margin-top: 0;
 }
 
@@ -2033,7 +2079,7 @@ tbody tr:hover {
     font-size: var(--fs-xs);
     font-weight: 600;
     transition: var(--transition-smooth);
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) ease-out;
 }
 
 .pace-indicator .pace-dot {
@@ -2160,6 +2206,7 @@ tbody tr:hover {
     transform: translateY(-50%);
     display: inline-flex;
     color: var(--text-muted);
+    transition: transform var(--dur) var(--ease-out), color var(--dur) ease;
     pointer-events: none;
     transition: transform 0.2s ease, color 0.2s ease;
 }
@@ -2225,21 +2272,23 @@ tbody tr:hover {
     overscroll-behavior: contain; /* al llegar al final no scrollea la página */
     -webkit-overflow-scrolling: touch;
     text-align: left;
-    animation: comboListIn 0.12s ease-out;
+    animation: comboListIn var(--dur) var(--ease-out);
+    transform-origin: top center;
 }
 
 .combo-list.opens-up {
     animation-name: comboListInUp;
+    transform-origin: bottom center;
 }
 
 @keyframes comboListIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-10px) scaleY(0.92); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
 @keyframes comboListInUp {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px) scaleY(0.92); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
 .combo-group {
@@ -2302,20 +2351,19 @@ tbody tr:hover {
 
 /* Goal-reached glow on progress panel */
 .progress-panel.goal-reached {
-    animation: goalGlow 2s ease-in-out 3;
+    animation: goalFlash 1.2s ease-in-out 3;
     border: 1px solid rgba(16, 185, 129, 0.5);
 }
 
-@keyframes goalGlow {
+@keyframes goalFlash {
 
     0%,
     100% {
-            inset 0 0 10px rgba(16, 185, 129, 0.05);
+        border-color: rgba(16, 185, 129, 0.5);
     }
 
     50% {
-            0 0 60px rgba(255, 107, 53, 0.2),
-            inset 0 0 20px rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 1);
     }
 }
 
@@ -2329,20 +2377,8 @@ tbody tr:hover {
 
 .pace-indicator.pace-goal .pace-dot {
     background: #10B981;
-    animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
-@keyframes goalPacePulse {
-
-    0%,
-    100% {
-        border-color: rgba(16, 185, 129, 0.35);
-    }
-
-    50% {
-        border-color: rgba(16, 185, 129, 0.6);
-    }
-}
 
 /* Celebration banner that slides down */
 .celebration-banner {
@@ -2358,13 +2394,12 @@ tbody tr:hover {
     font-weight: 700;
     font-size: 1rem;
     letter-spacing: 0.02em;
-    animation: bannerSlideDown 0.5s ease-out, bannerSlideUp 0.5s ease-in 4.5s forwards;
+    animation: bannerSlideDown var(--dur-slow) var(--ease-out), bannerSlideUp var(--dur) var(--ease-in) 5s forwards;
     box-shadow: var(--shadow-lg);
 }
 
 .celebration-banner span {
     display: inline-block;
-    animation: bannerBounce 0.6s ease-in-out 0.5s 3;
 }
 
 @keyframes bannerSlideDown {
@@ -2391,17 +2426,6 @@ tbody tr:hover {
     }
 }
 
-@keyframes bannerBounce {
-
-    0%,
-    100% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.15);
-    }
-}
 
 /* ==========================================
    Break Alarm — Indicator
@@ -2418,7 +2442,7 @@ tbody tr:hover {
     background: var(--secondary);
     border: 1px solid var(--border);
     margin-top: 0.3rem;
-    transition: all 0.3s ease;
+    transition: background-color var(--dur) ease, color var(--dur) ease, border-color var(--dur) ease;
 }
 
 .break-indicator.franco {
@@ -2452,7 +2476,7 @@ tbody tr:hover {
     margin-bottom: 0.85rem;
     font-size: var(--fs-xs);
     transition: var(--transition-smooth);
-    animation: fadeIn 0.25s ease-out;
+    animation: fadeIn var(--dur) ease-out;
 }
 
 .franco-swap-card.active {
@@ -2598,7 +2622,7 @@ tbody tr:hover {
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.75);
-    animation: breakOverlayIn 0.4s ease-out;
+    animation: breakOverlayIn var(--dur-slow) ease-out;
 }
 
 .break-overlay.hidden {
@@ -2624,13 +2648,13 @@ tbody tr:hover {
     background: var(--bg-card-solid);
     border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border-strong));
     box-shadow: var(--shadow-lg);
-    animation: breakCardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: breakCardIn var(--dur-slow) var(--ease-out);
 }
 
 @keyframes breakCardIn {
     from {
         opacity: 0;
-        transform: scale(0.7) translateY(30px);
+        transform: scale(0.96) translateY(8px);
     }
 
     to {
@@ -2644,26 +2668,18 @@ tbody tr:hover {
     font-size: 4rem;
     line-height: 1;
     margin-bottom: 0.5rem;
-    animation: breakBounce 1s ease-in-out infinite;
+    animation: breakBreathe 2s ease-in-out infinite;
 }
 
-@keyframes breakBounce {
+@keyframes breakBreathe {
 
     0%,
     100% {
-        transform: translateY(0) scale(1);
-    }
-
-    25% {
-        transform: translateY(-8px) scale(1.05);
+        transform: scale(1);
     }
 
     50% {
-        transform: translateY(0) scale(1);
-    }
-
-    75% {
-        transform: translateY(-4px) scale(1.02);
+        transform: scale(1.06);
     }
 }
 
@@ -3284,7 +3300,7 @@ html.compact-mode .gestion-card {
     padding: 0.15rem 0.5rem;
     border-radius: 20px;
     letter-spacing: 0.02em;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) ease-out;
 }
 
 .reiterado-panel {
@@ -3294,7 +3310,7 @@ html.compact-mode .gestion-card {
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) ease-out;
 }
 
 .reiterado-panel.hidden {
@@ -3537,7 +3553,7 @@ html.compact-mode .plantilla-code {
     border-radius: var(--radius-md);
     padding: 0.85rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) ease-out;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -3627,7 +3643,7 @@ html.compact-mode .plantilla-code {
 .ai-progress-bar-fill {
     height: 100%;
     border-radius: 6px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
+    transition: width 600ms var(--ease-out), background var(--dur) ease;
 }
 
 .ai-progress-bar-fill.fill-success {
@@ -4481,9 +4497,9 @@ html.compact-mode .ai-summary-text {
         border-radius: var(--radius);
         margin-top: 0.5rem;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
-        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                    opacity 0.25s ease,
-                    margin-top 0.25s ease;
+        transition: max-height var(--dur-slow) var(--ease-out),
+                    opacity var(--dur) ease,
+                    margin-top var(--dur) ease;
         z-index: 999;
         position: relative;
     }
@@ -4617,4 +4633,18 @@ html.compact-mode .ai-summary-text {
         grid-row: 2;
     }
 
+}
+
+/* ==========================================
+   Reducir movimiento: respeta la preferencia del sistema
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion-always]) *,
+    :root:not([data-motion-always]) *::before,
+    :root:not([data-motion-always]) *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
