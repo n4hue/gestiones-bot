@@ -48,6 +48,12 @@ Ejemplo: `fix: el filtro de Telefonía no mostraba resultados`
 `Co-Authored-By:`, `Claude-Session:` ni ninguna otra firma o atribución del
 agente en el mensaje del commit.
 
+**Sin firma del agente:** antes del primer commit de la sesión, ejecutar
+`git config commit.gpgsign false` en el repo. Algunos entornos (por ejemplo,
+Claude en la nube) firman los commits con una clave propia del agente; como el
+autor es el usuario, GitHub los marcaría como *Unverified*. Sin firma, no
+llevan esa etiqueta.
+
 ## 3. Arquitectura y estilo del código
 
 - **Sin frameworks ni build:** Vanilla JS (módulos ES), Vanilla CSS y HTML. No
