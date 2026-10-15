@@ -617,6 +617,14 @@ option {
     margin-bottom: 0.5rem;
 }
 
+.checkbox-group:has(.settings-hint) {
+    align-items: flex-start;
+}
+
+.checkbox-group:has(.settings-hint) input[type="checkbox"] {
+    margin-top: 0.1rem;
+}
+
 .checkbox-group label {
     margin-bottom: 0;
     cursor: pointer;
@@ -627,6 +635,7 @@ option {
 }
 
 .checkbox-group input[type="checkbox"] {
+    flex-shrink: 0;
     width: 1rem;
     height: 1rem;
     cursor: pointer;
@@ -1766,7 +1775,29 @@ tbody tr:hover {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    animation: fadeIn var(--dur) ease-out;
+    animation: accordionIn var(--dur-slow) var(--ease-out);
+}
+
+@keyframes accordionIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Altura animada al abrir y cerrar; donde no hay soporte, abre sin animar */
+:root {
+    interpolate-size: allow-keywords;
+}
+
+details::details-content {
+    block-size: 0;
+    overflow: clip;
+    overflow-clip-margin: 4px; /* no recortar anillos de foco */
+    transition: block-size var(--dur-slow) var(--ease-out),
+        content-visibility var(--dur-slow) allow-discrete;
+}
+
+details[open]::details-content {
+    block-size: auto;
 }
 
 .tool-group {
@@ -2175,6 +2206,7 @@ tbody tr:hover {
     transform: translateY(-50%);
     display: inline-flex;
     color: var(--text-muted);
+    transition: transform var(--dur) var(--ease-out), color var(--dur) ease;
     pointer-events: none;
     transition: transform 0.2s ease, color 0.2s ease;
 }
@@ -2240,21 +2272,23 @@ tbody tr:hover {
     overscroll-behavior: contain; /* al llegar al final no scrollea la página */
     -webkit-overflow-scrolling: touch;
     text-align: left;
-    animation: comboListIn 0.12s ease-out;
+    animation: comboListIn var(--dur) var(--ease-out);
+    transform-origin: top center;
 }
 
 .combo-list.opens-up {
     animation-name: comboListInUp;
+    transform-origin: bottom center;
 }
 
 @keyframes comboListIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-10px) scaleY(0.92); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
 @keyframes comboListInUp {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px) scaleY(0.92); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
 .combo-group {

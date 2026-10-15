@@ -338,7 +338,11 @@ nunca hace esperar.
     entra con 6 px;
   - los toasts entran desde la derecha (32 px);
   - los modales suben 8 px con escala 0,94;
-  - los desplegables se abren en 120 ms;
+  - los desplegables (combobox) se abren desde el campo con 10 px de
+    recorrido y la flecha gira;
+  - los acordeones ("Datos del reclamo", "Herramientas", plantilla oficial)
+    animan la altura al abrir y cerrar (`::details-content` con
+    `interpolate-size`; en navegadores sin soporte abren sin animar);
   - al llegar a la meta, el panel de progreso destella en verde tres veces.
 - **Sin rebote:** ninguna curva pasa del 100 % ni hay keyframes que vuelvan
   hacia atrás.
