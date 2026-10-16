@@ -45,9 +45,12 @@
 
             <div class="progress-panel">
                 <div class="progress-info">
-                    <span class="counter" aria-label="Gestiones registradas hoy"><span id="daily-count">0</span><span class="counter-goal">/30</span></span>
-                    <span class="progress-remaining" id="progress-remaining">faltan 30</span>
-                    <span class="session-timer-wrap" title="Tiempo desde la última gestión"><i data-lucide="clock"></i><span id="session-timer" class="session-timer">Sin iniciar</span></span>
+                    <span class="counter" aria-label="Gestiones registradas hoy"><span id="daily-count">0</span><span
+                            class="counter-goal">/30</span></span>
+                    <!-- span class="progress-remaining" id="progress-remaining">faltan 30</span-->
+                    <span class="session-timer-wrap" title="Tiempo desde la última gestión"><i
+                            data-lucide="clock"></i><span id="session-timer" class="session-timer">Sin
+                            iniciar</span></span>
                 </div>
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
@@ -97,9 +100,13 @@
 
             <div class="header-actions">
                 <button type="button" id="btn-clear-form" class="btn btn-secondary"
-                    title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i> Limpiar</button>
-                <button id="btn-export" class="btn btn-secondary" title="Descargar el historial del día en CSV"><i data-lucide="download"></i> Exportar</button>
-                <button id="btn-reset" class="btn btn-danger-outline" title="Archivar el día y empezar una jornada nueva"><i data-lucide="rotate-ccw"></i> Nueva Jornada</button>
+                    title="Limpiar todos los campos del formulario (Alt+L)"><i data-lucide="eraser"></i>
+                    Limpiar</button>
+                <button id="btn-export" class="btn btn-secondary" title="Descargar el historial del día en CSV"><i
+                        data-lucide="download"></i> Exportar</button>
+                <button id="btn-reset" class="btn btn-danger-outline"
+                    title="Archivar el día y empezar una jornada nueva"><i data-lucide="rotate-ccw"></i> Nueva
+                    Jornada</button>
             </div>
         </header>
 
@@ -119,7 +126,8 @@
                         <span class="paste-zone-title">Smart Paste</span>
                         <span class="paste-zone-text">Pegá acá el reclamo completo de Viena</span>
                     </span>
-                    <span class="paste-zone-keys" id="paste-zone-hint"><kbd>Ctrl+V</kbd><span class="paste-zone-or">o</span><kbd>Alt+P</kbd></span>
+                    <span class="paste-zone-keys" id="paste-zone-hint"><kbd>Ctrl+V</kbd><span
+                            class="paste-zone-or">o</span><kbd>Alt+P</kbd></span>
                 </div>
 
                 <form id="registro-form">
@@ -507,7 +515,8 @@
                     </details>
 
                     <details class="tools-accordion" id="tools-accordion">
-                        <summary><i data-lucide="wrench"></i> Herramientas de equipos <span class="shortcut-hint-small">Alt+T</span>
+                        <summary><i data-lucide="wrench"></i> Herramientas de equipos <span
+                                class="shortcut-hint-small">Alt+T</span>
                         </summary>
                         <div class="tools-content">
                             <!-- MTA Calculator -->
@@ -588,7 +597,9 @@
                 <div class="history-filters">
                     <div class="history-search-wrapper">
                         <i data-lucide="search" class="history-search-icon"></i>
-                        <input type="text" id="search-input" placeholder="Buscar por cliente, tipo u observación… (Ctrl+K)" aria-label="Buscar en el historial">
+                        <input type="text" id="search-input"
+                            placeholder="Buscar por cliente, tipo u observación… (Ctrl+K)"
+                            aria-label="Buscar en el historial">
                     </div>
                 </div>
 
@@ -624,12 +635,15 @@
             <section class="stats-section card" id="stats-section">
                 <div class="stats-header">
                     <h2>Por categoría</h2>
-                    <button id="btn-toggle-stats" class="btn btn-icon" title="Mostrar u ocultar la distribución por categoría"
-                        aria-label="Mostrar u ocultar la distribución por categoría"><i data-lucide="pie-chart"></i></button>
+                    <button id="btn-toggle-stats" class="btn btn-icon"
+                        title="Mostrar u ocultar la distribución por categoría"
+                        aria-label="Mostrar u ocultar la distribución por categoría"><i
+                            data-lucide="pie-chart"></i></button>
                 </div>
                 <div id="stats-content" class="stats-content">
                     <div id="category-chart" class="category-chart">
-                        <p class="empty-state stats-empty">Registrá tu primera gestión del día para ver la distribución por categoría.</p>
+                        <p class="empty-state stats-empty">Registrá tu primera gestión del día para ver la distribución
+                            por categoría.</p>
                     </div>
                 </div>
             </section>
@@ -693,7 +707,8 @@
             </div>
 
             <hr class="settings-divider">
-            <p class="settings-group-title"><i data-lucide="brain-circuit"></i> Inteligencia Artificial (Auditoría Profunda)</p>
+            <p class="settings-group-title"><i data-lucide="brain-circuit"></i> Inteligencia Artificial (Auditoría
+                Profunda)</p>
 
             <div class="settings-disclaimer">
                 <i data-lucide="info"></i>
@@ -800,7 +815,8 @@
         <div class="modal-content shortcuts-modal-content">
             <div class="shortcuts-header">
                 <h3 id="shortcuts-title"><i data-lucide="keyboard"></i> Atajos de teclado</h3>
-                <button type="button" class="btn btn-icon btn-close-shortcuts" id="btn-close-shortcuts" title="Cerrar (Esc)" aria-label="Cerrar atajos"><i data-lucide="x"></i></button>
+                <button type="button" class="btn btn-icon btn-close-shortcuts" id="btn-close-shortcuts"
+                    title="Cerrar (Esc)" aria-label="Cerrar atajos"><i data-lucide="x"></i></button>
             </div>
             <div class="shortcuts-grid">
                 <div class="shortcut-item">
